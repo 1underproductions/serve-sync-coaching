@@ -291,7 +291,7 @@ const Index = () => {
                     <span className="text-4xl font-bold">$0</span>
                     <span className="text-gray-500 ml-2">for 2 weeks</span>
                     <div className="mt-1">
-                      <span className="text-2xl font-bold">$29</span>
+                      <span className="text-2xl font-bold">$9.95</span>
                       <span className="text-gray-500">/month after trial</span>
                     </div>
                   </div>
@@ -299,7 +299,6 @@ const Index = () => {
                   <Button asChild size="lg" className="w-full mt-4">
                     <Link to="/sign-up">Start 14-Day Free Trial</Link>
                   </Button>
-                  <p className="mt-2 text-xs text-gray-500">Credit card required</p>
                 </div>
                 <div className="p-6">
                   <h4 className="font-semibold text-base mb-3 text-left">All features included:</h4>
