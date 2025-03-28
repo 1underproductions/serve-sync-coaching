@@ -284,21 +284,21 @@ const Index = () => {
                 viewport={{ once: true }}
                 className="w-full border rounded-2xl border-tennis-green-500 overflow-hidden shadow-lg"
               >
-                <div className="p-8 bg-tennis-green-50 border-b border-tennis-green-200">
-                  <h3 className="text-2xl font-bold">ServeSync Pro</h3>
-                  <div className="mt-6">
-                    <span className="text-5xl font-bold">$29</span>
+                <div className="p-6 bg-tennis-green-50 border-b border-tennis-green-200">
+                  <h3 className="text-xl font-bold">ServeSync Pro</h3>
+                  <div className="mt-4">
+                    <span className="text-4xl font-bold">$29</span>
                     <span className="text-gray-500">/month</span>
                   </div>
-                  <p className="mt-3 text-gray-600">Everything you need to manage your tennis coaching business</p>
-                  <Button asChild size="lg" className="w-full mt-6">
+                  <p className="mt-2 text-gray-600 text-sm">Everything you need to manage your tennis coaching business</p>
+                  <Button asChild size="lg" className="w-full mt-4">
                     <Link to="/sign-up">Start 14-Day Free Trial</Link>
                   </Button>
-                  <p className="mt-3 text-sm text-gray-500">No credit card required</p>
+                  <p className="mt-2 text-xs text-gray-500">No credit card required</p>
                 </div>
-                <div className="p-8">
-                  <h4 className="font-semibold text-lg mb-4 text-left">All features included:</h4>
-                  <div className="grid md:grid-cols-2 gap-y-4 gap-x-8 text-left">
+                <div className="p-6">
+                  <h4 className="font-semibold text-base mb-3 text-left">All features included:</h4>
+                  <div className="grid md:grid-cols-2 gap-y-2 gap-x-6 text-left">
                     {[
                       "Player management (up to 100 players)",
                       "Unlimited scheduling & sessions",
@@ -313,8 +313,8 @@ const Index = () => {
                       "Recurring sessions",
                       "Email notifications"
                     ].map((feature, index) => (
-                      <div key={index} className="flex items-start">
-                        <CheckCircle className="h-5 w-5 text-tennis-green-500 mt-0.5 mr-3 flex-shrink-0" />
+                      <div key={index} className="flex items-start text-sm">
+                        <CheckCircle className="h-4 w-4 text-tennis-green-500 mt-0.5 mr-2 flex-shrink-0" />
                         <span>{feature}</span>
                       </div>
                     ))}
