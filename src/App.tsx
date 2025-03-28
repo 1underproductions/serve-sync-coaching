@@ -12,6 +12,28 @@ import Messages from "./pages/Messages";
 import Payments from "./pages/Payments";
 import NotFound from "./pages/NotFound";
 
+// New placeholder components for routes mentioned in spec
+const Analytics = () => (
+  <div className="p-8 text-center">
+    <h1 className="text-2xl font-bold mb-4">Analytics Dashboard</h1>
+    <p>This page will display coaching analytics and performance metrics.</p>
+  </div>
+);
+
+const Settings = () => (
+  <div className="p-8 text-center">
+    <h1 className="text-2xl font-bold mb-4">Settings</h1>
+    <p>This page will allow configuration of your coaching account and preferences.</p>
+  </div>
+);
+
+const Profile = () => (
+  <div className="p-8 text-center">
+    <h1 className="text-2xl font-bold mb-4">Profile</h1>
+    <p>This page will display and allow editing of your coaching profile.</p>
+  </div>
+);
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -27,6 +49,9 @@ const App = () => (
           <Route path="/players" element={<Players />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/payments" element={<Payments />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/profile" element={<Profile />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -1,6 +1,8 @@
 
 import { ReactNode } from "react";
 import Navbar from "./Navbar";
+import Sidebar from "./Sidebar";
+import Footer from "./Footer";
 
 interface LayoutProps {
   children: ReactNode;
@@ -8,15 +10,15 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <main className="flex-1 container py-6">{children}</main>
-      <footer className="bg-muted py-6">
-        <div className="container text-center text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} ServeSync. All rights reserved.</p>
-          <p className="mt-1">Professional Tennis Coaching Management Platform</p>
-        </div>
-      </footer>
+    <div className="flex min-h-screen bg-gray-50">
+      <Sidebar />
+      <div className="flex flex-col flex-1 overflow-x-hidden">
+        <Navbar />
+        <main className="flex-1 container mx-auto px-4 py-6 max-w-7xl">
+          {children}
+        </main>
+        <Footer />
+      </div>
     </div>
   );
 };
