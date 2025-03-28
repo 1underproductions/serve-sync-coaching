@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -82,9 +83,18 @@ const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
   const [players, setPlayers] = useState<Player[]>([]);
   
   useEffect(() => {
+    // Load players from localStorage or set default mock data
     const storedPlayers = localStorage.getItem("players");
     if (storedPlayers) {
       setPlayers(JSON.parse(storedPlayers));
+    } else {
+      const mockPlayers = [
+        { id: "1", name: "Michael Johnson", skill: "Intermediate", age: 28, email: "michael@example.com", sessionsCount: 12 },
+        { id: "2", name: "Sarah Williams", skill: "Advanced", age: 24, email: "sarah@example.com", sessionsCount: 24 },
+        { id: "3", name: "David Smith", skill: "Beginner", age: 32, email: "david@example.com", sessionsCount: 5 },
+      ];
+      localStorage.setItem("players", JSON.stringify(mockPlayers));
+      setPlayers(mockPlayers);
     }
   }, []);
   
