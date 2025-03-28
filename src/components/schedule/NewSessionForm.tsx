@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -74,9 +75,10 @@ const formSchema = z.object({
 interface NewSessionFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSessionCreated?: () => void; // Add the missing prop with optional marker
 }
 
-const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
+const NewSessionForm = ({ open, onOpenChange, onSessionCreated }: NewSessionFormProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [openCombobox, setOpenCombobox] = useState(false);
@@ -169,8 +171,13 @@ const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
       description: `Session with ${playerName} has been scheduled.`,
     });
     
-    onOpenChange(false);
-    navigate("/schedule");
+    // Call the onSessionCreated callback if provided
+    if (onSessionCreated) {
+      onSessionCreated();
+    } else {
+      onOpenChange(false);
+      navigate("/schedule");
+    }
   };
 
   if (!isLoaded) {
