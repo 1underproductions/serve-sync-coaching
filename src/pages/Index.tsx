@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { CheckCircle, ArrowRight, Calendar, Users, CreditCard } from "lucide-react";
@@ -56,8 +57,8 @@ const Index = () => {
                 <div className="relative bg-white rounded-lg shadow-xl overflow-hidden">
                   <div className="aspect-[4/3] bg-tennis-green-50 relative">
                     <img 
-                      src="https://images.unsplash.com/photo-1551836022-4c4c79ecde51?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1740&q=80" 
-                      alt="Tennis players in action on a tennis court" 
+                      src="/lovable-uploads/232441c8-5827-4d0c-aa6e-df7fd889e942.png" 
+                      alt="Tennis player hitting a backhand on court" 
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
@@ -219,8 +220,8 @@ const Index = () => {
                     Coach Dashboard
                   </div>
                   <img 
-                    src="https://images.unsplash.com/photo-1551836022-4c4c79ecde51?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1740&q=80" 
-                    alt="Tennis coach dashboard" 
+                    src="/lovable-uploads/262cd87f-693c-4e1a-bc5b-d3e801ceb62f.png" 
+                    alt="Tennis coach working with player on court" 
                     className="w-full h-auto rounded-lg shadow-sm mb-6"
                   />
                   <h3 className="text-xl font-bold mb-2">Everything in One Place</h3>
