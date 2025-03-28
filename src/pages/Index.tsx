@@ -56,8 +56,8 @@ const Index = () => {
                 <div className="relative bg-white rounded-lg shadow-xl overflow-hidden">
                   <div className="aspect-[4/3] bg-tennis-green-50 relative">
                     <img 
-                      src="/lovable-uploads/dce6d83d-9eff-4392-bafc-16030017d7d8.png" 
-                      alt="Tennis coach training player on court" 
+                      src="https://images.unsplash.com/photo-1551836022-4c4c79ecde51?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1740&q=80" 
+                      alt="Tennis players in action on a tennis court" 
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
