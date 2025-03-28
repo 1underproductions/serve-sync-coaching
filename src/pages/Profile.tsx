@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -39,9 +39,31 @@ const profileFormSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
+const PROFILE_IMAGE_KEY = 'serveSync.profileImage';
+const PROFILE_DATA_KEY = 'serveSync.profileData';
+
 const Profile = () => {
   const { toast } = useToast();
   const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
+
+  // Load profile image from localStorage on component mount
+  useEffect(() => {
+    const savedImage = localStorage.getItem(PROFILE_IMAGE_KEY);
+    if (savedImage) {
+      setAvatarSrc(savedImage);
+    }
+    
+    // Load saved profile data if available
+    const savedProfileData = localStorage.getItem(PROFILE_DATA_KEY);
+    if (savedProfileData) {
+      try {
+        const parsedData = JSON.parse(savedProfileData);
+        form.reset(parsedData);
+      } catch (error) {
+        console.error('Error parsing profile data from localStorage:', error);
+      }
+    }
+  }, []);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -57,6 +79,9 @@ const Profile = () => {
   });
 
   const onSubmit = (data: ProfileFormValues) => {
+    // Save profile data to localStorage
+    localStorage.setItem(PROFILE_DATA_KEY, JSON.stringify(data));
+    
     toast({
       title: "Profile updated",
       description: "Your profile has been successfully updated.",
@@ -69,7 +94,11 @@ const Profile = () => {
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
-        setAvatarSrc(event.target?.result as string);
+        const result = event.target?.result as string;
+        setAvatarSrc(result);
+        
+        // Save image to localStorage
+        localStorage.setItem(PROFILE_IMAGE_KEY, result);
       };
       reader.readAsDataURL(file);
       toast({
