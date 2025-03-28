@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -82,29 +83,7 @@ const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   
-  useEffect(() => {
-    const initializeData = () => {
-      const storedPlayers = localStorage.getItem("players");
-      const parsedPlayers = storedPlayers ? JSON.parse(storedPlayers) : [];
-      
-      if (parsedPlayers && parsedPlayers.length > 0) {
-        setPlayers(parsedPlayers);
-      } else {
-        const mockPlayers = [
-          { id: "1", name: "Michael Johnson", skill: "Intermediate", age: 28, email: "michael@example.com", sessionsCount: 12 },
-          { id: "2", name: "Sarah Williams", skill: "Advanced", age: 24, email: "sarah@example.com", sessionsCount: 24 },
-          { id: "3", name: "David Smith", skill: "Beginner", age: 32, email: "david@example.com", sessionsCount: 5 },
-        ];
-        localStorage.setItem("players", JSON.stringify(mockPlayers));
-        setPlayers(mockPlayers);
-      }
-      
-      setIsLoaded(true);
-    };
-    
-    initializeData();
-  }, []);
-  
+  // Initialize the form with default values
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -117,6 +96,36 @@ const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
       isRecurring: false,
     },
   });
+  
+  useEffect(() => {
+    const initializeData = () => {
+      try {
+        const storedPlayers = localStorage.getItem("players");
+        const parsedPlayers = storedPlayers ? JSON.parse(storedPlayers) : [];
+        
+        if (parsedPlayers && parsedPlayers.length > 0) {
+          setPlayers(parsedPlayers);
+        } else {
+          // Default mock players if none exist
+          const mockPlayers = [
+            { id: "1", name: "Michael Johnson", skill: "Intermediate", age: 28, email: "michael@example.com", sessionsCount: 12 },
+            { id: "2", name: "Sarah Williams", skill: "Advanced", age: 24, email: "sarah@example.com", sessionsCount: 24 },
+            { id: "3", name: "David Smith", skill: "Beginner", age: 32, email: "david@example.com", sessionsCount: 5 },
+          ];
+          localStorage.setItem("players", JSON.stringify(mockPlayers));
+          setPlayers(mockPlayers);
+        }
+      } catch (error) {
+        console.error("Error initializing player data:", error);
+        // Fallback to empty array if there's an error
+        setPlayers([]);
+      } finally {
+        setIsLoaded(true);
+      }
+    };
+    
+    initializeData();
+  }, []);
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
     const selectedPlayer = players.find(player => player.id === data.playerId);
@@ -159,7 +168,7 @@ const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
     return null;
   }
 
-  const hasPlayers = players && players.length > 0;
+  const hasPlayers = Array.isArray(players) && players.length > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -248,7 +257,7 @@ const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
                             </Button>
                           </CommandEmpty>
                           <CommandGroup>
-                            {Array.isArray(players) && players.map((player) => (
+                            {players.map((player) => (
                               <CommandItem
                                 key={player.id}
                                 value={player.name}
@@ -310,6 +319,7 @@ const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
                           selected={field.value}
                           onSelect={field.onChange}
                           initialFocus
+                          className="p-3 pointer-events-auto" 
                         />
                       </PopoverContent>
                     </Popover>
