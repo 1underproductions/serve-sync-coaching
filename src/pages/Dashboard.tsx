@@ -1,14 +1,12 @@
-
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { CalendarClock, Users, DollarSign, MessageSquare, BarChart, PlusCircle, FileText } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import StatsCard from "@/components/dashboard/StatsCard";
 import UpcomingSessionCard from "@/components/dashboard/UpcomingSessionCard";
 import PlayerCard from "@/components/players/PlayerCard";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
-// Mock data for demonstration
 const upcomingSessions = [
   { id: "1", title: "Advanced Forehand Drills", playerName: "Michael Johnson", date: "Today", time: "3:00 PM - 4:00 PM", type: 'individual' as const },
   { id: "2", title: "Beginner Group Class", playerName: "Junior Group", date: "Tomorrow", time: "10:00 AM - 11:30 AM", type: 'group' as const },
@@ -22,6 +20,12 @@ const recentPlayers = [
 ];
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+
+  const handleUpcomingSessionsClick = () => {
+    navigate('/schedule?view=list');
+  };
+
   return (
     <Layout>
       <div className="flex flex-col space-y-6">
@@ -71,12 +75,14 @@ const Dashboard = () => {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {/* Upcoming Sessions Section */}
-          <Card className="md:col-span-1 lg:col-span-1">
+          <Card 
+            className="md:col-span-1 lg:col-span-1 cursor-pointer hover:bg-gray-50 transition-colors" 
+            onClick={handleUpcomingSessionsClick}
+          >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-lg font-medium">Upcoming Sessions</CardTitle>
               <Button variant="ghost" size="sm" asChild>
-                <Link to="/schedule" className="text-tennis-green-600 font-medium">View All</Link>
+                <Link to="/schedule?view=list" className="text-tennis-green-600 font-medium">View All</Link>
               </Button>
             </CardHeader>
             <CardContent>
@@ -88,7 +94,6 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Recent Players Section */}
           <Card className="md:col-span-1 lg:col-span-1">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-lg font-medium">Recent Players</CardTitle>
@@ -105,7 +110,6 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Revenue Overview Section */}
           <Card className="md:col-span-2 lg:col-span-1">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-lg font-medium">Revenue Overview</CardTitle>
@@ -163,7 +167,6 @@ const Dashboard = () => {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
-          {/* Quick Actions Section */}
           <Card>
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
@@ -197,7 +200,6 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Monthly Overview Section */}
           <Card>
             <CardHeader>
               <CardTitle>Monthly Overview</CardTitle>
