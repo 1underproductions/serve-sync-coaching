@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, ArrowRight, Calendar, Users, CreditCard } from "lucide-react";
@@ -275,123 +274,71 @@ const Index = () => {
           <div className="container text-center">
             <span className="text-tennis-green-600 font-medium">PRICING</span>
             <h2 className="text-3xl md:text-4xl font-bold mt-3 mb-6">Simple, Transparent Pricing</h2>
-            <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto">Choose the plan that fits your coaching business, with no hidden fees or long-term contracts.</p>
+            <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto">Everything you need to run your coaching business efficiently, for one straightforward price. No hidden fees or long-term contracts.</p>
             
-            <div className="flex flex-col md:flex-row justify-center gap-8 max-w-5xl mx-auto">
+            <div className="flex justify-center max-w-3xl mx-auto">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
                 viewport={{ once: true }}
-                className="flex-1 border rounded-2xl overflow-hidden"
+                className="w-full border rounded-2xl border-tennis-green-500 overflow-hidden shadow-lg"
               >
-                <div className="p-6 bg-gray-50 border-b">
-                  <h3 className="text-xl font-bold">Basic</h3>
-                  <div className="mt-4">
-                    <span className="text-4xl font-bold">$19</span>
+                <div className="p-8 bg-tennis-green-50 border-b border-tennis-green-200">
+                  <h3 className="text-2xl font-bold">ServeSync Pro</h3>
+                  <div className="mt-6">
+                    <span className="text-5xl font-bold">$29</span>
                     <span className="text-gray-500">/month</span>
                   </div>
-                  <p className="mt-2 text-gray-600">Perfect for individual coaches</p>
-                </div>
-                <div className="p-6">
-                  <ul className="space-y-4 mb-8 text-left">
-                    {[
-                      "Up to 30 players",
-                      "Unlimited sessions",
-                      "Basic scheduling",
-                      "Online payments",
-                      "Email support"
-                    ].map((feature, index) => (
-                      <li key={index} className="flex items-center">
-                        <CheckCircle className="h-5 w-5 text-tennis-green-500 mr-3 flex-shrink-0" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Button asChild variant="outline" size="lg" className="w-full">
-                    <Link to="/dashboard">Start Free Trial</Link>
+                  <p className="mt-3 text-gray-600">Everything you need to manage your tennis coaching business</p>
+                  <Button asChild size="lg" className="w-full mt-6">
+                    <Link to="/sign-up">Start 14-Day Free Trial</Link>
                   </Button>
+                  <p className="mt-3 text-sm text-gray-500">No credit card required</p>
                 </div>
-              </motion.div>
-              
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                viewport={{ once: true }}
-                className="flex-1 border rounded-2xl border-tennis-green-500 overflow-hidden shadow-lg relative"
-              >
-                <div className="absolute top-0 inset-x-0 bg-tennis-green-500 text-white text-sm py-1">
-                  MOST POPULAR
-                </div>
-                <div className="p-6 bg-tennis-green-50 border-b border-tennis-green-200 pt-8">
-                  <h3 className="text-xl font-bold">Pro</h3>
-                  <div className="mt-4">
-                    <span className="text-4xl font-bold">$49</span>
-                    <span className="text-gray-500">/month</span>
+                <div className="p-8">
+                  <h4 className="font-semibold text-lg mb-4 text-left">All features included:</h4>
+                  <div className="grid md:grid-cols-2 gap-y-4 gap-x-8 text-left">
+                    {[
+                      "Player management (up to 100 players)",
+                      "Unlimited scheduling & sessions",
+                      "Court booking integration",
+                      "Automated reminders",
+                      "Payment tracking",
+                      "Basic analytics dashboard",
+                      "Mobile friendly interface",
+                      "Email support",
+                      "Calendar integrations",
+                      "Custom branding options",
+                      "Recurring sessions",
+                      "Email notifications"
+                    ].map((feature, index) => (
+                      <div key={index} className="flex items-start">
+                        <CheckCircle className="h-5 w-5 text-tennis-green-500 mt-0.5 mr-3 flex-shrink-0" />
+                        <span>{feature}</span>
+                      </div>
+                    ))}
                   </div>
-                  <p className="mt-2 text-gray-600">For growing coaching businesses</p>
-                </div>
-                <div className="p-6">
-                  <ul className="space-y-4 mb-8 text-left">
-                    {[
-                      "Unlimited players",
-                      "Unlimited sessions",
-                      "Advanced scheduling",
-                      "Payment processing",
-                      "Player analytics",
-                      "Priority support",
-                      "Custom branding"
-                    ].map((feature, index) => (
-                      <li key={index} className="flex items-center">
-                        <CheckCircle className="h-5 w-5 text-tennis-green-500 mr-3 flex-shrink-0" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Button asChild size="lg" className="w-full">
-                    <Link to="/dashboard">Start Free Trial</Link>
-                  </Button>
                 </div>
               </motion.div>
-              
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-                viewport={{ once: true }}
-                className="flex-1 border rounded-2xl overflow-hidden"
-              >
-                <div className="p-6 bg-gray-50 border-b">
-                  <h3 className="text-xl font-bold">Academy</h3>
-                  <div className="mt-4">
-                    <span className="text-4xl font-bold">$99</span>
-                    <span className="text-gray-500">/month</span>
-                  </div>
-                  <p className="mt-2 text-gray-600">For tennis academies & schools</p>
+            </div>
+            
+            <div className="mt-12 max-w-3xl mx-auto text-center">
+              <h3 className="text-xl font-semibold mb-4">Frequently Asked Questions</h3>
+              <div className="grid gap-6 mt-6 text-left">
+                <div className="bg-gray-50 rounded-lg p-6">
+                  <h4 className="font-medium text-lg mb-2">Can I cancel anytime?</h4>
+                  <p className="text-gray-600">Yes, you can cancel your subscription at any time. There are no long-term contracts or commitments.</p>
                 </div>
-                <div className="p-6">
-                  <ul className="space-y-4 mb-8 text-left">
-                    {[
-                      "Everything in Pro",
-                      "Multiple coaches",
-                      "Advanced reporting",
-                      "Facility management",
-                      "API access",
-                      "White-label solution",
-                      "Dedicated account manager"
-                    ].map((feature, index) => (
-                      <li key={index} className="flex items-center">
-                        <CheckCircle className="h-5 w-5 text-tennis-green-500 mr-3 flex-shrink-0" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Button asChild variant="outline" size="lg" className="w-full">
-                    <Link to="/dashboard">Contact Sales</Link>
-                  </Button>
+                <div className="bg-gray-50 rounded-lg p-6">
+                  <h4 className="font-medium text-lg mb-2">What happens after my free trial?</h4>
+                  <p className="text-gray-600">After your 14-day free trial ends, your account will automatically convert to a paid subscription unless you cancel.</p>
                 </div>
-              </motion.div>
+                <div className="bg-gray-50 rounded-lg p-6">
+                  <h4 className="font-medium text-lg mb-2">Are there any hidden fees?</h4>
+                  <p className="text-gray-600">No hidden fees. The price you see is the price you pay. We're committed to transparent pricing.</p>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -402,7 +349,7 @@ const Index = () => {
             <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">Join thousands of tennis coaches who use ServeSync to streamline their operations and grow their business.</p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <Button asChild size="lg" className="bg-white text-tennis-green-600 hover:bg-gray-100 rounded-full px-8">
-                <Link to="/dashboard">Start Free Trial</Link>
+                <Link to="/sign-up">Start Free Trial</Link>
               </Button>
             </div>
           </div>
