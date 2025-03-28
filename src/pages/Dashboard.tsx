@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CalendarClock, Users, DollarSign, MessageSquare, BarChart, PlusCircle, FileText } from "lucide-react";
 import Layout from "@/components/layout/Layout";
