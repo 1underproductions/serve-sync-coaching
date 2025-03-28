@@ -4,18 +4,19 @@ import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CalendarClock, Clock, List, Calendar as CalendarIcon, Plus, User } from "lucide-react";
+import { CalendarClock, Clock, List, Calendar as CalendarIcon, Plus, User, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Calendar } from "@/components/ui/calendar";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { format, isToday, parseISO, isSameDay } from "date-fns";
 
-// Mock data for demonstration
+// Mock data for demonstration - with proper date objects
 const sessions = [
   {
     id: "1",
     title: "Advanced Forehand Drills",
     player: "Michael Johnson",
-    date: "July 24, 2023",
+    date: "2023-07-24",
     time: "3:00 PM - 4:00 PM",
     type: "individual",
     location: "Court 2",
@@ -24,7 +25,7 @@ const sessions = [
     id: "2",
     title: "Beginner Group Class",
     player: "Junior Group",
-    date: "July 25, 2023",
+    date: "2023-07-25",
     time: "10:00 AM - 11:30 AM",
     type: "group",
     location: "Courts 3-4",
@@ -33,7 +34,7 @@ const sessions = [
     id: "3",
     title: "Serve Practice",
     player: "Sarah Williams",
-    date: "July 25, 2023",
+    date: "2023-07-25",
     time: "5:00 PM - 6:00 PM",
     type: "individual",
     location: "Court 1",
@@ -42,7 +43,7 @@ const sessions = [
     id: "4",
     title: "Match Preparation",
     player: "David Smith",
-    date: "July 26, 2023",
+    date: "2023-07-26",
     time: "4:00 PM - 5:30 PM",
     type: "individual",
     location: "Court 2",
@@ -51,27 +52,78 @@ const sessions = [
     id: "5",
     title: "Advanced Group Class",
     player: "Adult Group",
-    date: "July 27, 2023",
+    date: "2023-07-27",
     time: "6:00 PM - 7:30 PM",
     type: "group",
     location: "Courts 1-2",
   },
+  {
+    id: "6",
+    title: "Tournament Prep",
+    player: "Michael Johnson",
+    date: "2023-07-28",
+    time: "2:00 PM - 4:00 PM",
+    type: "tournament",
+    location: "Center Court",
+  },
+  {
+    id: "7",
+    title: "Youth Camp Session",
+    player: "Kids Group",
+    date: "2023-07-29",
+    time: "9:00 AM - 12:00 PM",
+    type: "group",
+    location: "Courts 5-8",
+  },
 ];
 
-// Create a map of sessions by date for the calendar view
-const getSessionsByDate = () => {
-  const sessionMap = new Map();
-  
-  sessions.forEach(session => {
-    // This is a simplified approach - in a real app, you'd parse the date string properly
-    const dateStr = session.date;
-    if (!sessionMap.has(dateStr)) {
-      sessionMap.set(dateStr, []);
+// Function to get styled date string
+const getFormattedDate = (dateStr) => {
+  try {
+    const date = parseISO(dateStr);
+    return format(date, 'MMMM d, yyyy');
+  } catch (e) {
+    return dateStr; // Fallback to original string if parsing fails
+  }
+};
+
+// Functions for the calendar view
+const getSessionsByDate = (date) => {
+  return sessions.filter(session => {
+    try {
+      return isSameDay(parseISO(session.date), date);
+    } catch (e) {
+      return false;
     }
-    sessionMap.get(dateStr).push(session);
   });
+};
+
+// Function to get sessions for the calendar day cells
+const getDayContent = (day) => {
+  const daySessions = getSessionsByDate(day);
   
-  return sessionMap;
+  if (daySessions.length === 0) {
+    return null;
+  }
+  
+  // Return dots representing session types
+  return (
+    <div className="flex flex-wrap gap-1 mt-1 justify-center">
+      {daySessions.map((session, index) => (
+        <div 
+          key={index} 
+          className={`w-2 h-2 rounded-full ${
+            session.type === 'individual' 
+              ? 'bg-tennis-green-500' 
+              : session.type === 'group' 
+                ? 'bg-tennis-blue-500' 
+                : 'bg-orange-500'
+          }`}
+          title={session.title}
+        />
+      ))}
+    </div>
+  );
 };
 
 const Schedule = () => {
@@ -111,7 +163,7 @@ const Schedule = () => {
             <TabsList className="grid w-full md:w-auto grid-cols-3">
               <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
               <TabsTrigger value="past">Past</TabsTrigger>
-              <TabsTrigger value="calendar">Calendar</TabsTrigger>
+              <TabsTrigger value="all">All</TabsTrigger>
             </TabsList>
             <TabsContent value="upcoming" className="mt-4 space-y-4">
               {sessions.map((session) => (
@@ -123,10 +175,16 @@ const Schedule = () => {
                         className={`text-xs px-2 py-1 rounded-full ${
                           session.type === "individual"
                             ? "bg-tennis-green-100 text-tennis-green-800"
-                            : "bg-tennis-blue-100 text-tennis-blue-800"
+                            : session.type === "group"
+                              ? "bg-tennis-blue-100 text-tennis-blue-800"
+                              : "bg-orange-100 text-orange-800"
                         }`}
                       >
-                        {session.type === "individual" ? "Individual" : "Group"}
+                        {session.type === "individual" 
+                          ? "Individual" 
+                          : session.type === "group" 
+                            ? "Group" 
+                            : "Tournament"}
                       </span>
                     </div>
                   </CardHeader>
@@ -139,7 +197,7 @@ const Schedule = () => {
                         </div>
                         <div className="flex items-center text-sm">
                           <CalendarClock className="h-4 w-4 mr-2 text-muted-foreground" />
-                          <span>{session.date}</span>
+                          <span>{getFormattedDate(session.date)}</span>
                         </div>
                       </div>
                       <div className="space-y-2">
@@ -148,7 +206,7 @@ const Schedule = () => {
                           <span>{session.time}</span>
                         </div>
                         <div className="flex items-center text-sm">
-                          <span className="text-muted-foreground mr-2">Location:</span>
+                          <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
                           <span>{session.location}</span>
                         </div>
                       </div>
@@ -170,66 +228,135 @@ const Schedule = () => {
                 <p className="text-muted-foreground">Past sessions will appear here</p>
               </div>
             </TabsContent>
-            <TabsContent value="calendar">
+            <TabsContent value="all">
               <div className="text-center py-12">
-                <p className="text-muted-foreground">Calendar view will be available in the next update</p>
+                <p className="text-muted-foreground">All sessions will appear here</p>
               </div>
             </TabsContent>
           </Tabs>
         ) : (
-          <div className="space-y-4">
-            <Card>
+          <div className="space-y-6">
+            <Card className="overflow-hidden">
               <CardContent className="pt-6">
-                <div className="flex flex-col items-center">
-                  <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={(date) => date && setDate(date)}
-                    className="rounded-md border p-3 pointer-events-auto"
-                  />
-                </div>
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={(date) => date && setDate(date)}
+                  components={{
+                    DayContent: ({ date }) => (
+                      <div className="w-full h-full flex flex-col items-center">
+                        <span className={isToday(date) ? "font-bold" : ""}>
+                          {format(date, "d")}
+                        </span>
+                        {getDayContent(date)}
+                      </div>
+                    ),
+                  }}
+                  className="rounded-md border p-3"
+                />
               </CardContent>
             </Card>
             
-            <Card>
-              <CardHeader>
-                <CardTitle>Sessions for {date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {getSessionsByDate().get(date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })) ? (
-                  getSessionsByDate().get(date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })).map((session) => (
-                    <div key={session.id} className="border-b py-3 last:border-0 last:pb-0 first:pt-0">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-medium">{session.title}</h4>
-                          <div className="text-sm text-muted-foreground mt-1">
-                            {session.time} • {session.player} • {session.location}
-                          </div>
-                        </div>
-                        <span
-                          className={`text-xs px-2 py-1 rounded-full ${
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <div className="lg:col-span-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">
+                      Sessions for {format(date, 'MMMM d, yyyy')}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {getSessionsByDate(date).length > 0 ? (
+                      getSessionsByDate(date).map((session) => (
+                        <div 
+                          key={session.id} 
+                          className={`rounded-lg p-4 shadow-sm border-l-4 ${
                             session.type === "individual"
-                              ? "bg-tennis-green-100 text-tennis-green-800"
-                              : "bg-tennis-blue-100 text-tennis-blue-800"
+                              ? "border-tennis-green-500 bg-tennis-green-50"
+                              : session.type === "group"
+                                ? "border-tennis-blue-500 bg-tennis-blue-50"
+                                : "border-orange-500 bg-orange-50"
                           }`}
                         >
-                          {session.type === "individual" ? "Individual" : "Group"}
-                        </span>
+                          <div className="flex justify-between items-start mb-2">
+                            <h4 className="font-medium text-lg">{session.title}</h4>
+                            <span
+                              className={`text-xs px-2 py-1 rounded-full ${
+                                session.type === "individual"
+                                  ? "bg-tennis-green-100 text-tennis-green-800"
+                                  : session.type === "group"
+                                    ? "bg-tennis-blue-100 text-tennis-blue-800"
+                                    : "bg-orange-100 text-orange-800"
+                              }`}
+                            >
+                              {session.type === "individual" 
+                                ? "Individual" 
+                                : session.type === "group" 
+                                  ? "Group" 
+                                  : "Tournament"}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 mb-3">
+                            <div className="flex items-center text-sm">
+                              <User className="h-4 w-4 mr-2 text-muted-foreground" />
+                              <span>{session.player}</span>
+                            </div>
+                            <div className="flex items-center text-sm">
+                              <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+                              <span>{session.time}</span>
+                            </div>
+                            <div className="flex items-center text-sm col-span-2">
+                              <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
+                              <span>{session.location}</span>
+                            </div>
+                          </div>
+                          <div className="flex justify-end space-x-2">
+                            <Button size="sm" variant="outline" asChild>
+                              <Link to={`/session/${session.id}`}>View</Link>
+                            </Button>
+                            <Button size="sm" variant="ghost" asChild>
+                              <Link to={`/session/${session.id}/edit`}>Edit</Link>
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-10">
+                        <p className="text-muted-foreground mb-4">No sessions scheduled for this day</p>
+                        <Button variant="outline" className="mt-2" asChild>
+                          <Link to="/schedule/new">
+                            <Plus className="h-4 w-4 mr-2" /> Schedule Session
+                          </Link>
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+              <div>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Session Types</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 rounded-full bg-tennis-green-500 mr-2"></div>
+                        <span>Individual Sessions</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 rounded-full bg-tennis-blue-500 mr-2"></div>
+                        <span>Group Classes</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 rounded-full bg-orange-500 mr-2"></div>
+                        <span>Tournament Coaching</span>
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">No sessions scheduled for this day</p>
-                    <Button variant="outline" className="mt-4" asChild>
-                      <Link to="/schedule/new">
-                        <Plus className="h-4 w-4 mr-2" /> Schedule Session
-                      </Link>
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           </div>
         )}
       </div>
