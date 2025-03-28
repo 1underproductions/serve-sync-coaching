@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -81,21 +80,29 @@ const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
   const { toast } = useToast();
   const [openCombobox, setOpenCombobox] = useState(false);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
   
   useEffect(() => {
-    // Load players from localStorage or set default mock data
-    const storedPlayers = localStorage.getItem("players");
-    if (storedPlayers) {
-      setPlayers(JSON.parse(storedPlayers));
-    } else {
-      const mockPlayers = [
-        { id: "1", name: "Michael Johnson", skill: "Intermediate", age: 28, email: "michael@example.com", sessionsCount: 12 },
-        { id: "2", name: "Sarah Williams", skill: "Advanced", age: 24, email: "sarah@example.com", sessionsCount: 24 },
-        { id: "3", name: "David Smith", skill: "Beginner", age: 32, email: "david@example.com", sessionsCount: 5 },
-      ];
-      localStorage.setItem("players", JSON.stringify(mockPlayers));
-      setPlayers(mockPlayers);
-    }
+    const initializeData = () => {
+      const storedPlayers = localStorage.getItem("players");
+      const parsedPlayers = storedPlayers ? JSON.parse(storedPlayers) : [];
+      
+      if (parsedPlayers && parsedPlayers.length > 0) {
+        setPlayers(parsedPlayers);
+      } else {
+        const mockPlayers = [
+          { id: "1", name: "Michael Johnson", skill: "Intermediate", age: 28, email: "michael@example.com", sessionsCount: 12 },
+          { id: "2", name: "Sarah Williams", skill: "Advanced", age: 24, email: "sarah@example.com", sessionsCount: 24 },
+          { id: "3", name: "David Smith", skill: "Beginner", age: 32, email: "david@example.com", sessionsCount: 5 },
+        ];
+        localStorage.setItem("players", JSON.stringify(mockPlayers));
+        setPlayers(mockPlayers);
+      }
+      
+      setIsLoaded(true);
+    };
+    
+    initializeData();
   }, []);
   
   const form = useForm<z.infer<typeof formSchema>>({
@@ -148,7 +155,11 @@ const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
     navigate("/schedule");
   };
 
-  const hasPlayers = players.length > 0;
+  if (!isLoaded) {
+    return null;
+  }
+
+  const hasPlayers = players && players.length > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -237,7 +248,7 @@ const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
                             </Button>
                           </CommandEmpty>
                           <CommandGroup>
-                            {players.map((player) => (
+                            {Array.isArray(players) && players.map((player) => (
                               <CommandItem
                                 key={player.id}
                                 value={player.name}

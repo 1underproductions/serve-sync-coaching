@@ -23,7 +23,7 @@ const NewSession = () => {
           Please fill out the form to create a new coaching session.
         </p>
       </div>
-      <NewSessionForm open={isDialogOpen} onOpenChange={handleDialogOpenChange} />
+      <NewSessionForm key="new-session-form" open={isDialogOpen} onOpenChange={handleDialogOpenChange} />
     </Layout>
   );
 };
