@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import Schedule from "./pages/Schedule";
 import NewSession from "./pages/NewSession";
 import Players from "./pages/Players";
+import NewPlayer from "./pages/NewPlayer";
 import Messages from "./pages/Messages";
 import Payments from "./pages/Payments";
 import NotFound from "./pages/NotFound";
@@ -49,6 +50,7 @@ const App = () => (
           <Route path="/schedule" element={<Schedule />} />
           <Route path="/schedule/new" element={<NewSession />} />
           <Route path="/players" element={<Players />} />
+          <Route path="/players/new" element={<NewPlayer />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/payments" element={<Payments />} />
           <Route path="/analytics" element={<Analytics />} />

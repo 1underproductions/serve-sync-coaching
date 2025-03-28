@@ -1,11 +1,10 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { format } from "date-fns";
-import { CalendarIcon, Clock, Check, ChevronsUpDown } from "lucide-react";
+import { CalendarIcon, Clock, Check, ChevronsUpDown, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
@@ -48,19 +47,17 @@ import {
   CommandInput,
   CommandItem,
 } from "@/components/ui/command";
+import { Link } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
-// Mock player data for the combobox 
-// In a real app, this would come from a database or API
-const players = [
-  { id: "1", name: "Michael Johnson", skill: "Intermediate", age: 28 },
-  { id: "2", name: "Sarah Williams", skill: "Advanced", age: 24 },
-  { id: "3", name: "David Smith", skill: "Beginner", age: 32 },
-  { id: "4", name: "Emma Wilson", skill: "Intermediate", age: 22 },
-  { id: "5", name: "Robert Brown", skill: "Advanced", age: 34 },
-  { id: "6", name: "Laura Garcia", skill: "Beginner", age: 26 },
-  { id: "7", name: "Jason Taylor", skill: "Intermediate", age: 30 },
-  { id: "8", name: "Amy Martinez", skill: "Advanced", age: 27 },
-];
+interface Player {
+  id: string;
+  name: string;
+  skill: string;
+  age: number;
+  email: string;
+  sessionsCount: number;
+}
 
 const formSchema = z.object({
   title: z.string().min(3, { message: "Title must be at least 3 characters" }),
@@ -80,7 +77,16 @@ interface NewSessionFormProps {
 
 const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [openCombobox, setOpenCombobox] = useState(false);
+  const [players, setPlayers] = useState<Player[]>([]);
+  
+  useEffect(() => {
+    const storedPlayers = localStorage.getItem("players");
+    if (storedPlayers) {
+      setPlayers(JSON.parse(storedPlayers));
+    }
+  }, []);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -96,22 +102,43 @@ const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
   });
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
-    // Get the player name from the selected playerId
     const selectedPlayer = players.find(player => player.id === data.playerId);
     const playerName = selectedPlayer ? selectedPlayer.name : "Unknown player";
     
-    // In a real app, you would save this data to a database
-    console.log("Form submitted:", {
+    const newSession = {
+      id: crypto.randomUUID(),
       ...data,
-      playerName, // Add the player name for display purposes
+      playerName,
+      createdAt: new Date().toISOString(),
+    };
+    
+    const existingSessions = JSON.parse(localStorage.getItem("sessions") || "[]");
+    localStorage.setItem("sessions", JSON.stringify([...existingSessions, newSession]));
+    
+    if (selectedPlayer) {
+      const updatedPlayers = players.map(player => {
+        if (player.id === selectedPlayer.id) {
+          return {
+            ...player,
+            sessionsCount: player.sessionsCount + 1
+          };
+        }
+        return player;
+      });
+      
+      localStorage.setItem("players", JSON.stringify(updatedPlayers));
+    }
+    
+    toast({
+      title: "Session Created",
+      description: `Session with ${playerName} has been scheduled.`,
     });
     
-    // Mock saving the session (in a real app this would be an API call)
-    setTimeout(() => {
-      onOpenChange(false);
-      navigate("/schedule"); // Navigate back to schedule after saving
-    }, 500);
+    onOpenChange(false);
+    navigate("/schedule");
   };
+
+  const hasPlayers = players.length > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -145,54 +172,86 @@ const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Player</FormLabel>
-                  <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          aria-expanded={openCombobox}
-                          className={cn(
-                            "w-full justify-between",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value
-                            ? players.find((player) => player.id === field.value)?.name
-                            : "Select player"}
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full p-0">
-                      <Command>
-                        <CommandInput placeholder="Search player..." />
-                        <CommandEmpty>No player found.</CommandEmpty>
-                        <CommandGroup>
-                          {players.map((player) => (
-                            <CommandItem
-                              key={player.id}
-                              value={player.name}
-                              onSelect={() => {
-                                form.setValue("playerId", player.id);
-                                setOpenCombobox(false);
-                              }}
+                  {!hasPlayers ? (
+                    <div className="flex flex-col gap-2">
+                      <p className="text-sm text-muted-foreground">No players available. Add a player first.</p>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        className="w-full justify-center"
+                        asChild
+                      >
+                        <Link to="/players/new">
+                          <UserPlus className="mr-2 h-4 w-4" />
+                          Add New Player
+                        </Link>
+                      </Button>
+                    </div>
+                  ) : (
+                    <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={openCombobox}
+                            className={cn(
+                              "w-full justify-between",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value
+                              ? players.find((player) => player.id === field.value)?.name
+                              : "Select player"}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0">
+                        <Command>
+                          <CommandInput placeholder="Search player..." />
+                          <CommandEmpty>
+                            <p>No player found.</p>
+                            <Button 
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="mt-2 w-full justify-center"
+                              asChild
+                              onClick={() => setOpenCombobox(false)}
                             >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  player.id === field.value
-                                    ? "opacity-100"
-                                    : "opacity-0"
-                                )}
-                              />
-                              {player.name} ({player.skill})
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
+                              <Link to="/players/new">
+                                <UserPlus className="mr-2 h-4 w-4" />
+                                Add New Player
+                              </Link>
+                            </Button>
+                          </CommandEmpty>
+                          <CommandGroup>
+                            {players.map((player) => (
+                              <CommandItem
+                                key={player.id}
+                                value={player.name}
+                                onSelect={() => {
+                                  form.setValue("playerId", player.id);
+                                  setOpenCombobox(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    player.id === field.value
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                {player.name} ({player.skill})
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
@@ -344,6 +403,7 @@ const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
               <Button 
                 type="submit"
                 className="bg-tennis-green-600 hover:bg-tennis-green-700"
+                disabled={!hasPlayers}
               >
                 Create Session
               </Button>
