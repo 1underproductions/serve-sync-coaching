@@ -100,10 +100,22 @@ const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
   useEffect(() => {
     const initializeData = () => {
       try {
+        // Load players from localStorage
         const storedPlayers = localStorage.getItem("players");
-        const parsedPlayers = storedPlayers ? JSON.parse(storedPlayers) : [];
+        console.log("Stored players:", storedPlayers);
         
-        if (parsedPlayers && parsedPlayers.length > 0) {
+        let parsedPlayers: Player[] = [];
+        if (storedPlayers) {
+          try {
+            parsedPlayers = JSON.parse(storedPlayers);
+            console.log("Parsed players:", parsedPlayers);
+          } catch (parseError) {
+            console.error("Error parsing players:", parseError);
+          }
+        }
+        
+        if (Array.isArray(parsedPlayers) && parsedPlayers.length > 0) {
+          console.log("Setting players from localStorage:", parsedPlayers);
           setPlayers(parsedPlayers);
         } else {
           // Default mock players if none exist
@@ -112,6 +124,7 @@ const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
             { id: "2", name: "Sarah Williams", skill: "Advanced", age: 24, email: "sarah@example.com", sessionsCount: 24 },
             { id: "3", name: "David Smith", skill: "Beginner", age: 32, email: "david@example.com", sessionsCount: 5 },
           ];
+          console.log("Setting mock players:", mockPlayers);
           localStorage.setItem("players", JSON.stringify(mockPlayers));
           setPlayers(mockPlayers);
         }
@@ -169,6 +182,8 @@ const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
   }
 
   const hasPlayers = Array.isArray(players) && players.length > 0;
+  console.log("Players available:", players);
+  console.log("Has players:", hasPlayers);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -218,69 +233,25 @@ const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
                       </Button>
                     </div>
                   ) : (
-                    <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
-                      <PopoverTrigger asChild>
+                    <div className="w-full">
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
                         <FormControl>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            aria-expanded={openCombobox}
-                            className={cn(
-                              "w-full justify-between",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value
-                              ? players.find((player) => player.id === field.value)?.name
-                              : "Select player"}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          </Button>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select player" />
+                          </SelectTrigger>
                         </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-full p-0">
-                        <Command>
-                          <CommandInput placeholder="Search player..." />
-                          <CommandEmpty>
-                            <p>No player found.</p>
-                            <Button 
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="mt-2 w-full justify-center"
-                              asChild
-                              onClick={() => setOpenCombobox(false)}
-                            >
-                              <Link to="/players/new">
-                                <UserPlus className="mr-2 h-4 w-4" />
-                                Add New Player
-                              </Link>
-                            </Button>
-                          </CommandEmpty>
-                          <CommandGroup>
-                            {players.map((player) => (
-                              <CommandItem
-                                key={player.id}
-                                value={player.name}
-                                onSelect={() => {
-                                  form.setValue("playerId", player.id);
-                                  setOpenCombobox(false);
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    player.id === field.value
-                                      ? "opacity-100"
-                                      : "opacity-0"
-                                  )}
-                                />
-                                {player.name} ({player.skill})
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
+                        <SelectContent>
+                          {players.map((player) => (
+                            <SelectItem key={player.id} value={player.id}>
+                              {player.name} ({player.skill})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   )}
                   <FormMessage />
                 </FormItem>
@@ -319,7 +290,7 @@ const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
                           selected={field.value}
                           onSelect={field.onChange}
                           initialFocus
-                          className="p-3 pointer-events-auto" 
+                          className="p-3 pointer-events-auto"
                         />
                       </PopoverContent>
                     </Popover>
