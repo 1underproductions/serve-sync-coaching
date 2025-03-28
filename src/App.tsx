@@ -14,6 +14,10 @@ import NewPlayer from "./pages/NewPlayer";
 import Messages from "./pages/Messages";
 import Payments from "./pages/Payments";
 import NotFound from "./pages/NotFound";
+import SignUp from "./pages/SignUp";
+import Login from "./pages/Login";
+import ResetPassword from "./pages/ResetPassword";
+import Billing from "./pages/Billing";
 
 // New placeholder components for routes mentioned in spec
 const Analytics = () => (
@@ -58,6 +62,10 @@ const App = () => (
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/billing" element={<Billing />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
