@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Schedule from "./pages/Schedule";
+import NewSession from "./pages/NewSession";
 import Players from "./pages/Players";
 import Messages from "./pages/Messages";
 import Payments from "./pages/Payments";
@@ -46,6 +47,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/schedule" element={<Schedule />} />
+          <Route path="/schedule/new" element={<NewSession />} />
           <Route path="/players" element={<Players />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/payments" element={<Payments />} />
