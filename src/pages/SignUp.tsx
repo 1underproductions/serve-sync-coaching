@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -265,7 +264,7 @@ const SignUp = () => {
 
               <div className="text-xs text-gray-500 mt-4">
                 <p>
-                  You won't be charged during your free trial. After it ends, you'll be automatically subscribed to the Pro plan at $49/month.
+                  You won't be charged during your free trial. After it ends, you'll be automatically subscribed to the Pro plan at $9.95/month.
                 </p>
                 <p className="mt-2">
                   By signing up, you agree to our{" "}
