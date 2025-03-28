@@ -5,7 +5,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { format } from "date-fns";
-import { CalendarIcon, Clock } from "lucide-react";
+import { CalendarIcon, Clock, Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
@@ -40,15 +40,37 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+
+// Mock player data for the combobox 
+// In a real app, this would come from a database or API
+const players = [
+  { id: "1", name: "Michael Johnson", skill: "Intermediate", age: 28 },
+  { id: "2", name: "Sarah Williams", skill: "Advanced", age: 24 },
+  { id: "3", name: "David Smith", skill: "Beginner", age: 32 },
+  { id: "4", name: "Emma Wilson", skill: "Intermediate", age: 22 },
+  { id: "5", name: "Robert Brown", skill: "Advanced", age: 34 },
+  { id: "6", name: "Laura Garcia", skill: "Beginner", age: 26 },
+  { id: "7", name: "Jason Taylor", skill: "Intermediate", age: 30 },
+  { id: "8", name: "Amy Martinez", skill: "Advanced", age: 27 },
+];
 
 const formSchema = z.object({
   title: z.string().min(3, { message: "Title must be at least 3 characters" }),
-  player: z.string().min(2, { message: "Player name is required" }),
+  playerId: z.string({ required_error: "Please select a player" }),
   date: z.date({ required_error: "A date is required" }),
   startTime: z.string({ required_error: "Start time is required" }),
   endTime: z.string({ required_error: "End time is required" }),
   location: z.string().min(1, { message: "Location is required" }),
   type: z.enum(["individual", "group", "tournament"], { required_error: "Session type is required" }),
+  isRecurring: z.boolean().default(false),
 });
 
 interface NewSessionFormProps {
@@ -58,22 +80,31 @@ interface NewSessionFormProps {
 
 const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
   const navigate = useNavigate();
+  const [openCombobox, setOpenCombobox] = useState(false);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
-      player: "",
+      playerId: "",
       location: "",
       type: "individual",
       startTime: "09:00",
       endTime: "10:00",
+      isRecurring: false,
     },
   });
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
+    // Get the player name from the selected playerId
+    const selectedPlayer = players.find(player => player.id === data.playerId);
+    const playerName = selectedPlayer ? selectedPlayer.name : "Unknown player";
+    
     // In a real app, you would save this data to a database
-    console.log("Form submitted:", data);
+    console.log("Form submitted:", {
+      ...data,
+      playerName, // Add the player name for display purposes
+    });
     
     // Mock saving the session (in a real app this would be an API call)
     setTimeout(() => {
@@ -110,13 +141,58 @@ const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
             
             <FormField
               control={form.control}
-              name="player"
+              name="playerId"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Player Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Player or Group Name" {...field} />
-                  </FormControl>
+                <FormItem className="flex flex-col">
+                  <FormLabel>Player</FormLabel>
+                  <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={openCombobox}
+                          className={cn(
+                            "w-full justify-between",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value
+                            ? players.find((player) => player.id === field.value)?.name
+                            : "Select player"}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0">
+                      <Command>
+                        <CommandInput placeholder="Search player..." />
+                        <CommandEmpty>No player found.</CommandEmpty>
+                        <CommandGroup>
+                          {players.map((player) => (
+                            <CommandItem
+                              key={player.id}
+                              value={player.name}
+                              onSelect={() => {
+                                form.setValue("playerId", player.id);
+                                setOpenCombobox(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  player.id === field.value
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                              {player.name} ({player.skill})
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   <FormMessage />
                 </FormItem>
               )}
@@ -232,6 +308,27 @@ const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
                     <Input placeholder="e.g. Court 1" {...field} />
                   </FormControl>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="isRecurring"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>Recurring Session</FormLabel>
+                    <FormDescription>
+                      This will create a weekly recurring session at this time.
+                    </FormDescription>
+                  </div>
                 </FormItem>
               )}
             />
