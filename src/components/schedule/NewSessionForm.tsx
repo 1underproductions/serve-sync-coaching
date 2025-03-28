@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { format } from "date-fns";
-import { CalendarIcon, Clock, Check, ChevronsUpDown, UserPlus } from "lucide-react";
+import { CalendarIcon, Clock, Check, ChevronsUpDown, UserPlus, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
@@ -83,7 +82,6 @@ const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   
-  // Initialize the form with default values
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -100,7 +98,6 @@ const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
   useEffect(() => {
     const initializeData = () => {
       try {
-        // Load players from localStorage
         const storedPlayers = localStorage.getItem("players");
         console.log("Stored players:", storedPlayers);
         
@@ -118,7 +115,6 @@ const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
           console.log("Setting players from localStorage:", parsedPlayers);
           setPlayers(parsedPlayers);
         } else {
-          // Default mock players if none exist
           const mockPlayers = [
             { id: "1", name: "Michael Johnson", skill: "Intermediate", age: 28, email: "michael@example.com", sessionsCount: 12 },
             { id: "2", name: "Sarah Williams", skill: "Advanced", age: 24, email: "sarah@example.com", sessionsCount: 24 },
@@ -130,7 +126,6 @@ const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
         }
       } catch (error) {
         console.error("Error initializing player data:", error);
-        // Fallback to empty array if there's an error
         setPlayers([]);
       } finally {
         setIsLoaded(true);
@@ -394,7 +389,7 @@ const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
               )}
             />
             
-            <DialogFooter>
+            <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0">
               <Button 
                 type="button" 
                 variant="outline" 
@@ -407,7 +402,8 @@ const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
                 className="bg-tennis-green-600 hover:bg-tennis-green-700"
                 disabled={!hasPlayers}
               >
-                Create Session
+                <Save className="mr-2 h-4 w-4" />
+                Save Session
               </Button>
             </DialogFooter>
           </form>
