@@ -302,14 +302,12 @@ const Index = () => {
                     {[
                       "Player management (up to 100 players)",
                       "Unlimited scheduling & sessions",
-                      "Court booking integration",
                       "Automated reminders",
                       "Payment tracking",
                       "Basic analytics dashboard",
                       "Mobile friendly interface",
                       "Email support",
                       "Calendar integrations",
-                      "Custom branding options",
                       "Recurring sessions",
                       "Email notifications"
                     ].map((feature, index) => (
