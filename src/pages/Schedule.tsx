@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -28,90 +29,10 @@ import {
   getMinutes,
   setHours,
   setMinutes,
-  isToday
+  isToday,
+  addDays
 } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-// Mock data for demonstration - with proper date objects
-const sessions = [
-  {
-    id: "1",
-    title: "Advanced Forehand Drills",
-    player: "Michael Johnson",
-    date: "2023-07-24",
-    startTime: "15:00",
-    endTime: "16:00",
-    time: "3:00 PM - 4:00 PM",
-    type: "individual",
-    location: "Court 2",
-  },
-  {
-    id: "2",
-    title: "Beginner Group Class",
-    player: "Junior Group",
-    date: "2023-07-25",
-    startTime: "10:00",
-    endTime: "11:30",
-    time: "10:00 AM - 11:30 AM",
-    type: "group",
-    location: "Courts 3-4",
-  },
-  {
-    id: "3",
-    title: "Serve Practice",
-    player: "Sarah Williams",
-    date: "2023-07-25",
-    startTime: "17:00",
-    endTime: "18:00",
-    time: "5:00 PM - 6:00 PM",
-    type: "individual",
-    location: "Court 1",
-  },
-  {
-    id: "4",
-    title: "Match Preparation",
-    player: "David Smith",
-    date: "2023-07-26",
-    startTime: "16:00",
-    endTime: "17:30",
-    time: "4:00 PM - 5:30 PM",
-    type: "individual",
-    location: "Court 2",
-  },
-  {
-    id: "5",
-    title: "Advanced Group Class",
-    player: "Adult Group",
-    date: "2023-07-27",
-    startTime: "18:00",
-    endTime: "19:30",
-    time: "6:00 PM - 7:30 PM",
-    type: "group",
-    location: "Courts 1-2",
-  },
-  {
-    id: "6",
-    title: "Tournament Prep",
-    player: "Michael Johnson",
-    date: "2023-07-28",
-    startTime: "14:00",
-    endTime: "16:00",
-    time: "2:00 PM - 4:00 PM",
-    type: "tournament",
-    location: "Center Court",
-  },
-  {
-    id: "7",
-    title: "Youth Camp Session",
-    player: "Kids Group",
-    date: "2023-07-29",
-    startTime: "09:00",
-    endTime: "12:00",
-    time: "9:00 AM - 12:00 PM",
-    type: "group",
-    location: "Courts 5-8",
-  },
-];
 
 // Function to get styled date string
 const getFormattedDate = (dateStr) => {
@@ -144,20 +65,16 @@ const parseSessionDates = (sessions) => {
   });
 };
 
-// Functions for the calendar view
-const getSessionsByDate = (date) => {
-  return sessions.filter(session => {
+// Function to get sessions for the calendar day cells
+const getDayContent = (day, parsedSessions) => {
+  const daySessions = parsedSessions.filter(session => {
     try {
-      return isSameDay(parseISO(session.date), date);
+      return isSameDay(session.startDate, day);
     } catch (e) {
+      console.error("Error comparing dates:", e);
       return false;
     }
   });
-};
-
-// Function to get sessions for the calendar day cells
-const getDayContent = (day) => {
-  const daySessions = getSessionsByDate(day);
   
   if (daySessions.length === 0) {
     return null;
@@ -190,11 +107,45 @@ const Schedule = () => {
   const [viewType, setViewType] = useState<"list" | "week">("week");
   const [date, setDate] = useState<Date>(new Date());
   const [weekStart, setWeekStart] = useState(startOfWeek(date, { weekStartsOn: 0 }));
+  const [savedSessions, setSavedSessions] = useState([]);
   const [parsedSessions, setParsedSessions] = useState([]);
   
+  // Load sessions from localStorage
   useEffect(() => {
-    // Parse dates for easier manipulation
-    setParsedSessions(parseSessionDates(sessions));
+    const loadSessions = () => {
+      try {
+        const sessionsStr = localStorage.getItem("sessions");
+        console.log("Loaded sessions from localStorage:", sessionsStr);
+        
+        if (sessionsStr) {
+          const loadedSessions = JSON.parse(sessionsStr);
+          console.log("Parsed sessions:", loadedSessions);
+          setSavedSessions(loadedSessions);
+          
+          // Parse dates for easier manipulation
+          const parsed = parseSessionDates(loadedSessions);
+          console.log("Sessions with parsed dates:", parsed);
+          setParsedSessions(parsed);
+        } else {
+          console.log("No sessions found in localStorage");
+          setSavedSessions([]);
+          setParsedSessions([]);
+        }
+      } catch (error) {
+        console.error("Error loading sessions:", error);
+        setSavedSessions([]);
+        setParsedSessions([]);
+      }
+    };
+    
+    loadSessions();
+    
+    // Set up an event listener to reload sessions when storage changes
+    window.addEventListener('storage', loadSessions);
+    
+    return () => {
+      window.removeEventListener('storage', loadSessions);
+    };
   }, []);
   
   // Calculate week days
@@ -222,69 +173,85 @@ const Schedule = () => {
     setDate(today);
     setWeekStart(startOfWeek(today, { weekStartsOn: 0 }));
   };
+
+  // Navigate to a specific day
+  const goToDate = (day) => {
+    setDate(day);
+    setWeekStart(startOfWeek(day, { weekStartsOn: 0 }));
+  };
   
   // Get sessions for a specific day and time slot
   const getSessionsForTimeSlot = (day, hour) => {
     if (!parsedSessions.length) return [];
     
     return parsedSessions.filter(session => {
-      const sessionHour = getHours(session.startDate);
-      const sessionEndHour = getHours(session.endDate);
-      const sessionMinutes = getMinutes(session.startDate);
-      
-      return (
-        isSameDay(session.startDate, day) && 
-        (sessionHour === hour || 
-          (sessionHour < hour && sessionEndHour > hour) ||
-          (sessionHour === hour - 1 && sessionMinutes >= 30 && hour > sessionHour))
-      );
+      try {
+        const sessionHour = getHours(session.startDate);
+        const sessionEndHour = getHours(session.endDate);
+        const sessionMinutes = getMinutes(session.startDate);
+        
+        return (
+          isSameDay(session.startDate, day) && 
+          (sessionHour === hour || 
+            (sessionHour < hour && sessionEndHour > hour) ||
+            (sessionHour === hour - 1 && sessionMinutes >= 30 && hour > sessionHour))
+        );
+      } catch (e) {
+        console.error("Error filtering sessions for time slot:", e);
+        return false;
+      }
     });
   };
   
   // Calculate session height and position
   const calculateSessionStyle = (session, hour) => {
-    const startHour = getHours(session.startDate);
-    const startMinute = getMinutes(session.startDate);
-    const endHour = getHours(session.endDate);
-    const endMinute = getMinutes(session.endDate);
-    
-    // Calculate top position (relative to the current hour cell)
-    let topOffset = 0;
-    if (startHour === hour) {
-      topOffset = (startMinute / 60) * 100;
-    }
-    
-    // Calculate height based on duration
-    let duration;
-    if (startHour === hour) {
-      // If session starts in this hour
-      if (endHour > hour) {
-        // If it extends to next hour(s)
-        duration = (60 - startMinute) / 60;
-      } else {
-        // If it ends in the same hour
-        duration = (endMinute - startMinute) / 60;
+    try {
+      const startHour = getHours(session.startDate);
+      const startMinute = getMinutes(session.startDate);
+      const endHour = getHours(session.endDate);
+      const endMinute = getMinutes(session.endDate);
+      
+      // Calculate top position (relative to the current hour cell)
+      let topOffset = 0;
+      if (startHour === hour) {
+        topOffset = (startMinute / 60) * 100;
       }
-    } else if (startHour < hour && endHour > hour) {
-      // If this is a middle hour of the session
-      duration = 1; // Full hour
-    } else if (startHour < hour && endHour === hour) {
-      // If session ends in this hour
-      duration = endMinute / 60;
-    } else {
-      duration = 0.5; // Default fallback
+      
+      // Calculate height based on duration
+      let duration;
+      if (startHour === hour) {
+        // If session starts in this hour
+        if (endHour > hour) {
+          // If it extends to next hour(s)
+          duration = (60 - startMinute) / 60;
+        } else {
+          // If it ends in the same hour
+          duration = (endMinute - startMinute) / 60;
+        }
+      } else if (startHour < hour && endHour > hour) {
+        // If this is a middle hour of the session
+        duration = 1; // Full hour
+      } else if (startHour < hour && endHour === hour) {
+        // If session ends in this hour
+        duration = endMinute / 60;
+      } else {
+        duration = 0.5; // Default fallback
+      }
+      
+      const heightPercent = Math.min(duration * 100, 100);
+      
+      // Return styles
+      return {
+        top: `${topOffset}%`,
+        height: `${heightPercent}%`,
+        width: '90%',
+        position: 'absolute',
+        zIndex: 10,
+      };
+    } catch (e) {
+      console.error("Error calculating session style:", e);
+      return {};
     }
-    
-    const heightPercent = Math.min(duration * 100, 100);
-    
-    // Return styles
-    return {
-      top: `${topOffset}%`,
-      height: `${heightPercent}%`,
-      width: '90%',
-      position: 'absolute',
-      zIndex: 10,
-    };
   };
   
   // Determine session color
@@ -310,62 +277,73 @@ const Schedule = () => {
         <TabsTrigger value="all">All</TabsTrigger>
       </TabsList>
       <TabsContent value="upcoming" className="mt-4 space-y-4">
-        {sessions.map((session) => (
-          <Card key={session.id} className="card-hover">
-            <CardHeader className="pb-2">
-              <div className="flex justify-between">
-                <CardTitle className="text-lg">{session.title}</CardTitle>
-                <span
-                  className={`text-xs px-2 py-1 rounded-full ${
-                    session.type === "individual"
-                      ? "bg-tennis-green-100 text-tennis-green-800"
-                      : session.type === "group"
-                        ? "bg-tennis-blue-100 text-tennis-blue-800"
-                        : "bg-orange-100 text-orange-800"
-                  }`}
-                >
-                  {session.type === "individual" 
-                    ? "Individual" 
-                    : session.type === "group" 
-                      ? "Group" 
-                      : "Tournament"}
-                </span>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center text-sm">
-                    <User className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <span>{session.player}</span>
+        {savedSessions.length > 0 ? (
+          savedSessions.map((session) => (
+            <Card key={session.id} className="card-hover">
+              <CardHeader className="pb-2">
+                <div className="flex justify-between">
+                  <CardTitle className="text-lg">{session.title}</CardTitle>
+                  <span
+                    className={`text-xs px-2 py-1 rounded-full ${
+                      session.type === "individual"
+                        ? "bg-tennis-green-100 text-tennis-green-800"
+                        : session.type === "group"
+                          ? "bg-tennis-blue-100 text-tennis-blue-800"
+                          : "bg-orange-100 text-orange-800"
+                    }`}
+                  >
+                    {session.type === "individual" 
+                      ? "Individual" 
+                      : session.type === "group" 
+                        ? "Group" 
+                        : "Tournament"}
+                  </span>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center text-sm">
+                      <User className="h-4 w-4 mr-2 text-muted-foreground" />
+                      <span>{session.player}</span>
+                    </div>
+                    <div className="flex items-center text-sm">
+                      <CalendarClock className="h-4 w-4 mr-2 text-muted-foreground" />
+                      <span>{getFormattedDate(session.date)}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center text-sm">
-                    <CalendarClock className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <span>{getFormattedDate(session.date)}</span>
+                  <div className="space-y-2">
+                    <div className="flex items-center text-sm">
+                      <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+                      <span>{session.startTime} - {session.endTime}</span>
+                    </div>
+                    <div className="flex items-center text-sm">
+                      <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
+                      <span>{session.location}</span>
+                    </div>
+                  </div>
+                  <div className="flex space-x-2 md:justify-end items-center">
+                    <Button size="sm" variant="outline" asChild>
+                      <Link to={`/session/${session.id}`}>View</Link>
+                    </Button>
+                    <Button size="sm" variant="ghost" asChild>
+                      <Link to={`/session/${session.id}/edit`}>Edit</Link>
+                    </Button>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex items-center text-sm">
-                    <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <span>{session.time}</span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <span>{session.location}</span>
-                  </div>
-                </div>
-                <div className="flex space-x-2 md:justify-end items-center">
-                  <Button size="sm" variant="outline" asChild>
-                    <Link to={`/session/${session.id}`}>View</Link>
-                  </Button>
-                  <Button size="sm" variant="ghost" asChild>
-                    <Link to={`/session/${session.id}/edit`}>Edit</Link>
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">No sessions scheduled yet</p>
+            <Button className="mt-4 bg-tennis-green-600 hover:bg-tennis-green-700" asChild>
+              <Link to="/schedule/new">
+                <Plus className="h-4 w-4 mr-2" /> Schedule Your First Session
+              </Link>
+            </Button>
+          </div>
+        )}
       </TabsContent>
       <TabsContent value="past">
         <div className="text-center py-12">
@@ -405,9 +383,10 @@ const Schedule = () => {
         {weekDays.map((day) => (
           <div 
             key={day.toString()} 
-            className={`p-2 text-center border-r last:border-r-0 relative ${
+            className={`p-2 text-center border-r last:border-r-0 relative cursor-pointer hover:bg-blue-50 ${
               isSameDay(day, new Date()) ? 'bg-blue-50' : ''
             }`}
+            onClick={() => goToDate(day)}
           >
             <div className="font-medium">{format(day, 'EEE')}</div>
             <div className={`text-2xl ${
@@ -417,6 +396,7 @@ const Schedule = () => {
             }`}>
               {format(day, 'd')}
             </div>
+            {getDayContent(day, parsedSessions)}
           </div>
         ))}
       </div>
@@ -436,47 +416,64 @@ const Schedule = () => {
         
         {/* Day columns with sessions */}
         {weekDays.map((day) => (
-          <div key={day.toString()} className="col-span-1 border-r last:border-r-0">
+          <div 
+            key={day.toString()} 
+            className="col-span-1 border-r last:border-r-0"
+          >
             {timeSlots.map((hour) => {
               const sessionsInSlot = getSessionsForTimeSlot(day, hour);
               
               return (
-                <div key={`${day}-${hour}`} className="h-20 border-b relative">
+                <div 
+                  key={`${day}-${hour}`} 
+                  className="h-20 border-b relative hover:bg-blue-50/50 cursor-pointer"
+                  onClick={() => goToDate(day)}
+                >
                   {/* Render sessions in this time slot */}
                   {sessionsInSlot.map((session, index) => {
-                    const style = calculateSessionStyle(session, hour);
-                    const colorClass = getSessionColorClass(session.type);
-                    
-                    // Only render if it's the session's start hour or if spanning from previous hour
-                    const shouldRender = 
-                      getHours(session.startDate) === hour || 
-                      (getHours(session.startDate) < hour && getHours(session.endDate) > hour) ||
-                      (getHours(session.startDate) === hour - 1 && getMinutes(session.startDate) >= 30);
-                    
-                    // Skip already rendered sessions (avoid duplicates across hour slots)
-                    const isFirstRender = getHours(session.startDate) === hour || 
-                                          (getHours(session.startDate) < hour && !sessionsInSlot.some(s => 
-                                            s.id === session.id && getHours(s.startDate) < hour - 1));
-                    
-                    if (shouldRender && isFirstRender) {
-                      return (
-                        <div
-                          key={session.id}
-                          className={`${colorClass} rounded px-2 text-xs overflow-hidden shadow-sm cursor-pointer`}
-                          style={style as React.CSSProperties}
-                        >
-                          <div className="font-medium truncate">{session.title}</div>
-                          <div className="truncate">{session.player}</div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            <span>
-                              {format(session.startDate, 'h:mm a')} - {format(session.endDate, 'h:mm a')}
-                            </span>
+                    try {
+                      const style = calculateSessionStyle(session, hour);
+                      const colorClass = getSessionColorClass(session.type);
+                      
+                      // Only render if it's the session's start hour or if spanning from previous hour
+                      const shouldRender = 
+                        getHours(session.startDate) === hour || 
+                        (getHours(session.startDate) < hour && getHours(session.endDate) > hour) ||
+                        (getHours(session.startDate) === hour - 1 && getMinutes(session.startDate) >= 30);
+                      
+                      // Skip already rendered sessions (avoid duplicates across hour slots)
+                      const isFirstRender = getHours(session.startDate) === hour || 
+                                            (getHours(session.startDate) < hour && !sessionsInSlot.some(s => 
+                                              s.id === session.id && getHours(s.startDate) < hour - 1));
+                      
+                      if (shouldRender && isFirstRender) {
+                        return (
+                          <div
+                            key={session.id}
+                            className={`${colorClass} rounded px-2 text-xs overflow-hidden shadow-sm cursor-pointer`}
+                            style={style as React.CSSProperties}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // Here you would navigate to session details
+                              console.log("Session clicked:", session);
+                            }}
+                          >
+                            <div className="font-medium truncate">{session.title}</div>
+                            <div className="truncate">{session.player}</div>
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              <span>
+                                {session.startTime} - {session.endTime}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      );
+                        );
+                      }
+                      return null;
+                    } catch (e) {
+                      console.error("Error rendering session:", e);
+                      return null;
                     }
-                    return null;
                   })}
                 </div>
               );
