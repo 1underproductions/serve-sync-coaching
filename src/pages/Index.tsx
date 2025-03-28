@@ -42,9 +42,6 @@ const Index = () => {
                   <Button asChild size="lg" className="bg-white text-tennis-green-600 hover:bg-gray-100 rounded-full px-8">
                     <Link to="/dashboard">Get Started Free</Link>
                   </Button>
-                  <Button asChild size="lg" variant="outline" className="border-white text-white hover:bg-white/10 rounded-full px-8">
-                    <Link to="#demo">Watch Demo</Link>
-                  </Button>
                 </div>
               </motion.div>
               <motion.div
