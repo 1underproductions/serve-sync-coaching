@@ -5,7 +5,7 @@ import Layout from "@/components/layout/Layout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
-import { NewSessionForm } from "@/components/schedule/NewSessionForm";
+import NewSessionForm from "@/components/schedule/NewSessionForm"; // Changed to default import
 import { ArrowLeft } from "lucide-react";
 
 const SessionEdit = () => {
