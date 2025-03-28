@@ -17,7 +17,7 @@ const NewSession = () => {
   
   return (
     <Layout>
-      <div className="text-center py-12">
+      <div className="text-center py-8">
         <h1 className="text-2xl font-semibold">Create a New Session</h1>
         <p className="text-muted-foreground mt-2">
           Please fill out the form to create a new coaching session.

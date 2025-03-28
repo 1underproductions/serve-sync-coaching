@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Form,
   FormControl,
@@ -182,113 +183,188 @@ const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[525px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[525px] max-h-[90vh] p-0">
+        <DialogHeader className="px-6 pt-6">
           <DialogTitle>Create New Session</DialogTitle>
           <DialogDescription>
             Add a new coaching session to your schedule.
           </DialogDescription>
         </DialogHeader>
         
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Session Title</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g. Forehand Technique" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="playerId"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Player</FormLabel>
-                  {!hasPlayers ? (
-                    <div className="flex flex-col gap-2">
-                      <p className="text-sm text-muted-foreground">No players available. Add a player first.</p>
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        className="w-full justify-center"
-                        asChild
-                      >
-                        <Link to="/players/new">
-                          <UserPlus className="mr-2 h-4 w-4" />
-                          Add New Player
-                        </Link>
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="w-full">
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
+        <ScrollArea className="max-h-[calc(90vh-180px)] px-6">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pb-4">
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Session Title</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. Forehand Technique" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="playerId"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Player</FormLabel>
+                    {!hasPlayers ? (
+                      <div className="flex flex-col gap-2">
+                        <p className="text-sm text-muted-foreground">No players available. Add a player first.</p>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          className="w-full justify-center"
+                          asChild
+                        >
+                          <Link to="/players/new">
+                            <UserPlus className="mr-2 h-4 w-4" />
+                            Add New Player
+                          </Link>
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="w-full">
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select player" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {players.map((player) => (
+                              <SelectItem key={player.id} value={player.id}>
+                                {player.name} ({player.skill})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="date"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Date</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, "PPP")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            initialFocus
+                            className="p-3 pointer-events-auto"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Session Type</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select player" />
+                            <SelectValue placeholder="Select session type" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {players.map((player) => (
-                            <SelectItem key={player.id} value={player.id}>
-                              {player.name} ({player.skill})
-                            </SelectItem>
-                          ))}
+                          <SelectItem value="individual">Individual</SelectItem>
+                          <SelectItem value="group">Group</SelectItem>
+                          <SelectItem value="tournament">Tournament</SelectItem>
                         </SelectContent>
                       </Select>
-                    </div>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="date"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
+                />
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="startTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Start Time</FormLabel>
+                      <div className="flex items-center">
+                        <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
                         <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
+                          <Input type="time" {...field} />
                         </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          initialFocus
-                          className="p-3 pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="endTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>End Time</FormLabel>
+                      <div className="flex items-center">
+                        <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <FormControl>
+                          <Input type="time" {...field} />
+                        </FormControl>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Location</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. Court 1" {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -296,118 +372,46 @@ const NewSessionForm = ({ open, onOpenChange }: NewSessionFormProps) => {
               
               <FormField
                 control={form.control}
-                name="type"
+                name="isRecurring"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Session Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select session type" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="individual">Individual</SelectItem>
-                        <SelectItem value="group">Group</SelectItem>
-                        <SelectItem value="tournament">Tournament</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="startTime"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Start Time</FormLabel>
-                    <div className="flex items-center">
-                      <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
-                      <FormControl>
-                        <Input type="time" {...field} />
-                      </FormControl>
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Recurring Session</FormLabel>
+                      <FormDescription>
+                        This will create a weekly recurring session at this time.
+                      </FormDescription>
                     </div>
-                    <FormMessage />
                   </FormItem>
                 )}
               />
-              
-              <FormField
-                control={form.control}
-                name="endTime"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>End Time</FormLabel>
-                    <div className="flex items-center">
-                      <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
-                      <FormControl>
-                        <Input type="time" {...field} />
-                      </FormControl>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            
-            <FormField
-              control={form.control}
-              name="location"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Location</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g. Court 1" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="isRecurring"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel>Recurring Session</FormLabel>
-                    <FormDescription>
-                      This will create a weekly recurring session at this time.
-                    </FormDescription>
-                  </div>
-                </FormItem>
-              )}
-            />
-            
-            <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => onOpenChange(false)}
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit"
-                className="bg-tennis-green-600 hover:bg-tennis-green-700"
-                disabled={!hasPlayers}
-              >
-                <Save className="mr-2 h-4 w-4" />
-                Save Session
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+            </form>
+          </Form>
+        </ScrollArea>
+        
+        <DialogFooter className="p-6 flex flex-col sm:flex-row gap-2 sm:gap-0 border-t">
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={() => onOpenChange(false)}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={form.handleSubmit(onSubmit)}
+            type="submit"
+            className="bg-tennis-green-600 hover:bg-tennis-green-700"
+            disabled={!hasPlayers}
+          >
+            <Save className="mr-2 h-4 w-4" />
+            Save Session
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
