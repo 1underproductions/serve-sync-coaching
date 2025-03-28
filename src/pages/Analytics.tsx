@@ -8,28 +8,22 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { 
-  Chart as ChartComponent, 
-  LineElement, 
-  BarElement, 
-  CategoryScale, 
-  LinearScale, 
-  PointElement, 
-  Tooltip, 
-  Legend 
-} from "chart.js";
-import { Line, Bar } from "recharts";
-
-// Register Chart.js components
-ChartComponent.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
+import {
+  ResponsiveContainer,
+  BarChart as RechartsBarChart,
+  LineChart as RechartsLineChart,
+  PieChart as RechartsPieChart,
+  Bar,
+  Line,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   Tooltip,
   Legend
-);
+} from "recharts";
+import { ChartContainer } from "@/components/ui/chart";
 
 const sessionsData = [
   { name: "Mon", sessions: 4 },
@@ -55,6 +49,8 @@ const playerActivityData = [
   { name: "Active", value: 48 },
   { name: "Inactive", value: 8 },
 ];
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28'];
 
 const Analytics = () => {
   return (
@@ -113,12 +109,24 @@ const Analytics = () => {
               <CardDescription>Number of sessions per day this week</CardDescription>
             </CardHeader>
             <CardContent className="h-[300px]">
-              <div className="h-full w-full flex items-center justify-center">
-                <BarChart className="h-24 w-24 text-muted-foreground" />
-                <p className="text-center text-muted-foreground mt-4">
-                  Chart visualization will be implemented with live data
-                </p>
-              </div>
+              <ResponsiveContainer width="100%" height="100%">
+                <RechartsBarChart
+                  data={sessionsData}
+                  margin={{
+                    top: 20,
+                    right: 30,
+                    left: 20,
+                    bottom: 5,
+                  }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="sessions" fill="#10b981" />
+                </RechartsBarChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
           <Card>
@@ -127,12 +135,24 @@ const Analytics = () => {
               <CardDescription>Your earnings over the past 6 months</CardDescription>
             </CardHeader>
             <CardContent className="h-[300px]">
-              <div className="h-full w-full flex items-center justify-center">
-                <LineChart className="h-24 w-24 text-muted-foreground" />
-                <p className="text-center text-muted-foreground mt-4">
-                  Chart visualization will be implemented with live data
-                </p>
-              </div>
+              <ResponsiveContainer width="100%" height="100%">
+                <RechartsLineChart
+                  data={revenueData}
+                  margin={{
+                    top: 20,
+                    right: 30,
+                    left: 20,
+                    bottom: 5,
+                  }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="revenue" stroke="#10b981" activeDot={{ r: 8 }} />
+                </RechartsLineChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
         </div>
@@ -143,12 +163,26 @@ const Analytics = () => {
             <CardDescription>Distribution of active, inactive, and new players</CardDescription>
           </CardHeader>
           <CardContent className="h-[300px]">
-            <div className="h-full w-full flex items-center justify-center">
-              <PieChart className="h-24 w-24 text-muted-foreground" />
-              <p className="text-center text-muted-foreground mt-4">
-                Chart visualization will be implemented with live data
-              </p>
-            </div>
+            <ResponsiveContainer width="100%" height="100%">
+              <RechartsPieChart>
+                <Pie
+                  data={playerActivityData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {playerActivityData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </RechartsPieChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
 
