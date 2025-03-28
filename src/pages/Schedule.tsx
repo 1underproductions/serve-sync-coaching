@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -13,7 +12,8 @@ import {
   Clock,
   User,
   MapPin,
-  CalendarClock
+  CalendarClock,
+  X
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { 
@@ -33,8 +33,16 @@ import {
   addDays
 } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogHeader, 
+  DialogTitle,
+  DialogFooter,
+  DialogClose
+} from "@/components/ui/dialog";
 
-// Function to get styled date string
 const getFormattedDate = (dateStr) => {
   try {
     const date = parseISO(dateStr);
@@ -44,16 +52,13 @@ const getFormattedDate = (dateStr) => {
   }
 };
 
-// Helper function to convert sessions to Date objects
 const parseSessionDates = (sessions) => {
   return sessions.map(session => {
     const date = parseISO(session.date);
     
-    // Parse start time
     const [startHour, startMinute] = session.startTime.split(':').map(Number);
     const startDate = setMinutes(setHours(date, startHour), startMinute);
     
-    // Parse end time
     const [endHour, endMinute] = session.endTime.split(':').map(Number);
     const endDate = setMinutes(setHours(date, endHour), endMinute);
     
@@ -65,7 +70,6 @@ const parseSessionDates = (sessions) => {
   });
 };
 
-// Function to get sessions for the calendar day cells
 const getDayContent = (day, parsedSessions) => {
   const daySessions = parsedSessions.filter(session => {
     try {
@@ -80,7 +84,6 @@ const getDayContent = (day, parsedSessions) => {
     return null;
   }
   
-  // Return dots representing session types
   return (
     <div className="flex flex-wrap gap-1 mt-1 justify-center">
       {daySessions.map((session, index) => (
@@ -100,7 +103,6 @@ const getDayContent = (day, parsedSessions) => {
   );
 };
 
-// Time slots for the week view (24-hour format)
 const timeSlots = Array.from({ length: 14 }, (_, i) => i + 7); // 7 AM to 8 PM
 
 const Schedule = () => {
@@ -109,8 +111,9 @@ const Schedule = () => {
   const [weekStart, setWeekStart] = useState(startOfWeek(date, { weekStartsOn: 0 }));
   const [savedSessions, setSavedSessions] = useState([]);
   const [parsedSessions, setParsedSessions] = useState([]);
+  const [selectedSession, setSelectedSession] = useState(null);
+  const [isSessionDialogOpen, setIsSessionDialogOpen] = useState(false);
   
-  // Load sessions from localStorage
   useEffect(() => {
     const loadSessions = () => {
       try {
@@ -122,7 +125,6 @@ const Schedule = () => {
           console.log("Parsed sessions:", loadedSessions);
           setSavedSessions(loadedSessions);
           
-          // Parse dates for easier manipulation
           const parsed = parseSessionDates(loadedSessions);
           console.log("Sessions with parsed dates:", parsed);
           setParsedSessions(parsed);
@@ -140,7 +142,6 @@ const Schedule = () => {
     
     loadSessions();
     
-    // Set up an event listener to reload sessions when storage changes
     window.addEventListener('storage', loadSessions);
     
     return () => {
@@ -148,13 +149,11 @@ const Schedule = () => {
     };
   }, []);
   
-  // Calculate week days
   const weekDays = eachDayOfInterval({
     start: weekStart,
     end: endOfWeek(weekStart, { weekStartsOn: 0 }),
   });
   
-  // Navigate to next/previous week
   const nextWeek = () => {
     const next = addWeeks(weekStart, 1);
     setWeekStart(next);
@@ -167,20 +166,17 @@ const Schedule = () => {
     setDate(prev);
   };
   
-  // Reset to current week
   const goToToday = () => {
     const today = new Date();
     setDate(today);
     setWeekStart(startOfWeek(today, { weekStartsOn: 0 }));
   };
 
-  // Navigate to a specific day
   const goToDate = (day) => {
     setDate(day);
     setWeekStart(startOfWeek(day, { weekStartsOn: 0 }));
   };
   
-  // Get sessions for a specific day and time slot
   const getSessionsForTimeSlot = (day, hour) => {
     if (!parsedSessions.length) return [];
     
@@ -203,7 +199,6 @@ const Schedule = () => {
     });
   };
   
-  // Calculate session height and position
   const calculateSessionStyle = (session, hour) => {
     try {
       const startHour = getHours(session.startDate);
@@ -211,36 +206,28 @@ const Schedule = () => {
       const endHour = getHours(session.endDate);
       const endMinute = getMinutes(session.endDate);
       
-      // Calculate top position (relative to the current hour cell)
       let topOffset = 0;
       if (startHour === hour) {
         topOffset = (startMinute / 60) * 100;
       }
       
-      // Calculate height based on duration
       let duration;
       if (startHour === hour) {
-        // If session starts in this hour
         if (endHour > hour) {
-          // If it extends to next hour(s)
           duration = (60 - startMinute) / 60;
         } else {
-          // If it ends in the same hour
           duration = (endMinute - startMinute) / 60;
         }
       } else if (startHour < hour && endHour > hour) {
-        // If this is a middle hour of the session
-        duration = 1; // Full hour
+        duration = 1;
       } else if (startHour < hour && endHour === hour) {
-        // If session ends in this hour
         duration = endMinute / 60;
       } else {
-        duration = 0.5; // Default fallback
+        duration = 0.5;
       }
       
       const heightPercent = Math.min(duration * 100, 100);
       
-      // Return styles
       return {
         top: `${topOffset}%`,
         height: `${heightPercent}%`,
@@ -254,7 +241,6 @@ const Schedule = () => {
     }
   };
   
-  // Determine session color
   const getSessionColorClass = (type) => {
     switch (type) {
       case 'individual':
@@ -268,7 +254,11 @@ const Schedule = () => {
     }
   };
   
-  // Render list view (original implementation)
+  const openSessionDialog = (session) => {
+    setSelectedSession(session);
+    setIsSessionDialogOpen(true);
+  };
+  
   const renderListView = () => (
     <Tabs defaultValue="upcoming" className="w-full">
       <TabsList className="grid w-full md:w-auto grid-cols-3">
@@ -358,10 +348,8 @@ const Schedule = () => {
     </Tabs>
   );
   
-  // Render week view (Google Calendar style)
   const renderWeekView = () => (
     <div className="week-calendar">
-      {/* Week navigation header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
           <Button variant="outline" size="icon" onClick={prevWeek}>
@@ -377,7 +365,6 @@ const Schedule = () => {
         </div>
       </div>
       
-      {/* Day headers */}
       <div className="grid grid-cols-8 border-b">
         <div className="p-2 text-center font-medium text-gray-500 border-r"></div>
         {weekDays.map((day) => (
@@ -401,9 +388,7 @@ const Schedule = () => {
         ))}
       </div>
       
-      {/* Time grid */}
       <div className="grid grid-cols-8 h-[800px] overflow-y-auto relative">
-        {/* Time labels */}
         <div className="col-span-1 border-r">
           {timeSlots.map((hour) => (
             <div key={hour} className="h-20 border-b relative">
@@ -414,7 +399,6 @@ const Schedule = () => {
           ))}
         </div>
         
-        {/* Day columns with sessions */}
         {weekDays.map((day) => (
           <div 
             key={day.toString()} 
@@ -429,19 +413,16 @@ const Schedule = () => {
                   className="h-20 border-b relative hover:bg-blue-50/50 cursor-pointer"
                   onClick={() => goToDate(day)}
                 >
-                  {/* Render sessions in this time slot */}
                   {sessionsInSlot.map((session, index) => {
                     try {
                       const style = calculateSessionStyle(session, hour);
                       const colorClass = getSessionColorClass(session.type);
                       
-                      // Only render if it's the session's start hour or if spanning from previous hour
                       const shouldRender = 
                         getHours(session.startDate) === hour || 
                         (getHours(session.startDate) < hour && getHours(session.endDate) > hour) ||
                         (getHours(session.startDate) === hour - 1 && getMinutes(session.startDate) >= 30);
                       
-                      // Skip already rendered sessions (avoid duplicates across hour slots)
                       const isFirstRender = getHours(session.startDate) === hour || 
                                             (getHours(session.startDate) < hour && !sessionsInSlot.some(s => 
                                               s.id === session.id && getHours(s.startDate) < hour - 1));
@@ -454,8 +435,7 @@ const Schedule = () => {
                             style={style as React.CSSProperties}
                             onClick={(e) => {
                               e.stopPropagation();
-                              // Here you would navigate to session details
-                              console.log("Session clicked:", session);
+                              openSessionDialog(session);
                             }}
                           >
                             <div className="font-medium truncate">{session.title}</div>
@@ -482,7 +462,6 @@ const Schedule = () => {
         ))}
       </div>
       
-      {/* Legend */}
       <div className="flex mt-4 justify-end gap-4">
         <div className="flex items-center">
           <div className="w-3 h-3 rounded-full bg-tennis-green-500 mr-2"></div>
@@ -529,6 +508,75 @@ const Schedule = () => {
         </div>
         
         {viewType === "list" ? renderListView() : renderWeekView()}
+        
+        <Dialog open={isSessionDialogOpen} onOpenChange={setIsSessionDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            {selectedSession && (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="text-xl">{selectedSession.title}</DialogTitle>
+                  <DialogDescription>
+                    <span className={`inline-block text-xs px-2 py-1 mt-2 rounded-full ${
+                      selectedSession.type === "individual" 
+                        ? "bg-tennis-green-100 text-tennis-green-800"
+                        : selectedSession.type === "group" 
+                          ? "bg-tennis-blue-100 text-tennis-blue-800" 
+                          : "bg-orange-100 text-orange-800"
+                    }`}>
+                      {selectedSession.type === "individual" 
+                        ? "Individual" 
+                        : selectedSession.type === "group" 
+                          ? "Group" 
+                          : "Tournament"}
+                    </span>
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <div className="col-span-3">{selectedSession.player}</div>
+                  </div>
+                  
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <CalendarClock className="h-4 w-4 text-muted-foreground" />
+                    <div className="col-span-3">
+                      {getFormattedDate(selectedSession.date)}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <div className="col-span-3">
+                      {selectedSession.startTime} - {selectedSession.endTime}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <div className="col-span-3">{selectedSession.location}</div>
+                  </div>
+                  
+                  {selectedSession.notes && (
+                    <div className="border rounded-md p-3 mt-2">
+                      <h4 className="font-medium mb-1">Notes</h4>
+                      <p className="text-sm text-muted-foreground">{selectedSession.notes}</p>
+                    </div>
+                  )}
+                </div>
+                
+                <DialogFooter>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to={`/session/${selectedSession.id}/edit`}>Edit Session</Link>
+                  </Button>
+                  <DialogClose asChild>
+                    <Button variant="ghost" size="sm">Close</Button>
+                  </DialogClose>
+                </DialogFooter>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );
