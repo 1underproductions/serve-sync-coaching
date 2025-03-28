@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -61,6 +60,20 @@ interface Player {
   sessionsCount: number;
 }
 
+interface Session {
+  id: string;
+  title: string;
+  playerId: string;
+  playerName?: string;
+  date: Date | string;
+  startTime: string;
+  endTime: string;
+  location: string;
+  type: "individual" | "group" | "tournament";
+  isRecurring: boolean;
+  createdAt?: string;
+}
+
 const formSchema = z.object({
   title: z.string().min(3, { message: "Title must be at least 3 characters" }),
   playerId: z.string({ required_error: "Please select a player" }),
@@ -73,21 +86,32 @@ const formSchema = z.object({
 });
 
 interface NewSessionFormProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSessionCreated?: () => void; // Add the missing prop with optional marker
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onSessionCreated?: () => void;
+  initialData?: Session;
 }
 
-const NewSessionForm = ({ open, onOpenChange, onSessionCreated }: NewSessionFormProps) => {
+const NewSessionForm = ({ open = true, onOpenChange, onSessionCreated, initialData }: NewSessionFormProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [openCombobox, setOpenCombobox] = useState(false);
   const [players, setPlayers] = useState<Player[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(!!initialData);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    defaultValues: initialData ? {
+      title: initialData.title,
+      playerId: initialData.playerId,
+      date: typeof initialData.date === 'string' ? new Date(initialData.date) : initialData.date,
+      location: initialData.location,
+      type: initialData.type,
+      startTime: initialData.startTime,
+      endTime: initialData.endTime,
+      isRecurring: initialData.isRecurring,
+    } : {
       title: "",
       playerId: "",
       location: "",
@@ -142,40 +166,59 @@ const NewSessionForm = ({ open, onOpenChange, onSessionCreated }: NewSessionForm
     const selectedPlayer = players.find(player => player.id === data.playerId);
     const playerName = selectedPlayer ? selectedPlayer.name : "Unknown player";
     
-    const newSession = {
-      id: crypto.randomUUID(),
-      ...data,
-      playerName,
-      createdAt: new Date().toISOString(),
-    };
-    
-    const existingSessions = JSON.parse(localStorage.getItem("sessions") || "[]");
-    localStorage.setItem("sessions", JSON.stringify([...existingSessions, newSession]));
-    
-    if (selectedPlayer) {
-      const updatedPlayers = players.map(player => {
-        if (player.id === selectedPlayer.id) {
-          return {
-            ...player,
-            sessionsCount: player.sessionsCount + 1
-          };
-        }
-        return player;
-      });
+    if (isEditMode && initialData) {
+      const updatedSession = {
+        ...initialData,
+        ...data,
+        playerName,
+      };
       
-      localStorage.setItem("players", JSON.stringify(updatedPlayers));
+      const existingSessions = JSON.parse(localStorage.getItem("sessions") || "[]");
+      const updatedSessions = existingSessions.map((session: Session) => 
+        session.id === initialData.id ? updatedSession : session
+      );
+      
+      localStorage.setItem("sessions", JSON.stringify(updatedSessions));
+      
+      toast({
+        title: "Session Updated",
+        description: `Session with ${playerName} has been updated.`,
+      });
+    } else {
+      const newSession = {
+        id: crypto.randomUUID(),
+        ...data,
+        playerName,
+        createdAt: new Date().toISOString(),
+      };
+      
+      const existingSessions = JSON.parse(localStorage.getItem("sessions") || "[]");
+      localStorage.setItem("sessions", JSON.stringify([...existingSessions, newSession]));
+      
+      if (selectedPlayer) {
+        const updatedPlayers = players.map(player => {
+          if (player.id === selectedPlayer.id) {
+            return {
+              ...player,
+              sessionsCount: player.sessionsCount + 1
+            };
+          }
+          return player;
+        });
+        
+        localStorage.setItem("players", JSON.stringify(updatedPlayers));
+      }
+      
+      toast({
+        title: "Session Created",
+        description: `Session with ${playerName} has been scheduled.`,
+      });
     }
     
-    toast({
-      title: "Session Created",
-      description: `Session with ${playerName} has been scheduled.`,
-    });
-    
-    // Call the onSessionCreated callback if provided
     if (onSessionCreated) {
       onSessionCreated();
     } else {
-      onOpenChange(false);
+      if (onOpenChange) onOpenChange(false);
       navigate("/schedule");
     }
   };
@@ -188,13 +231,227 @@ const NewSessionForm = ({ open, onOpenChange, onSessionCreated }: NewSessionForm
   console.log("Players available:", players);
   console.log("Has players:", hasPlayers);
 
+  if (!onOpenChange) {
+    return (
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pb-4">
+          <FormField
+            control={form.control}
+            name="title"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Session Title</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g. Forehand Technique" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="playerId"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Player</FormLabel>
+                {!hasPlayers ? (
+                  <div className="flex flex-col gap-2">
+                    <p className="text-sm text-muted-foreground">No players available. Add a player first.</p>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      className="w-full justify-center"
+                      asChild
+                    >
+                      <Link to="/players/new">
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        Add New Player
+                      </Link>
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="w-full">
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select player" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {players.map((player) => (
+                          <SelectItem key={player.id} value={player.id}>
+                            {player.name} ({player.skill})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="date"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Date</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "PPP")
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Session Type</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select session type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="individual">Individual</SelectItem>
+                      <SelectItem value="group">Group</SelectItem>
+                      <SelectItem value="tournament">Tournament</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="startTime"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Start Time</FormLabel>
+                  <div className="flex items-center">
+                    <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+                    <FormControl>
+                      <Input type="time" {...field} />
+                    </FormControl>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="endTime"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>End Time</FormLabel>
+                  <div className="flex items-center">
+                    <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+                    <FormControl>
+                      <Input type="time" {...field} />
+                    </FormControl>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          
+          <FormField
+            control={form.control}
+            name="location"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Location</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g. Court 1" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="isRecurring"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel>Recurring Session</FormLabel>
+                  <FormDescription>
+                    This will create a weekly recurring session at this time.
+                  </FormDescription>
+                </div>
+              </FormItem>
+            )}
+          />
+
+          <Button 
+            type="submit"
+            className="bg-tennis-green-600 hover:bg-tennis-green-700"
+            disabled={!hasPlayers}
+          >
+            <Save className="mr-2 h-4 w-4" />
+            {isEditMode ? 'Update Session' : 'Save Session'}
+          </Button>
+        </form>
+      </Form>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[525px] max-h-[90vh] p-0">
         <DialogHeader className="px-6 pt-6">
-          <DialogTitle>Create New Session</DialogTitle>
+          <DialogTitle>{isEditMode ? 'Edit Session' : 'Create New Session'}</DialogTitle>
           <DialogDescription>
-            Add a new coaching session to your schedule.
+            {isEditMode ? 'Modify your coaching session details.' : 'Add a new coaching session to your schedule.'}
           </DialogDescription>
         </DialogHeader>
         
@@ -416,7 +673,7 @@ const NewSessionForm = ({ open, onOpenChange, onSessionCreated }: NewSessionForm
             disabled={!hasPlayers}
           >
             <Save className="mr-2 h-4 w-4" />
-            Save Session
+            {isEditMode ? 'Update Session' : 'Save Session'}
           </Button>
         </DialogFooter>
       </DialogContent>
