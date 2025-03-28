@@ -43,10 +43,20 @@ const UpcomingSessionCard = ({ id, title, playerName, date, time, type }: Sessio
         </div>
       </CardContent>
       <CardFooter className="flex justify-between pt-0">
-        <Button variant="outline" size="sm" asChild>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          asChild
+          onClick={(e) => e.stopPropagation()}
+        >
           <Link to={`/session/${id}`}>View Details</Link>
         </Button>
-        <Button variant="ghost" size="sm" asChild>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          asChild
+          onClick={(e) => e.stopPropagation()}
+        >
           <Link to={`/session/${id}/edit`}>Edit</Link>
         </Button>
       </CardFooter>
