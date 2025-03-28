@@ -276,7 +276,7 @@ const Index = () => {
             <h2 className="text-3xl md:text-4xl font-bold mt-3 mb-6">Simple, Transparent Pricing</h2>
             <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto">Everything you need to run your coaching business efficiently, for one straightforward price. No hidden fees or long-term contracts.</p>
             
-            <div className="flex justify-center max-w-3xl mx-auto">
+            <div className="flex justify-center max-w-xl mx-auto">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -319,24 +319,6 @@ const Index = () => {
                   </div>
                 </div>
               </motion.div>
-            </div>
-            
-            <div className="mt-12 max-w-3xl mx-auto text-center">
-              <h3 className="text-xl font-semibold mb-4">Frequently Asked Questions</h3>
-              <div className="grid gap-6 mt-6 text-left">
-                <div className="bg-gray-50 rounded-lg p-6">
-                  <h4 className="font-medium text-lg mb-2">Can I cancel anytime?</h4>
-                  <p className="text-gray-600">Yes, you can cancel your subscription at any time. There are no long-term contracts or commitments.</p>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-6">
-                  <h4 className="font-medium text-lg mb-2">What happens after my free trial?</h4>
-                  <p className="text-gray-600">After your 14-day free trial ends, your account will automatically convert to a paid subscription unless you cancel.</p>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-6">
-                  <h4 className="font-medium text-lg mb-2">Are there any hidden fees?</h4>
-                  <p className="text-gray-600">No hidden fees. The price you see is the price you pay. We're committed to transparent pricing.</p>
-                </div>
-              </div>
             </div>
           </div>
         </section>
