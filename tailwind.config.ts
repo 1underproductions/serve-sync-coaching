@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,33 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Tennis themed colors
+				"tennis-green": {
+					100: "#e8f5e9",
+					200: "#c8e6c9",
+					300: "#a5d6a7",
+					400: "#81c784",
+					500: "#4CAF50",
+					600: "#43a047",
+					700: "#388e3c",
+					800: "#2e7d32",
+					900: "#1b5e20",
+				},
+				"tennis-blue": {
+					100: "#e1f5fe",
+					200: "#b3e5fc",
+					300: "#81d4fa",
+					400: "#4fc3f7",
+					500: "#03A9F4",
+					600: "#039be5",
+					700: "#0288d1",
+					800: "#0277bd",
+					900: "#01579b",
+				},
+				"court": {
+					light: "#8BC34A",
+					dark: "#2196F3",
 				}
 			},
 			borderRadius: {
