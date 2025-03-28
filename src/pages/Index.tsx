@@ -4,15 +4,38 @@ import { CheckCircle, ArrowRight, Calendar, Users, CreditCard } from "lucide-rea
 import { motion } from "framer-motion";
 
 const Index = () => {
+  // Function to handle smooth scrolling to sections
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <header className="bg-white border-b sticky top-0 z-50">
         <div className="container py-4 flex justify-between items-center">
           <span className="text-2xl font-bold text-tennis-green-600">ServeSync</span>
           <div className="hidden md:flex space-x-6 items-center">
-            <Link to="#features" className="text-gray-600 hover:text-tennis-green-600 transition-colors">Features</Link>
-            <Link to="#benefits" className="text-gray-600 hover:text-tennis-green-600 transition-colors">Benefits</Link>
-            <Link to="#pricing" className="text-gray-600 hover:text-tennis-green-600 transition-colors">Pricing</Link>
+            <button 
+              onClick={() => scrollToSection('features')} 
+              className="text-gray-600 hover:text-tennis-green-600 transition-colors"
+            >
+              Features
+            </button>
+            <button 
+              onClick={() => scrollToSection('benefits')} 
+              className="text-gray-600 hover:text-tennis-green-600 transition-colors"
+            >
+              Benefits
+            </button>
+            <button 
+              onClick={() => scrollToSection('pricing')} 
+              className="text-gray-600 hover:text-tennis-green-600 transition-colors"
+            >
+              Pricing
+            </button>
             <Button asChild variant="outline">
               <Link to="/dashboard">Login</Link>
             </Button>
