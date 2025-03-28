@@ -1,3 +1,4 @@
+
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, ArrowRight, Calendar, Users, CreditCard } from "lucide-react";
@@ -36,13 +37,21 @@ const Index = () => {
             >
               Pricing
             </button>
-            <Button asChild variant="outline">
-              <Link to="/dashboard">Login</Link>
+            <Button asChild variant="outline" className="mr-2">
+              <Link to="/login">Login</Link>
+            </Button>
+            <Button asChild>
+              <Link to="/sign-up">Start Free Trial</Link>
             </Button>
           </div>
-          <Button asChild variant="outline" className="md:hidden">
-            <Link to="/dashboard">Login</Link>
-          </Button>
+          <div className="flex items-center space-x-3 md:hidden">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/login">Login</Link>
+            </Button>
+            <Button asChild size="sm">
+              <Link to="/sign-up">Start Free Trial</Link>
+            </Button>
+          </div>
         </div>
       </header>
 
