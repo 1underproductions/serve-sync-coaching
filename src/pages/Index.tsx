@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import { CheckCircle, ArrowRight, Calendar, Users, CreditCard } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -371,9 +371,6 @@ const Index = () => {
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <Button asChild size="lg" className="bg-white text-tennis-green-600 hover:bg-gray-100 rounded-full px-8">
                 <Link to="/dashboard">Start Free Trial</Link>
-              </Button>
-              <Button asChild size="lg" variant="outline" className="border-white text-white hover:bg-white/10 rounded-full px-8">
-                <Link to="/dashboard">Schedule a Demo</Link>
               </Button>
             </div>
           </div>
