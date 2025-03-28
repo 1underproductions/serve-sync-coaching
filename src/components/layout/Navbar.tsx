@@ -1,5 +1,5 @@
 
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
   CalendarClock, 
@@ -9,7 +9,8 @@ import {
   User, 
   Menu,
   Bell,
-  Search
+  Search,
+  LogOut
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -19,8 +20,25 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
 
 const Navbar = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  const handleLogout = () => {
+    // In a real app, we would clear authentication tokens here
+    
+    // Show toast notification
+    toast({
+      title: "Logged out",
+      description: "You have been successfully logged out.",
+    });
+    
+    // Redirect to login page
+    navigate("/login");
+  };
+
   return (
     <header className="sticky top-0 z-40 border-b bg-white">
       <div className="container flex h-16 items-center justify-between px-4">
@@ -87,7 +105,8 @@ const Navbar = () => {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>
             </DropdownMenuContent>

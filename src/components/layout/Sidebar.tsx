@@ -1,5 +1,5 @@
 
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
   CalendarClock, 
   Users, 
@@ -11,6 +11,7 @@ import {
   Home 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 const navItems = [
   { name: "Dashboard", path: "/dashboard", icon: Home },
@@ -24,7 +25,22 @@ const navItems = [
 
 const Sidebar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const currentPath = location.pathname;
+
+  const handleLogout = () => {
+    // In a real app, we would clear authentication tokens here
+    
+    // Show toast notification
+    toast({
+      title: "Logged out",
+      description: "You have been successfully logged out.",
+    });
+    
+    // Redirect to login page
+    navigate("/login");
+  };
 
   return (
     <div className="hidden md:flex flex-col h-screen border-r bg-white w-[240px] shrink-0">
@@ -56,7 +72,10 @@ const Sidebar = () => {
         })}
 
         <div className="mt-6 pt-6 border-t">
-          <button className="flex w-full items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100 transition-colors">
+          <button 
+            onClick={handleLogout}
+            className="flex w-full items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100 transition-colors"
+          >
             <LogOut className="h-5 w-5" />
             <span>Logout</span>
           </button>
