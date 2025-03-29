@@ -4,6 +4,17 @@ import { User, Mail, Phone, MessageSquare, Calendar, BarChart3 } from "lucide-re
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
+interface PlayerCardProps {
+  id: string;
+  name: string; 
+  skill: string;
+  age: number;
+  email: string;
+  sessionsCount: number;
+  phone?: string;
+  extraActions?: React.ReactNode;
+}
+
 const PlayerCard = ({ 
   id, 
   name, 
@@ -13,15 +24,17 @@ const PlayerCard = ({
   phone, 
   sessionsCount, 
   extraActions 
-}) => {
-  const emailPlayer = (e) => {
+}: PlayerCardProps) => {
+  const emailPlayer = (e: React.MouseEvent) => {
     e.preventDefault();
     window.location.href = `mailto:${email}`;
   };
 
-  const phonePlayer = (e) => {
+  const phonePlayer = (e: React.MouseEvent) => {
     e.preventDefault();
-    window.location.href = `tel:${phone}`;
+    if (phone) {
+      window.location.href = `tel:${phone}`;
+    }
   };
 
   const getProgressColor = () => {

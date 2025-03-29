@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -106,6 +107,7 @@ const getDayContent = (day, parsedSessions) => {
 const timeSlots = Array.from({ length: 14 }, (_, i) => i + 7); // 7 AM to 8 PM
 
 const Schedule = () => {
+  const navigate = useNavigate();
   const [viewType, setViewType] = useState<"list" | "week">("week");
   const [date, setDate] = useState<Date>(new Date());
   const [weekStart, setWeekStart] = useState(startOfWeek(date, { weekStartsOn: 0 }));

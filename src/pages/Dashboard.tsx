@@ -104,7 +104,12 @@ const Dashboard = () => {
             <CardContent>
               <div className="space-y-4">
                 {recentPlayers.map((player) => (
-                  <PlayerCard key={player.id} {...player} />
+                  <PlayerCard 
+                    key={player.id} 
+                    {...player}
+                    phone=""
+                    extraActions={null}
+                  />
                 ))}
               </div>
             </CardContent>
