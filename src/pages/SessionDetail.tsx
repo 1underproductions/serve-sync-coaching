@@ -5,7 +5,7 @@ import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Calendar, Clock, MapPin, User, ArrowRight } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, MapPin, User } from "lucide-react";
 import SessionNotes from "@/components/session/SessionNotes";
 import SessionFeedback from "@/components/session/SessionFeedback";
 import CoachingPlan from "@/components/session/CoachingPlan";
@@ -121,112 +121,135 @@ const SessionDetail = () => {
 
   return (
     <Layout>
-      <div className="flex flex-col space-y-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Button variant="outline" size="icon" onClick={() => navigate("/schedule")}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <h1 className="text-3xl font-bold tracking-tight">{session.title}</h1>
-          <span className={`text-xs px-2 py-1 rounded-full ${
-            session.type === "individual"
-              ? "bg-tennis-green-100 text-tennis-green-800"
-              : session.type === "group"
-                ? "bg-tennis-blue-100 text-tennis-blue-800"
-                : "bg-orange-100 text-orange-800"
-          }`}>
-            {session.type === "individual" 
-              ? "Individual" 
-              : session.type === "group" 
-                ? "Group" 
-                : "Tournament"}
-          </span>
-        </div>
+      <div className="mb-6">
+        <Button variant="outline" size="icon" className="mr-3" onClick={() => navigate("/schedule")}>
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <span className={`text-xs px-2 py-1 rounded-full align-middle mr-3 ${
+          session.type === "individual"
+            ? "bg-tennis-green-100 text-tennis-green-800"
+            : session.type === "group"
+              ? "bg-tennis-blue-100 text-tennis-blue-800"
+              : "bg-orange-100 text-orange-800"
+        }`}>
+          {session.type === "individual" 
+            ? "Individual" 
+            : session.type === "group" 
+              ? "Group" 
+              : "Tournament"}
+        </span>
+      </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          <Card className="md:col-span-1">
-            <CardHeader>
-              <CardTitle>Session Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {player && (
-                <div className="flex items-center">
-                  <User className="h-4 w-4 mr-3 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">
-                      <Link to={`/players/${player.id}`} className="hover:underline">
-                        {player.name}
-                      </Link>
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {player.skill} • {player.age} years old
-                    </p>
-                  </div>
-                </div>
-              )}
-              
-              <div className="flex items-center">
-                <Calendar className="h-4 w-4 mr-3 text-muted-foreground" />
-                <p>{formatDate(session.date)}</p>
-              </div>
-              
-              <div className="flex items-center">
-                <Clock className="h-4 w-4 mr-3 text-muted-foreground" />
-                <p>{session.startTime} - {session.endTime}</p>
-              </div>
-              
-              <div className="flex items-center">
-                <MapPin className="h-4 w-4 mr-3 text-muted-foreground" />
-                <p>{session.location}</p>
-              </div>
-
-              <div className="flex flex-col space-y-2 mt-6">
-                <Button size="sm" variant="outline" asChild>
-                  <Link to={`/session/${session.id}/edit`}>Edit Session</Link>
-                </Button>
-                {player && (
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    asChild
-                  >
-                    <Link to={`/players/${player.id}`}>
-                      <User className="h-4 w-4 mr-2" />
-                      View Player Profile
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Session Details Card */}
+        <Card className="md:col-span-1 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-2xl font-bold">Session Details</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            {player && (
+              <div className="flex items-start">
+                <User className="h-5 w-5 mr-3 text-muted-foreground mt-0.5" />
+                <div>
+                  <p className="font-semibold text-lg">
+                    <Link to={`/players/${player.id}`} className="hover:underline">
+                      {player.name}
                     </Link>
-                  </Button>
-                )}
+                  </p>
+                  <p className="text-muted-foreground">
+                    {player.skill} • {player.age} years old
+                  </p>
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            )}
+            
+            <div className="flex items-center">
+              <Calendar className="h-5 w-5 mr-3 text-muted-foreground" />
+              <p>{formatDate(session.date)}</p>
+            </div>
+            
+            <div className="flex items-center">
+              <Clock className="h-5 w-5 mr-3 text-muted-foreground" />
+              <p>{session.startTime} - {session.endTime}</p>
+            </div>
+            
+            <div className="flex items-center">
+              <MapPin className="h-5 w-5 mr-3 text-muted-foreground" />
+              <p>{session.location}</p>
+            </div>
 
-          <Card className="md:col-span-2">
+            <div className="flex flex-col space-y-3 mt-8">
+              <Button variant="outline" size="lg" className="justify-center w-full">
+                Edit Session
+              </Button>
+              
+              {player && (
+                <Button 
+                  variant="outline" 
+                  size="lg"
+                  className="justify-center w-full"
+                  asChild
+                >
+                  <Link to={`/players/${player.id}`}>
+                    <User className="h-4 w-4 mr-2" />
+                    View Player Profile
+                  </Link>
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Session Management Card */}
+        <div className="md:col-span-2">
+          <Card className="shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-2xl font-bold">Session Management</CardTitle>
+            </CardHeader>
             <Tabs 
               defaultValue={activeTab} 
-              className="w-full"
               onValueChange={handleTabChange}
+              className="w-full"
             >
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <CardTitle>Session Management</CardTitle>
-                  <TabsList>
-                    <TabsTrigger value="notes">Notes</TabsTrigger>
-                    <TabsTrigger value="feedback">Feedback</TabsTrigger>
-                    <TabsTrigger value="plan">Coaching Plan</TabsTrigger>
-                    <TabsTrigger value="progress">Progress</TabsTrigger>
-                  </TabsList>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <TabsContent value="notes" className="mt-0">
+              <div className="px-6 border-b">
+                <TabsList className="bg-transparent p-0 h-12 w-full justify-start space-x-6">
+                  <TabsTrigger 
+                    value="notes" 
+                    className="py-3 px-1 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-tennis-green-600 data-[state=active]:shadow-none data-[state=active]:bg-transparent"
+                  >
+                    Notes
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="feedback" 
+                    className="py-3 px-1 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-tennis-green-600 data-[state=active]:shadow-none data-[state=active]:bg-transparent"
+                  >
+                    Feedback
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="plan" 
+                    className="py-3 px-1 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-tennis-green-600 data-[state=active]:shadow-none data-[state=active]:bg-transparent"
+                  >
+                    Coaching Plan
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="progress" 
+                    className="py-3 px-1 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-tennis-green-600 data-[state=active]:shadow-none data-[state=active]:bg-transparent"
+                  >
+                    Progress
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+              <CardContent className="pt-6">
+                <TabsContent value="notes" className="mt-0 p-0">
                   <SessionNotes session={session} />
                 </TabsContent>
-                <TabsContent value="feedback" className="mt-0">
+                <TabsContent value="feedback" className="mt-0 p-0">
                   <SessionFeedback session={session} player={player} />
                 </TabsContent>
-                <TabsContent value="plan" className="mt-0">
+                <TabsContent value="plan" className="mt-0 p-0">
                   <CoachingPlan session={session} player={player} />
                 </TabsContent>
-                <TabsContent value="progress" className="mt-0">
+                <TabsContent value="progress" className="mt-0 p-0">
                   <ProgressTracking session={session} player={player} />
                 </TabsContent>
               </CardContent>

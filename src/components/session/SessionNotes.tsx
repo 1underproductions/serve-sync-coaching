@@ -200,103 +200,100 @@ const SessionNotes = ({ session }) => {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Session Notes</CardTitle>
-          <CardDescription>
-            Record your notes before and after this session
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="preSessionNotes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Pre-Session Notes</FormLabel>
-                    <FormDescription>
-                      What will you focus on in this session? Add notes about drills, techniques or specific skills.
-                    </FormDescription>
-                    <FormControl>
-                      <Textarea
-                        placeholder="e.g. Work on forehand technique, focus on proper follow-through..."
-                        className="min-h-[120px]"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="postSessionNotes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Post-Session Notes</FormLabel>
-                    <FormDescription>
-                      How did the session go? What was accomplished? What needs more work?
-                    </FormDescription>
-                    <FormControl>
-                      <Textarea
-                        placeholder="e.g. Made good progress on serve technique, backhand still needs work..."
-                        className="min-h-[120px]"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {player && (
-                <FormField
-                  control={form.control}
-                  name="playerFeedback"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Feedback for Player</FormLabel>
-                      <FormDescription>
-                        Write feedback that will be shared with {player.name}. This can include accomplishments, areas to work on, and home practice suggestions.
-                      </FormDescription>
-                      <FormControl>
-                        <Textarea
-                          placeholder="e.g. Great job on your forehand today! Please practice the following drills at home..."
-                          className="min-h-[120px]"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+      <div>
+        <h2 className="text-2xl font-bold mb-2">Session Notes</h2>
+        <p className="text-muted-foreground mb-6">
+          Record your notes before and after this session
+        </p>
+        
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="preSessionNotes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-lg font-medium">Pre-Session Notes</FormLabel>
+                  <FormDescription>
+                    What will you focus on in this session? Add notes about drills, techniques or specific skills.
+                  </FormDescription>
+                  <FormControl>
+                    <Textarea
+                      placeholder="e.g. Work on forehand technique, focus on proper follow-through..."
+                      className="min-h-[120px] resize-none mt-2"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-              
-              <div className="flex space-x-3">
-                <Button type="submit" className="bg-tennis-green-600 hover:bg-tennis-green-700">
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Notes
-                </Button>
-                
-                {player && savedNotes?.playerFeedback && (
-                  <Button type="button" variant="outline" onClick={sendFeedbackToPlayer}>
-                    <Send className="h-4 w-4 mr-2" />
-                    Send Feedback to Player
-                  </Button>
+            />
+            
+            <FormField
+              control={form.control}
+              name="postSessionNotes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-lg font-medium">Post-Session Notes</FormLabel>
+                  <FormDescription>
+                    How did the session go? What was accomplished? What needs more work?
+                  </FormDescription>
+                  <FormControl>
+                    <Textarea
+                      placeholder="e.g. Made good progress on serve technique, backhand still needs work..."
+                      className="min-h-[120px] resize-none mt-2"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            {player && (
+              <FormField
+                control={form.control}
+                name="playerFeedback"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-lg font-medium">Feedback for Player</FormLabel>
+                    <FormDescription>
+                      Write feedback that will be shared with {player.name}. This can include accomplishments, areas to work on, and home practice suggestions.
+                    </FormDescription>
+                    <FormControl>
+                      <Textarea
+                        placeholder="e.g. Great job on your forehand today! Please practice the following drills at home..."
+                        className="min-h-[120px] resize-none mt-2"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-              </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+              />
+            )}
+            
+            <div className="flex space-x-3 pt-2">
+              <Button type="submit" className="bg-tennis-green-600 hover:bg-tennis-green-700">
+                <Save className="h-4 w-4 mr-2" />
+                Save Notes
+              </Button>
+              
+              {player && savedNotes?.playerFeedback && (
+                <Button type="button" variant="outline" onClick={sendFeedbackToPlayer}>
+                  <Send className="h-4 w-4 mr-2" />
+                  Send Feedback to Player
+                </Button>
+              )}
+            </div>
+          </form>
+        </Form>
+      </div>
 
       {savedNotes && (
-        <Card>
+        <Card className="border border-muted mt-8">
           <CardHeader>
-            <CardTitle>Saved Notes</CardTitle>
+            <CardTitle className="text-lg">Saved Notes</CardTitle>
             <CardDescription>
               Last updated: {format(new Date(savedNotes.updatedAt), "PPP p")}
             </CardDescription>
@@ -341,10 +338,7 @@ const SessionNotes = ({ session }) => {
       )}
 
       {player && (
-        <div className="flex justify-between items-center pt-4">
-          <div className="flex items-center text-sm text-muted-foreground">
-            <span>All notes are automatically linked to {player.name}'s profile</span>
-          </div>
+        <div className="flex justify-end items-center pt-4">
           <Button variant="link" size="sm" asChild>
             <Link to={`/players/${player.id}`}>
               View Player Profile
