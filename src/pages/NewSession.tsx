@@ -29,7 +29,7 @@ const NewSession = () => {
   const handleSessionCreated = () => {
     toast({
       title: "Success",
-      description: "Session has been scheduled successfully",
+      description: "Session(s) have been scheduled successfully",
     });
     navigate("/schedule");
   };

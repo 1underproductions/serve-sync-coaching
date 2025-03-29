@@ -247,17 +247,28 @@ const Schedule = () => {
     }
   };
   
-  const getSessionColorClass = (type) => {
+  const getSessionColorClass = (type, isRecurring) => {
+    let baseClass = '';
+    
     switch (type) {
       case 'individual':
-        return 'bg-tennis-green-500 text-white';
+        baseClass = 'bg-tennis-green-500 text-white';
+        break;
       case 'group':
-        return 'bg-tennis-blue-500 text-white';
+        baseClass = 'bg-tennis-blue-500 text-white';
+        break;
       case 'tournament':
-        return 'bg-orange-500 text-white';
+        baseClass = 'bg-orange-500 text-white';
+        break;
       default:
-        return 'bg-gray-500 text-white';
+        baseClass = 'bg-gray-500 text-white';
     }
+    
+    if (isRecurring) {
+      baseClass += ' border-2 border-purple-300';
+    }
+    
+    return baseClass;
   };
   
   const openSessionDialog = (session) => {
@@ -279,21 +290,28 @@ const Schedule = () => {
               <CardHeader className="pb-2">
                 <div className="flex justify-between">
                   <CardTitle className="text-lg">{session.title}</CardTitle>
-                  <span
-                    className={`text-xs px-2 py-1 rounded-full ${
-                      session.type === "individual"
-                        ? "bg-tennis-green-100 text-tennis-green-800"
-                        : session.type === "group"
-                          ? "bg-tennis-blue-100 text-tennis-blue-800"
-                          : "bg-orange-100 text-orange-800"
-                    }`}
-                  >
-                    {session.type === "individual" 
-                      ? "Individual" 
-                      : session.type === "group" 
-                        ? "Group" 
-                        : "Tournament"}
-                  </span>
+                  <div className="flex space-x-2">
+                    {session.isRecurring && (
+                      <span className="text-xs px-2 py-1 rounded-full bg-purple-100 text-purple-800">
+                        Recurring
+                      </span>
+                    )}
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full ${
+                        session.type === "individual"
+                          ? "bg-tennis-green-100 text-tennis-green-800"
+                          : session.type === "group"
+                            ? "bg-tennis-blue-100 text-tennis-blue-800"
+                            : "bg-orange-100 text-orange-800"
+                      }`}
+                    >
+                      {session.type === "individual" 
+                        ? "Individual" 
+                        : session.type === "group" 
+                          ? "Group" 
+                          : "Tournament"}
+                    </span>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -422,7 +440,7 @@ const Schedule = () => {
                   {sessionsInSlot.map((session, index) => {
                     try {
                       const style = calculateSessionStyle(session, hour);
-                      const colorClass = getSessionColorClass(session.type);
+                      const colorClass = getSessionColorClass(session.type, session.isRecurring);
                       
                       const shouldRender = 
                         getHours(session.startDate) === hour || 
@@ -522,19 +540,26 @@ const Schedule = () => {
                 <DialogHeader>
                   <DialogTitle className="text-xl">{selectedSession.title}</DialogTitle>
                   <DialogDescription>
-                    <span className={`inline-block text-xs px-2 py-1 mt-2 rounded-full ${
-                      selectedSession.type === "individual" 
-                        ? "bg-tennis-green-100 text-tennis-green-800"
-                        : selectedSession.type === "group" 
-                          ? "bg-tennis-blue-100 text-tennis-blue-800" 
-                          : "bg-orange-100 text-orange-800"
-                    }`}>
-                      {selectedSession.type === "individual" 
-                        ? "Individual" 
-                        : selectedSession.type === "group" 
-                          ? "Group" 
-                          : "Tournament"}
-                    </span>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <span className={`inline-block text-xs px-2 py-1 rounded-full ${
+                        selectedSession.type === "individual" 
+                          ? "bg-tennis-green-100 text-tennis-green-800"
+                          : selectedSession.type === "group" 
+                            ? "bg-tennis-blue-100 text-tennis-blue-800" 
+                            : "bg-orange-100 text-orange-800"
+                      }`}>
+                        {selectedSession.type === "individual" 
+                          ? "Individual" 
+                          : selectedSession.type === "group" 
+                            ? "Group" 
+                            : "Tournament"}
+                      </span>
+                      {selectedSession.isRecurring && (
+                        <span className="inline-block text-xs px-2 py-1 rounded-full bg-purple-100 text-purple-800">
+                          Recurring
+                        </span>
+                      )}
+                    </div>
                   </DialogDescription>
                 </DialogHeader>
                 

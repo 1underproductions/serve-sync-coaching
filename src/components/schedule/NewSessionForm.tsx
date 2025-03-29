@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { format } from "date-fns";
+import { format, addWeeks, parseISO } from "date-fns";
 import { CalendarIcon, Clock, Check, ChevronsUpDown, UserPlus, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -83,6 +83,7 @@ const formSchema = z.object({
   location: z.string().min(1, { message: "Location is required" }),
   type: z.enum(["individual", "group", "tournament"], { required_error: "Session type is required" }),
   isRecurring: z.boolean().default(false),
+  recurringWeeks: z.number().min(1).max(12).default(4),
 });
 
 interface NewSessionFormProps {
@@ -111,6 +112,7 @@ const NewSessionForm = ({ open = true, onOpenChange, onSessionCreated, initialDa
       startTime: initialData.startTime,
       endTime: initialData.endTime,
       isRecurring: initialData.isRecurring,
+      recurringWeeks: 4,
     } : {
       title: "",
       playerId: "",
@@ -119,6 +121,7 @@ const NewSessionForm = ({ open = true, onOpenChange, onSessionCreated, initialDa
       startTime: "09:00",
       endTime: "10:00",
       isRecurring: false,
+      recurringWeeks: 4,
     },
   });
   
@@ -162,6 +165,28 @@ const NewSessionForm = ({ open = true, onOpenChange, onSessionCreated, initialDa
     initializeData();
   }, []);
 
+  const createRecurringSessions = (baseSession, numberOfWeeks) => {
+    const sessions = [baseSession];
+    
+    for (let i = 1; i <= numberOfWeeks; i++) {
+      const recurringDate = addWeeks(
+        typeof baseSession.date === 'string' 
+          ? new Date(baseSession.date) 
+          : baseSession.date, 
+        i
+      );
+      
+      sessions.push({
+        ...baseSession,
+        id: crypto.randomUUID(),
+        date: recurringDate.toISOString(),
+        createdAt: new Date().toISOString(),
+      });
+    }
+    
+    return sessions;
+  };
+
   const onSubmit = (data: z.infer<typeof formSchema>) => {
     const selectedPlayer = players.find(player => player.id === data.playerId);
     const playerName = selectedPlayer ? selectedPlayer.name : "Unknown player";
@@ -195,14 +220,30 @@ const NewSessionForm = ({ open = true, onOpenChange, onSessionCreated, initialDa
       };
       
       const existingSessions = JSON.parse(localStorage.getItem("sessions") || "[]");
-      localStorage.setItem("sessions", JSON.stringify([...existingSessions, newSession]));
+      
+      if (data.isRecurring) {
+        const allSessions = createRecurringSessions(newSession, data.recurringWeeks);
+        localStorage.setItem("sessions", JSON.stringify([...existingSessions, ...allSessions]));
+        
+        toast({
+          title: "Recurring Sessions Created",
+          description: `${allSessions.length} sessions with ${playerName} have been scheduled.`,
+        });
+      } else {
+        localStorage.setItem("sessions", JSON.stringify([...existingSessions, newSession]));
+        
+        toast({
+          title: "Session Created",
+          description: `Session with ${playerName} has been scheduled.`,
+        });
+      }
       
       if (selectedPlayer) {
         const updatedPlayers = players.map(player => {
           if (player.id === selectedPlayer.id) {
             return {
               ...player,
-              sessionsCount: player.sessionsCount + 1
+              sessionsCount: player.sessionsCount + (data.isRecurring ? data.recurringWeeks + 1 : 1)
             };
           }
           return player;
@@ -210,11 +251,6 @@ const NewSessionForm = ({ open = true, onOpenChange, onSessionCreated, initialDa
         
         localStorage.setItem("players", JSON.stringify(updatedPlayers));
       }
-      
-      toast({
-        title: "Session Created",
-        description: `Session with ${playerName} has been scheduled.`,
-      });
     }
     
     if (onSessionCreated) {
@@ -223,6 +259,45 @@ const NewSessionForm = ({ open = true, onOpenChange, onSessionCreated, initialDa
       if (onOpenChange) onOpenChange(false);
       navigate("/schedule");
     }
+  };
+
+  const renderRecurringWeeksField = () => {
+    const isRecurring = form.watch("isRecurring");
+    
+    if (!isRecurring) return null;
+    
+    return (
+      <FormField
+        control={form.control}
+        name="recurringWeeks"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Number of recurring weeks</FormLabel>
+            <FormControl>
+              <Select
+                onValueChange={(value) => field.onChange(parseInt(value))}
+                defaultValue={field.value.toString()}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select number of weeks" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[1, 2, 3, 4, 6, 8, 12].map((num) => (
+                    <SelectItem key={num} value={num.toString()}>
+                      {num} {num === 1 ? 'week' : 'weeks'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormControl>
+            <FormDescription>
+              This will create this session plus {field.value} additional weekly sessions
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    );
   };
 
   if (!isLoaded) {
@@ -427,13 +502,15 @@ const NewSessionForm = ({ open = true, onOpenChange, onSessionCreated, initialDa
                 <div className="space-y-1 leading-none">
                   <FormLabel>Recurring Session</FormLabel>
                   <FormDescription>
-                    This will create a weekly recurring session at this time.
+                    This will create weekly recurring sessions at this time.
                   </FormDescription>
                 </div>
               </FormItem>
             )}
           />
-
+          
+          {renderRecurringWeeksField()}
+          
           <Button 
             type="submit"
             className="bg-tennis-green-600 hover:bg-tennis-green-700"
@@ -650,12 +727,14 @@ const NewSessionForm = ({ open = true, onOpenChange, onSessionCreated, initialDa
                     <div className="space-y-1 leading-none">
                       <FormLabel>Recurring Session</FormLabel>
                       <FormDescription>
-                        This will create a weekly recurring session at this time.
+                        This will create weekly recurring sessions at this time.
                       </FormDescription>
                     </div>
                   </FormItem>
                 )}
               />
+              
+              {renderRecurringWeeksField()}
             </form>
           </Form>
         </ScrollArea>

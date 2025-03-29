@@ -19,6 +19,7 @@ const badgeVariants = cva(
         custom: "", // For custom styling via className
         success: "border-transparent bg-tennis-green-100 text-tennis-green-800 hover:bg-tennis-green-200",
         primary: "border-transparent bg-tennis-green-700 text-white hover:bg-tennis-green-800",
+        recurring: "border-transparent bg-purple-100 text-purple-800 hover:bg-purple-200",
       },
     },
     defaultVariants: {
