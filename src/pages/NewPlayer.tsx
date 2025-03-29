@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -51,13 +50,17 @@ const playerFormSchema = z.object({
   if (data.isChild && !data.parentEmail) {
     return false;
   }
+  // If it's a child, parent phone is also required
+  if (data.isChild && !data.parentPhone) {
+    return false;
+  }
   // If it's an adult, their own email is required
   if (!data.isChild && !data.email) {
     return false;
   }
   return true;
 }, {
-  message: "Email is required. For children, parent email is required.",
+  message: "Email is required. For children, parent email and phone are required.",
   path: ["email"]
 });
 
@@ -223,7 +226,7 @@ const NewPlayer = () => {
                     name="parentPhone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Parent Phone</FormLabel>
+                        <FormLabel>Parent Phone <span className="text-red-500">*</span></FormLabel>
                         <FormControl>
                           <Input placeholder="(555) 123-4567" {...field} />
                         </FormControl>
