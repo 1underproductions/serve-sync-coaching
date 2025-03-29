@@ -3,8 +3,8 @@ import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Link } from "react-router-dom";
-import { Plus, Search, UserPlus, ChartLine } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Plus, Search, UserPlus, ChartLine, FileText } from "lucide-react";
 import PlayerCard from "@/components/players/PlayerCard";
 import { 
   Dialog, 
@@ -34,6 +34,7 @@ const Players = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [isProgressDialogOpen, setIsProgressDialogOpen] = useState(false);
+  const navigate = useNavigate();
   
   useEffect(() => {
     // Load players from localStorage
@@ -61,6 +62,10 @@ const Players = () => {
   const openProgressDialog = (player: Player) => {
     setSelectedPlayer(player);
     setIsProgressDialogOpen(true);
+  };
+
+  const viewPlayerProfile = (playerId: string) => {
+    navigate(`/players/${playerId}`);
   };
 
   return (
@@ -107,14 +112,24 @@ const Players = () => {
                 key={player.id} 
                 {...player} 
                 extraActions={
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => openProgressDialog(player)}
-                  >
-                    <ChartLine className="h-4 w-4 mr-2" />
-                    Progress
-                  </Button>
+                  <div className="flex space-x-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => viewPlayerProfile(player.id)}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Profile
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => openProgressDialog(player)}
+                    >
+                      <ChartLine className="h-4 w-4 mr-2" />
+                      Progress
+                    </Button>
+                  </div>
                 }
               />
             ))}
@@ -138,6 +153,11 @@ const Players = () => {
             )}
             
             <DialogFooter>
+              <Button variant="outline" asChild>
+                <Link to={`/players/${selectedPlayer?.id}`} onClick={() => setIsProgressDialogOpen(false)}>
+                  View Full Profile
+                </Link>
+              </Button>
               <DialogClose asChild>
                 <Button variant="outline">Close</Button>
               </DialogClose>

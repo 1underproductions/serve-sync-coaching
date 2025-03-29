@@ -1,11 +1,11 @@
 
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Calendar, Clock, MapPin, User } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, MapPin, User, ArrowRight } from "lucide-react";
 import SessionNotes from "@/components/session/SessionNotes";
 import SessionFeedback from "@/components/session/SessionFeedback";
 import CoachingPlan from "@/components/session/CoachingPlan";
@@ -16,9 +16,13 @@ import { format, parseISO } from "date-fns";
 const SessionDetail = () => {
   const { sessionId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [session, setSession] = useState(null);
   const [player, setPlayer] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Get the active tab from query params or default to "notes"
+  const activeTab = searchParams.get("tab") || "notes";
 
   useEffect(() => {
     const fetchSessionAndPlayer = () => {
@@ -83,6 +87,11 @@ const SessionDetail = () => {
     }
   };
 
+  // Function to handle tab change and update URL
+  const handleTabChange = (value) => {
+    navigate(`/session/${sessionId}?tab=${value}`);
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -143,7 +152,11 @@ const SessionDetail = () => {
                 <div className="flex items-center">
                   <User className="h-4 w-4 mr-3 text-muted-foreground" />
                   <div>
-                    <p className="font-medium">{player.name}</p>
+                    <p className="font-medium">
+                      <Link to={`/players/${player.id}`} className="hover:underline">
+                        {player.name}
+                      </Link>
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       {player.skill} • {player.age} years old
                     </p>
@@ -166,16 +179,32 @@ const SessionDetail = () => {
                 <p>{session.location}</p>
               </div>
 
-              <div className="flex space-x-2 mt-6">
+              <div className="flex flex-col space-y-2 mt-6">
                 <Button size="sm" variant="outline" asChild>
                   <Link to={`/session/${session.id}/edit`}>Edit Session</Link>
                 </Button>
+                {player && (
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    asChild
+                  >
+                    <Link to={`/players/${player.id}`}>
+                      <User className="h-4 w-4 mr-2" />
+                      View Player Profile
+                    </Link>
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
 
           <Card className="md:col-span-2">
-            <Tabs defaultValue="notes" className="w-full">
+            <Tabs 
+              defaultValue={activeTab} 
+              className="w-full"
+              onValueChange={handleTabChange}
+            >
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <CardTitle>Session Management</CardTitle>

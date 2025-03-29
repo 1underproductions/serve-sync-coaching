@@ -1,6 +1,6 @@
 
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { User, Mail, Phone, MessageSquare, Calendar, BarChart3 } from "lucide-react";
+import { User, Mail, Phone, MessageSquare, Calendar, BarChart3, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
@@ -48,7 +48,11 @@ const PlayerCard = ({
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <div>
-            <h3 className="text-lg font-semibold">{name}</h3>
+            <h3 className="text-lg font-semibold">
+              <Link to={`/players/${id}`} className="hover:underline">
+                {name}
+              </Link>
+            </h3>
             <p className="text-sm text-muted-foreground">{skill} • {age} years old</p>
           </div>
           <div className={`flex items-center ${getProgressColor()}`}>
@@ -84,7 +88,16 @@ const PlayerCard = ({
             </Button>
           )}
         </div>
-        {extraActions}
+        
+        <div className="flex space-x-2">
+          <Button variant="ghost" size="sm" asChild>
+            <Link to={`/players/${id}`}>
+              <FileText className="h-4 w-4 mr-1" />
+              View Profile
+            </Link>
+          </Button>
+          {extraActions}
+        </div>
       </CardFooter>
     </Card>
   );
