@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import NewSessionForm from "@/components/schedule/NewSessionForm";
 import { toast } from "@/hooks/use-toast";
+import { scheduleReminders } from "@/utils/reminderService";
 
 const NewSession = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(true);
@@ -26,11 +27,20 @@ const NewSession = () => {
   };
   
   // Handle successful session creation
-  const handleSessionCreated = () => {
+  const handleSessionCreated = (sessions: any[]) => {
     toast({
       title: "Success",
       description: "Session(s) have been scheduled successfully",
     });
+    
+    // Schedule reminders for the new sessions if enabled in settings
+    try {
+      scheduleReminders(sessions);
+    } catch (error) {
+      console.error("Failed to schedule reminders:", error);
+      // Don't show an error to the user for this - it's a background process
+    }
+    
     navigate("/schedule");
   };
   

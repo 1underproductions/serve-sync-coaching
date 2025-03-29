@@ -1,9 +1,8 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { BellRing, Key, Mail, Smartphone, Shield, Save, Award, Plus, X } from "lucide-react";
+import { BellRing, Key, Mail, Smartphone, Shield, Save, Award, Plus, X, Calendar, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Layout from "@/components/layout/Layout";
 import {
@@ -35,6 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 const passwordFormSchema = z
   .object({
@@ -56,6 +56,13 @@ const notificationFormSchema = z.object({
   marketingEmails: z.boolean(),
 });
 
+const reminderFormSchema = z.object({
+  sendReminders: z.boolean().default(true),
+  reminderTimes: z.array(z.enum(["1day", "3days"])).default(["1day"]),
+  emailSessionReminders: z.boolean().default(true),
+  smsSessionReminders: z.boolean().default(false),
+});
+
 const qualificationFormSchema = z.object({
   coachingLevel: z.string().optional(),
   newQualification: z.string().optional(),
@@ -64,6 +71,7 @@ const qualificationFormSchema = z.object({
 type PasswordFormValues = z.infer<typeof passwordFormSchema>;
 type NotificationFormValues = z.infer<typeof notificationFormSchema>;
 type QualificationFormValues = z.infer<typeof qualificationFormSchema>;
+type ReminderFormValues = z.infer<typeof reminderFormSchema>;
 
 // Sample qualification types that could be used
 const qualificationTypes = [
@@ -124,6 +132,16 @@ const Settings = () => {
       newQualification: "",
     },
   });
+  
+  const reminderForm = useForm<ReminderFormValues>({
+    resolver: zodResolver(reminderFormSchema),
+    defaultValues: {
+      sendReminders: true,
+      reminderTimes: ["1day"],
+      emailSessionReminders: true,
+      smsSessionReminders: false,
+    },
+  });
 
   const onPasswordSubmit = (data: PasswordFormValues) => {
     toast({
@@ -154,6 +172,14 @@ const Settings = () => {
       coachingLevel: data.coachingLevel,
       newQualification: "",
     });
+  };
+
+  const onReminderSubmit = (data: ReminderFormValues) => {
+    toast({
+      title: "Reminder preferences updated",
+      description: "Your session reminder preferences have been successfully updated.",
+    });
+    console.log("Reminder data:", data);
   };
 
   const addQualification = () => {
@@ -190,7 +216,148 @@ const Settings = () => {
         </div>
 
         <div className="grid gap-6">
-          {/* New Coaching Qualifications Card */}
+          {/* New Session Reminders Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                <div className="flex items-center">
+                  <Calendar className="mr-2 h-5 w-5 text-tennis-green-600" />
+                  <span>Session Reminders</span>
+                </div>
+              </CardTitle>
+              <CardDescription>
+                Configure automatic reminders for upcoming coaching sessions.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...reminderForm}>
+                <form onSubmit={reminderForm.handleSubmit(onReminderSubmit)} className="space-y-6">
+                  <FormField
+                    control={reminderForm.control}
+                    name="sendReminders"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-base">
+                            Session Reminders
+                          </FormLabel>
+                          <FormDescription>
+                            Send automatic reminders for upcoming sessions
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="border-t pt-4">
+                    <div className="mb-4">
+                      <h3 className="text-sm font-medium">When to send reminders</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Choose when reminders should be sent before sessions
+                      </p>
+                    </div>
+
+                    <FormField
+                      control={reminderForm.control}
+                      name="reminderTimes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <ToggleGroup
+                            type="multiple"
+                            value={field.value}
+                            onValueChange={(value) => {
+                              if (value.length === 0) {
+                                // Prevent deselecting all options
+                                return;
+                              }
+                              field.onChange(value);
+                            }}
+                            className="justify-start"
+                          >
+                            <ToggleGroupItem value="1day" aria-label="1 day before">
+                              <Clock className="h-4 w-4 mr-2" />
+                              1 day before
+                            </ToggleGroupItem>
+                            <ToggleGroupItem value="3days" aria-label="3 days before">
+                              <Calendar className="h-4 w-4 mr-2" />
+                              3 days before
+                            </ToggleGroupItem>
+                          </ToggleGroup>
+                          <FormDescription>
+                            You can select one or both reminder times
+                          </FormDescription>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <div className="mb-4">
+                      <h3 className="text-sm font-medium">Reminder methods</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Choose how reminders should be delivered
+                      </p>
+                    </div>
+
+                    <div className="space-y-4">
+                      <FormField
+                        control={reminderForm.control}
+                        name="emailSessionReminders"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between space-y-0">
+                            <FormLabel className="flex items-center space-x-2">
+                              <Mail className="h-4 w-4" />
+                              <span>Email reminders</span>
+                            </FormLabel>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={reminderForm.control}
+                        name="smsSessionReminders"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between space-y-0">
+                            <FormLabel className="flex items-center space-x-2">
+                              <Smartphone className="h-4 w-4" />
+                              <span>SMS reminders</span>
+                            </FormLabel>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+
+                  <CardFooter className="px-0 pt-4">
+                    <Button type="submit" className="ml-auto" variant="tennis">
+                      <Save className="mr-2 h-4 w-4" />
+                      Save Reminder Settings
+                    </Button>
+                  </CardFooter>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+
+          {/* Coaching Qualifications Card */}
           <Card>
             <CardHeader>
               <CardTitle>
