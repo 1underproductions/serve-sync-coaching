@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -26,6 +25,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ArrowRight, Save, Send } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const notesSchema = z.object({
   preSessionNotes: z.string().optional(),
