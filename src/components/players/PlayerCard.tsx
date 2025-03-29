@@ -1,8 +1,9 @@
 
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { User, Mail, Phone, MessageSquare, Calendar, BarChart3, FileText } from "lucide-react";
+import { User, Mail, Phone, MessageSquare, Calendar, BarChart3, FileText, ChartLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
 
 interface PlayerCardProps {
   id: string;
@@ -38,7 +39,7 @@ const PlayerCard = ({
   };
 
   const getProgressColor = () => {
-    if (sessionsCount > 20) return "text-green-500";
+    if (sessionsCount > 20) return "text-tennis-green-500";
     if (sessionsCount > 10) return "text-blue-500";
     return "text-orange-500";
   };
@@ -75,8 +76,8 @@ const PlayerCard = ({
           )}
         </div>
       </CardContent>
-      <CardFooter className="flex flex-wrap gap-2 justify-between pt-2">
-        <div className="flex space-x-2">
+      <CardFooter className="pt-2 flex flex-col space-y-2">
+        <div className="flex justify-between w-full">
           <Button variant="outline" size="sm" onClick={emailPlayer}>
             <Mail className="h-4 w-4 mr-1" />
             Email
@@ -89,14 +90,17 @@ const PlayerCard = ({
           )}
         </div>
         
-        <div className="flex space-x-2">
+        <div className="flex justify-between w-full">
           <Button variant="ghost" size="sm" asChild>
             <Link to={`/players/${id}`}>
               <FileText className="h-4 w-4 mr-1" />
               View Profile
             </Link>
           </Button>
-          {extraActions}
+          <Button variant="ghost" size="sm" onClick={() => {}}>
+            <ChartLine className="h-4 w-4 mr-1" />
+            Progress
+          </Button>
         </div>
       </CardFooter>
     </Card>

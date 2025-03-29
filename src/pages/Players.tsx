@@ -16,6 +16,7 @@ import {
   DialogClose
 } from "@/components/ui/dialog";
 import ProgressTracking from "@/components/session/ProgressTracking";
+import { Badge } from "@/components/ui/badge";
 
 // Define the Player type
 interface Player {
@@ -64,10 +65,6 @@ const Players = () => {
     setIsProgressDialogOpen(true);
   };
 
-  const viewPlayerProfile = (playerId: string) => {
-    navigate(`/players/${playerId}`);
-  };
-
   return (
     <Layout>
       <div className="flex flex-col space-y-6">
@@ -91,7 +88,7 @@ const Players = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <Button type="submit" size="icon">
+          <Button type="submit" size="icon" className="bg-tennis-green-600 hover:bg-tennis-green-700">
             <Search className="h-4 w-4" />
           </Button>
         </div>
@@ -110,27 +107,7 @@ const Players = () => {
             {filteredPlayers.map((player) => (
               <PlayerCard 
                 key={player.id} 
-                {...player} 
-                extraActions={
-                  <div className="flex space-x-2">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => viewPlayerProfile(player.id)}
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      Profile
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => openProgressDialog(player)}
-                    >
-                      <ChartLine className="h-4 w-4 mr-2" />
-                      Progress
-                    </Button>
-                  </div>
-                }
+                {...player}
               />
             ))}
           </div>
