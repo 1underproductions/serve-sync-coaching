@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { User, Upload, Edit } from "lucide-react";
+import { User, Upload, Edit, Award } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Layout from "@/components/layout/Layout";
 import {
@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
 const profileFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
@@ -41,12 +42,16 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 const PROFILE_IMAGE_KEY = 'serveSync.profileImage';
 const PROFILE_DATA_KEY = 'serveSync.profileData';
+const QUALIFICATIONS_KEY = 'serveSync.qualifications';
+const COACHING_LEVEL_KEY = 'serveSync.coachingLevel';
 
 const Profile = () => {
   const { toast } = useToast();
   const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
+  const [qualifications, setQualifications] = useState<string[]>([]);
+  const [coachingLevel, setCoachingLevel] = useState<string>("");
 
-  // Load profile image from localStorage on component mount
+  // Load profile image and data from localStorage on component mount
   useEffect(() => {
     const savedImage = localStorage.getItem(PROFILE_IMAGE_KEY);
     if (savedImage) {
@@ -62,6 +67,32 @@ const Profile = () => {
       } catch (error) {
         console.error('Error parsing profile data from localStorage:', error);
       }
+    }
+
+    // Load qualifications
+    const savedQualifications = localStorage.getItem(QUALIFICATIONS_KEY);
+    if (savedQualifications) {
+      try {
+        setQualifications(JSON.parse(savedQualifications));
+      } catch (error) {
+        console.error('Error parsing qualifications from localStorage:', error);
+      }
+    } else {
+      // Default qualifications if none are saved
+      setQualifications(["LTA Level 3", "First Aid Certified", "Safeguarding Trained"]);
+    }
+
+    // Load coaching level
+    const savedCoachingLevel = localStorage.getItem(COACHING_LEVEL_KEY);
+    if (savedCoachingLevel) {
+      try {
+        setCoachingLevel(savedCoachingLevel);
+      } catch (error) {
+        console.error('Error parsing coaching level from localStorage:', error);
+      }
+    } else {
+      // Default coaching level if none is saved
+      setCoachingLevel("LTA Level 3");
     }
   }, []);
 
@@ -119,40 +150,84 @@ const Profile = () => {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Profile Picture</CardTitle>
-              <CardDescription>
-                Upload a profile picture to make your profile more personalized.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex justify-center">
-              <div className="space-y-4 flex flex-col items-center">
-                <Avatar className="h-32 w-32">
-                  <AvatarImage src={avatarSrc || ""} alt="Profile" />
-                  <AvatarFallback className="text-4xl bg-tennis-green-100 text-tennis-green-700">
-                    <User />
-                  </AvatarFallback>
-                </Avatar>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Profile Picture</CardTitle>
+                <CardDescription>
+                  Upload a profile picture to make your profile more personalized.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex justify-center">
+                <div className="space-y-4 flex flex-col items-center">
+                  <Avatar className="h-32 w-32">
+                    <AvatarImage src={avatarSrc || ""} alt="Profile" />
+                    <AvatarFallback className="text-4xl bg-tennis-green-100 text-tennis-green-700">
+                      <User />
+                    </AvatarFallback>
+                  </Avatar>
 
-                <div className="mt-4">
-                  <label htmlFor="avatar-upload">
-                    <div className="cursor-pointer inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
-                      <Upload className="mr-2 h-4 w-4" />
-                      Upload new image
-                    </div>
-                  </label>
-                  <input
-                    id="avatar-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImageUpload}
-                  />
+                  <div className="mt-4">
+                    <label htmlFor="avatar-upload">
+                      <div className="cursor-pointer inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload new image
+                      </div>
+                    </label>
+                    <input
+                      id="avatar-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                    />
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            {/* New Qualifications Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Award className="mr-2 h-5 w-5 text-tennis-green-600" />
+                  Coaching Qualifications
+                </CardTitle>
+                <CardDescription>
+                  Your coaching levels and certifications
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {coachingLevel && (
+                  <div className="mb-4">
+                    <h3 className="text-sm font-medium mb-2">Primary Coaching Level</h3>
+                    <Badge variant="custom" className="bg-tennis-green-700 text-white hover:bg-tennis-green-800">
+                      {coachingLevel}
+                    </Badge>
+                  </div>
+                )}
+                
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Certifications & Qualifications</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {qualifications.map((qual, index) => (
+                      <Badge 
+                        key={index} 
+                        variant="custom" 
+                        className="bg-tennis-green-100 text-tennis-green-800"
+                      >
+                        {qual}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="mt-4 text-sm text-muted-foreground">
+                  <p>Manage your qualifications in Settings</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
           <Card>
             <CardHeader>
