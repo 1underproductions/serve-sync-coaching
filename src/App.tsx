@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +16,8 @@ import SessionDetail from "./pages/SessionDetail";
 import Players from "./pages/Players";
 import NewPlayer from "./pages/NewPlayer";
 import Messages from "./pages/Messages";
+import NewMessage from "./pages/NewMessage";
+import MessageDetail from "./pages/MessageDetail";
 import Payments from "./pages/Payments";
 import AccountBilling from "./pages/AccountBilling";
 import NotFound from "./pages/NotFound";
@@ -45,6 +48,8 @@ const App = () => (
           <Route path="/players/new" element={<NewPlayer />} />
           <Route path="/players/:playerId" element={<PlayerDetail />} />
           <Route path="/messages" element={<Messages />} />
+          <Route path="/messages/new" element={<NewMessage />} />
+          <Route path="/message/:messageId" element={<MessageDetail />} />
           <Route path="/payments" element={<Payments />} />
           <Route path="/account/billing" element={<AccountBilling />} />
           <Route path="/analytics" element={<Analytics />} />
