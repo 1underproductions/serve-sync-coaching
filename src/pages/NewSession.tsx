@@ -27,7 +27,7 @@ const NewSession = () => {
   };
   
   // Handle successful session creation
-  const handleSessionCreated = (sessions: any[]) => {
+  const handleSessionCreated = () => {
     toast({
       title: "Success",
       description: "Session(s) have been scheduled successfully",
@@ -35,7 +35,12 @@ const NewSession = () => {
     
     // Schedule reminders for the new sessions if enabled in settings
     try {
-      scheduleReminders(sessions);
+      // Get the latest sessions from localStorage
+      const sessionsJson = localStorage.getItem("sessions");
+      if (sessionsJson) {
+        const sessions = JSON.parse(sessionsJson);
+        scheduleReminders(sessions);
+      }
     } catch (error) {
       console.error("Failed to schedule reminders:", error);
       // Don't show an error to the user for this - it's a background process
