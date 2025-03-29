@@ -170,6 +170,7 @@ const NewSessionForm = ({ open = true, onOpenChange, onSessionCreated, initialDa
       const updatedSession = {
         ...initialData,
         ...data,
+        player: playerName,
         playerName,
       };
       
@@ -188,6 +189,7 @@ const NewSessionForm = ({ open = true, onOpenChange, onSessionCreated, initialDa
       const newSession = {
         id: crypto.randomUUID(),
         ...data,
+        player: playerName,
         playerName,
         createdAt: new Date().toISOString(),
       };

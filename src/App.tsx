@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import Schedule from "./pages/Schedule";
 import NewSession from "./pages/NewSession";
 import SessionEdit from "./pages/SessionEdit";
+import SessionDetail from "./pages/SessionDetail";
 import Players from "./pages/Players";
 import NewPlayer from "./pages/NewPlayer";
 import Messages from "./pages/Messages";
@@ -38,6 +39,7 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/schedule" element={<Schedule />} />
           <Route path="/schedule/new" element={<NewSession />} />
+          <Route path="/session/:sessionId" element={<SessionDetail />} />
           <Route path="/session/:sessionId/edit" element={<SessionEdit />} />
           <Route path="/players" element={<Players />} />
           <Route path="/players/new" element={<NewPlayer />} />

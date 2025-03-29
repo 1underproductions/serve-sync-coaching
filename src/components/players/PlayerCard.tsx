@@ -1,51 +1,77 @@
 
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { User, Mail, Phone, MessageSquare, Calendar, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Link } from "react-router-dom";
 
-interface PlayerProps {
-  id: string;
-  name: string;
-  skill: string;
-  age: number;
-  email: string;
-  sessionsCount: number;
-}
+const PlayerCard = ({ 
+  id, 
+  name, 
+  skill, 
+  age, 
+  email, 
+  phone, 
+  sessionsCount, 
+  extraActions 
+}) => {
+  const emailPlayer = (e) => {
+    e.preventDefault();
+    window.location.href = `mailto:${email}`;
+  };
 
-const PlayerCard = ({ id, name, skill, age, email, sessionsCount }: PlayerProps) => {
+  const phonePlayer = (e) => {
+    e.preventDefault();
+    window.location.href = `tel:${phone}`;
+  };
+
+  const getProgressColor = () => {
+    if (sessionsCount > 20) return "text-green-500";
+    if (sessionsCount > 10) return "text-blue-500";
+    return "text-orange-500";
+  };
+
   return (
-    <Card className="card-hover">
+    <Card className="h-full flex flex-col">
       <CardHeader className="pb-2">
-        <div className="flex items-center space-x-4">
-          <Avatar className="h-12 w-12">
-            <AvatarFallback className="bg-tennis-blue-100 text-tennis-blue-800">
-              {name.split(' ').map(n => n[0]).join('')}
-            </AvatarFallback>
-          </Avatar>
+        <div className="flex justify-between items-start">
           <div>
-            <CardTitle>{name}</CardTitle>
-            <CardDescription>{email}</CardDescription>
+            <h3 className="text-lg font-semibold">{name}</h3>
+            <p className="text-sm text-muted-foreground">{skill} • {age} years old</p>
+          </div>
+          <div className={`flex items-center ${getProgressColor()}`}>
+            <BarChart3 className="h-4 w-4 mr-1" />
+            <span className="text-sm font-medium">{sessionsCount} sessions</span>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="pb-2">
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <div>
-            <span className="text-muted-foreground">Age:</span> {age}
+      <CardContent className="pb-2 flex-grow">
+        <div className="space-y-2">
+          <div className="flex items-center text-sm">
+            <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
+            <span>{email}</span>
           </div>
-          <div>
-            <span className="text-muted-foreground">Skill:</span> {skill}
-          </div>
-          <div className="col-span-2">
-            <span className="text-muted-foreground">Sessions:</span> {sessionsCount} total
-          </div>
+          {phone && (
+            <div className="flex items-center text-sm">
+              <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
+              <span>{phone}</span>
+            </div>
+          )}
         </div>
       </CardContent>
-      <CardFooter className="pt-0">
-        <Button variant="outline" size="sm" className="w-full" asChild>
-          <Link to={`/player/${id}`}>View Profile</Link>
-        </Button>
+      <CardFooter className="flex flex-wrap gap-2 justify-between pt-2">
+        <div className="flex space-x-2">
+          <Button variant="outline" size="sm" onClick={emailPlayer}>
+            <Mail className="h-4 w-4 mr-1" />
+            Email
+          </Button>
+          {phone && (
+            <Button variant="outline" size="sm" onClick={phonePlayer}>
+              <Phone className="h-4 w-4 mr-1" />
+              Call
+            </Button>
+          )}
+        </div>
+        {extraActions}
       </CardFooter>
     </Card>
   );

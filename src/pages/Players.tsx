@@ -4,8 +4,18 @@ import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
-import { Plus, Search, UserPlus } from "lucide-react";
+import { Plus, Search, UserPlus, ChartLine } from "lucide-react";
 import PlayerCard from "@/components/players/PlayerCard";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogHeader, 
+  DialogTitle,
+  DialogFooter,
+  DialogClose
+} from "@/components/ui/dialog";
+import ProgressTracking from "@/components/session/ProgressTracking";
 
 // Define the Player type
 interface Player {
@@ -22,6 +32,8 @@ interface Player {
 const Players = () => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [isProgressDialogOpen, setIsProgressDialogOpen] = useState(false);
   
   useEffect(() => {
     // Load players from localStorage
@@ -45,6 +57,11 @@ const Players = () => {
     player.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     player.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const openProgressDialog = (player: Player) => {
+    setSelectedPlayer(player);
+    setIsProgressDialogOpen(true);
+  };
 
   return (
     <Layout>
@@ -86,10 +103,47 @@ const Players = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredPlayers.map((player) => (
-              <PlayerCard key={player.id} {...player} />
+              <PlayerCard 
+                key={player.id} 
+                {...player} 
+                extraActions={
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => openProgressDialog(player)}
+                  >
+                    <ChartLine className="h-4 w-4 mr-2" />
+                    Progress
+                  </Button>
+                }
+              />
             ))}
           </div>
         )}
+        
+        <Dialog open={isProgressDialogOpen} onOpenChange={setIsProgressDialogOpen}>
+          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{selectedPlayer?.name}'s Progress</DialogTitle>
+              <DialogDescription>
+                View performance history and track development over time
+              </DialogDescription>
+            </DialogHeader>
+            
+            {selectedPlayer && (
+              <ProgressTracking 
+                player={selectedPlayer} 
+                session={{ id: "progress-view" }}
+              />
+            )}
+            
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline">Close</Button>
+              </DialogClose>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );

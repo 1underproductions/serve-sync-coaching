@@ -177,6 +177,10 @@ const Schedule = () => {
     setWeekStart(startOfWeek(day, { weekStartsOn: 0 }));
   };
   
+  const goToSession = (sessionId) => {
+    navigate(`/session/${sessionId}`);
+  };
+  
   const getSessionsForTimeSlot = (day, hour) => {
     if (!parsedSessions.length) return [];
     
