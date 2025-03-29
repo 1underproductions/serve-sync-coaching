@@ -10,9 +10,13 @@ interface PlayerCardProps {
   name: string; 
   skill: string;
   age: number;
-  email: string;
+  email?: string;
   sessionsCount: number;
   phone?: string;
+  isChild?: boolean;
+  parentName?: string;
+  parentEmail?: string;
+  parentPhone?: string;
   extraActions?: React.ReactNode;
 }
 
@@ -23,18 +27,26 @@ const PlayerCard = ({
   age, 
   email, 
   phone, 
-  sessionsCount, 
+  sessionsCount,
+  isChild,
+  parentName,
+  parentEmail,
+  parentPhone,
   extraActions 
 }: PlayerCardProps) => {
   const emailPlayer = (e: React.MouseEvent) => {
     e.preventDefault();
-    window.location.href = `mailto:${email}`;
+    const contactEmail = isChild ? parentEmail : email;
+    if (contactEmail) {
+      window.location.href = `mailto:${contactEmail}`;
+    }
   };
 
   const phonePlayer = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (phone) {
-      window.location.href = `tel:${phone}`;
+    const contactPhone = isChild ? parentPhone : phone;
+    if (contactPhone) {
+      window.location.href = `tel:${contactPhone}`;
     }
   };
 
@@ -53,6 +65,11 @@ const PlayerCard = ({
               <Link to={`/players/${id}`} className="hover:underline">
                 {name}
               </Link>
+              {isChild && (
+                <Badge variant="sessions" className="ml-2">
+                  Child
+                </Badge>
+              )}
             </h3>
             <p className="text-sm text-muted-foreground">{skill} • {age} years old</p>
           </div>
@@ -64,28 +81,55 @@ const PlayerCard = ({
       </CardHeader>
       <CardContent className="pb-2 flex-grow">
         <div className="space-y-2">
-          <div className="flex items-center text-sm">
-            <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
-            <span>{email}</span>
-          </div>
-          {phone && (
-            <div className="flex items-center text-sm">
-              <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
-              <span>{phone}</span>
-            </div>
+          {isChild ? (
+            <>
+              {parentName && (
+                <div className="flex items-center text-sm">
+                  <User className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <span>{parentName} (Parent)</span>
+                </div>
+              )}
+              {parentEmail && (
+                <div className="flex items-center text-sm">
+                  <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <span>{parentEmail}</span>
+                </div>
+              )}
+              {parentPhone && (
+                <div className="flex items-center text-sm">
+                  <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <span>{parentPhone}</span>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {email && (
+                <div className="flex items-center text-sm">
+                  <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <span>{email}</span>
+                </div>
+              )}
+              {phone && (
+                <div className="flex items-center text-sm">
+                  <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <span>{phone}</span>
+                </div>
+              )}
+            </>
           )}
         </div>
       </CardContent>
       <CardFooter className="pt-2 flex flex-col space-y-2">
         <div className="flex justify-between w-full">
-          <Button variant="outline" size="sm" onClick={emailPlayer}>
+          <Button variant="outline" size="sm" onClick={emailPlayer} disabled={isChild ? !parentEmail : !email}>
             <Mail className="h-4 w-4 mr-1" />
-            Email
+            Email {isChild ? "Parent" : ""}
           </Button>
-          {phone && (
+          {(isChild ? parentPhone : phone) && (
             <Button variant="outline" size="sm" onClick={phonePlayer}>
               <Phone className="h-4 w-4 mr-1" />
-              Call
+              Call {isChild ? "Parent" : ""}
             </Button>
           )}
         </div>

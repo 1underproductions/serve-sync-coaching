@@ -24,10 +24,14 @@ interface Player {
   name: string;
   skill: string;
   age: number;
-  email: string;
+  email?: string;
   sessionsCount: number;
   phone?: string;
   notes?: string;
+  isChild?: boolean;
+  parentName?: string;
+  parentEmail?: string;
+  parentPhone?: string;
 }
 
 const Players = () => {
@@ -48,6 +52,17 @@ const Players = () => {
         { id: "1", name: "Michael Johnson", skill: "Intermediate", age: 28, email: "michael@example.com", sessionsCount: 12 },
         { id: "2", name: "Sarah Williams", skill: "Advanced", age: 24, email: "sarah@example.com", sessionsCount: 24 },
         { id: "3", name: "David Smith", skill: "Beginner", age: 32, email: "david@example.com", sessionsCount: 5 },
+        { 
+          id: "4", 
+          name: "Emma Brown", 
+          skill: "Beginner", 
+          age: 10, 
+          sessionsCount: 3,
+          isChild: true,
+          parentName: "John Brown",
+          parentEmail: "john.brown@example.com",
+          parentPhone: "(555) 987-6543"
+        },
       ];
       localStorage.setItem("players", JSON.stringify(mockPlayers));
       setPlayers(mockPlayers);
@@ -57,7 +72,9 @@ const Players = () => {
   // Filter players based on search query
   const filteredPlayers = players.filter(player => 
     player.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    player.email.toLowerCase().includes(searchQuery.toLowerCase())
+    (player.email && player.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (player.parentName && player.parentName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (player.parentEmail && player.parentEmail.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const openProgressDialog = (player: Player) => {
