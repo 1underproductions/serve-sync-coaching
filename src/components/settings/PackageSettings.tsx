@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,6 +24,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { PackageData } from "@/lib/supabase";
 
 const PACKAGES_KEY = 'tennexis.packages';
 
@@ -32,19 +32,10 @@ const packageFormSchema = z.object({
   name: z.string().min(2, { message: "Package name must be at least 2 characters" }),
   sessions: z.coerce.number().min(1, { message: "Must include at least 1 session" }),
   price: z.coerce.number().min(1, { message: "Price must be at least $1" }),
-  description: z.string().optional(),
+  description: z.string().default(""),
 });
 
 type PackageFormValues = z.infer<typeof packageFormSchema>;
-
-export type PackageData = {
-  id: string;
-  name: string;
-  sessions: number;
-  price: number;
-  description?: string;
-  discount: number;
-};
 
 const PackageSettings = () => {
   const { toast } = useToast();
@@ -61,7 +52,6 @@ const PackageSettings = () => {
     },
   });
 
-  // Load packages
   useEffect(() => {
     const savedPackages = localStorage.getItem(PACKAGES_KEY);
     if (savedPackages) {
@@ -74,7 +64,6 @@ const PackageSettings = () => {
     }
   }, []);
 
-  // Save packages
   const savePackages = (updatedPackages: PackageData[]) => {
     setPackages(updatedPackages);
     localStorage.setItem(PACKAGES_KEY, JSON.stringify(updatedPackages));
@@ -82,13 +71,11 @@ const PackageSettings = () => {
 
   const onSubmit = (data: PackageFormValues) => {
     if (editingPackage) {
-      // Update existing package
       const updatedPackages = packages.map(pkg => 
         pkg.id === editingPackage 
           ? { 
               ...pkg, 
               ...data, 
-              // Recalculate discount based on hourly rate
               discount: calculateDiscount(data.price, data.sessions)
             } 
           : pkg
@@ -100,10 +87,12 @@ const PackageSettings = () => {
         description: `${data.name} has been updated.`,
       });
     } else {
-      // Add new package
       const newPackage: PackageData = {
         id: Date.now().toString(),
-        ...data,
+        name: data.name,
+        sessions: data.sessions,
+        price: data.price,
+        description: data.description || "",
         discount: calculateDiscount(data.price, data.sessions)
       };
       
@@ -124,9 +113,7 @@ const PackageSettings = () => {
   };
 
   const calculateDiscount = (packagePrice: number, sessions: number) => {
-    // This is a basic calculation. In a real app, you'd compare with the hourly rate
-    // stored in the profile. For now, we'll use a placeholder calculation.
-    const hourlyRate = 50; // This would ideally come from profile
+    const hourlyRate = 50;
     const fullPrice = hourlyRate * sessions;
     
     if (fullPrice <= 0 || packagePrice >= fullPrice) return 0;
@@ -180,7 +167,6 @@ const PackageSettings = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Current packages list */}
         {packages.length > 0 ? (
           <div className="space-y-4">
             <h3 className="text-sm font-medium">Your Package Offerings</h3>
@@ -242,7 +228,6 @@ const PackageSettings = () => {
           </div>
         )}
 
-        {/* Add/Edit package form */}
         <div className="border-t pt-6">
           <h3 className="text-sm font-medium mb-4">
             {editingPackage ? "Edit Package" : "Create New Package"}
