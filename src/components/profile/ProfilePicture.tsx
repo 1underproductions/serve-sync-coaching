@@ -40,15 +40,23 @@ export const ProfilePicture = () => {
     try {
       setIsSubmitting(true);
       
-      // Update the profile with the new avatar
+      // Update local state immediately for better user experience
+      setAvatarSrc(imageData);
+      
+      // Save to database (await here to catch potential errors)
       await updateProfile({ avatar_url: imageData });
       
       toast({
         title: "Profile Picture Updated",
         description: "Your profile picture has been saved successfully.",
       });
+      
+      console.log("Avatar updated successfully");
     } catch (error: any) {
       console.error("Error uploading profile picture:", error);
+      
+      // Revert to previous avatar on error
+      setAvatarSrc(profile?.avatar_url || null);
       
       toast({
         variant: "destructive",
