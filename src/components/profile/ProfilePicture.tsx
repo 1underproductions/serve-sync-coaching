@@ -15,7 +15,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 export const ProfilePicture = () => {
   const { toast } = useToast();
-  const { profile, updateProfile } = useAuth();
+  const { profile, updateProfile, user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Use a separate state for the avatar to avoid UI flicker during updates
@@ -24,7 +24,8 @@ export const ProfilePicture = () => {
   );
 
   const handleImageUpload = async (imageData: string) => {
-    if (!profile) {
+    // Check for user instead of profile first
+    if (!user) {
       toast({
         variant: "destructive",
         title: "Error",
@@ -55,7 +56,7 @@ export const ProfilePicture = () => {
       console.error("Error uploading profile picture:", error);
       
       // Revert to previous avatar if update fails
-      setAvatarSrc(profile.avatar_url || null);
+      setAvatarSrc(profile?.avatar_url || null);
       
       toast({
         variant: "destructive",
