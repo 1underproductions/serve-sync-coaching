@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -42,9 +43,26 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     storage: localStorage, // Explicitly set to use localStorage
-    debug: true // Enable debug mode temporarily to help diagnose issues
+    debug: true, // Enable debug mode temporarily to help diagnose issues
+    flowType: 'pkce',
   }
 });
+
+// Custom email function to handle our enhanced email templates
+export const sendCustomEmail = async (type: string, email: string, data: any) => {
+  try {
+    const response = await supabase.functions.invoke('custom-email', {
+      body: { type, email, data }
+    });
+    
+    if (response.error) throw response.error;
+    
+    return response.data;
+  } catch (error) {
+    console.error("Error sending custom email:", error);
+    throw error;
+  }
+};
 
 // Database types
 export type Profile = {

@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
+import { supabase, sendCustomEmail } from '@/lib/supabase';
 import { Profile } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -128,18 +128,31 @@ export const useAuthProvider = () => {
           data: {
             full_name: metadata.fullName,
           },
+          emailRedirectTo: `${window.location.origin}/dashboard`,
         },
       });
 
       if (error) throw error;
 
-      if (data.user) {          
+      if (data.user) {
+        // Send custom confirmation email
+        try {
+          await sendCustomEmail('signup', email, {
+            token_hash: data.session?.access_token,
+            redirect_to: `${window.location.origin}/dashboard`,
+          });
+        } catch (emailError) {
+          console.error("Error sending custom email:", emailError);
+          // Fall back to Supabase's default email if our custom one fails
+        }
+          
         toast({
           title: "Account created successfully!",
-          description: "Welcome to Tennexis. Your 14-day trial has started.",
+          description: "Welcome to Tennexis. Please check your email to confirm your account.",
         });
         
-        navigate('/dashboard');
+        // Don't navigate to dashboard yet since we need email confirmation
+        navigate('/login');
       }
     } catch (error: any) {
       toast({
