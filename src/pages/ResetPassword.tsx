@@ -15,40 +15,59 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, Mail, Lock } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+import { Eye, EyeOff, Lock } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
-const loginSchema = z.object({
-  email: z.string().email({
-    message: "Please enter a valid email address.",
+const resetPasswordSchema = z.object({
+  password: z.string().min(8, {
+    message: "Password must be at least 8 characters.",
   }),
-  password: z.string().min(1, {
-    message: "Password is required.",
+  confirmPassword: z.string().min(8, {
+    message: "Please confirm your password.",
   }),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match.",
+  path: ["confirmPassword"],
 });
 
-type LoginFormValues = z.infer<typeof loginSchema>;
+type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 
-const Login = () => {
+const ResetPassword = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signIn, isLoading } = useAuth();
   
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+  const form = useForm<ResetPasswordFormValues>({
+    resolver: zodResolver(resetPasswordSchema),
     defaultValues: {
-      email: "",
       password: "",
+      confirmPassword: "",
     },
   });
 
-  const onSubmit = async (data: LoginFormValues) => {
+  const onSubmit = async (data: ResetPasswordFormValues) => {
     try {
-      await signIn(data.email, data.password);
-    } catch (error) {
-      // Error is handled in the signIn function
-      console.error("Login error:", error);
+      const { error } = await supabase.auth.updateUser({
+        password: data.password,
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Password updated",
+        description: "Your password has been successfully updated.",
+      });
+      
+      setTimeout(() => {
+        navigate("/login");
+      }, 1500);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Update failed",
+        description: error.message || "There was a problem updating your password. Please try again.",
+      });
     }
   };
 
@@ -59,13 +78,10 @@ const Login = () => {
           <span className="text-2xl font-bold text-tennis-green-600">ServeSync</span>
         </Link>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Sign in to your account
+          Reset your password
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Don't have an account?{" "}
-          <Link to="/sign-up" className="font-medium text-tennis-green-600 hover:text-tennis-green-500">
-            Start your free trial
-          </Link>
+          Enter your new password below.
         </p>
       </div>
 
@@ -75,40 +91,10 @@ const Login = () => {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
                 control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email address</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                        <Input
-                          className="pl-10"
-                          type="email"
-                          placeholder="coach@example.com"
-                          {...field}
-                        />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="flex items-center justify-between">
-                      <FormLabel>Password</FormLabel>
-                      <Link
-                        to="/forgot-password"
-                        className="text-sm font-medium text-tennis-green-600 hover:text-tennis-green-500"
-                      >
-                        Forgot password?
-                      </Link>
-                    </div>
+                    <FormLabel>New Password</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -136,14 +122,52 @@ const Login = () => {
                 )}
               />
 
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirm Password</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <Input
+                          className="pl-10 pr-10"
+                          type={showConfirmPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          {...field}
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-3"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff className="h-4 w-4 text-gray-400" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-gray-400" />
+                          )}
+                        </button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <div>
-                <Button 
-                  type="submit" 
-                  className="w-full" 
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Signing in..." : "Sign in"}
+                <Button type="submit" className="w-full">
+                  Reset Password
                 </Button>
+              </div>
+
+              <div className="text-center mt-4">
+                <Link
+                  to="/login"
+                  className="text-sm font-medium text-tennis-green-600 hover:text-tennis-green-500"
+                >
+                  Return to login
+                </Link>
               </div>
             </form>
           </Form>
@@ -153,4 +177,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default ResetPassword;

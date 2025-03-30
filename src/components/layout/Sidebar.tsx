@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 const navItems = [
   { name: "Dashboard", path: "/dashboard", icon: Home },
@@ -36,35 +36,16 @@ const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signOut, isAdmin } = useAuth();
   const currentPath = location.pathname;
-  const [isAdmin, setIsAdmin] = useState(false);
   
-  // Check if user is admin (in a real app this would use authentication context)
-  useEffect(() => {
-    // For demonstration, we'll check localStorage
-    // In a real app, this would check from your auth provider
-    const userRole = localStorage.getItem("userRole");
-    setIsAdmin(userRole === "admin");
-    
-    // For demo purposes only - set admin role so admin section shows up
-    // Remove this in production with real auth
-    if (!userRole) {
-      localStorage.setItem("userRole", "admin");
-      setIsAdmin(true);
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      // Toast and navigation are handled in the signOut function
+    } catch (error) {
+      console.error("Logout error:", error);
     }
-  }, []);
-
-  const handleLogout = () => {
-    // In a real app, we would clear authentication tokens here
-    
-    // Show toast notification
-    toast({
-      title: "Logged out",
-      description: "You have been successfully logged out.",
-    });
-    
-    // Redirect to login page
-    navigate("/login");
   };
 
   return (

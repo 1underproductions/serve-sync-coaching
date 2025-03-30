@@ -3,6 +3,7 @@ import { ReactNode, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "./Layout";
 import { Shield } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -14,21 +15,25 @@ const AdminLayout = ({
   requiresAdmin = true 
 }: AdminLayoutProps) => {
   const navigate = useNavigate();
+  const { isAdmin, isLoading } = useAuth();
   
-  // In a real app, this would check if the current user is a super admin
-  const checkAdminStatus = (): boolean => {
-    // For demonstration purposes, we'll create a mock admin check
-    // In production, this would verify against Supabase or another backend
-    const isAdmin = localStorage.getItem("userRole") === "admin";
-    return isAdmin;
-  };
-
   useEffect(() => {
     // If admin access is required but user is not an admin, redirect to dashboard
-    if (requiresAdmin && !checkAdminStatus()) {
+    if (!isLoading && requiresAdmin && !isAdmin) {
       navigate("/dashboard");
     }
-  }, [navigate, requiresAdmin]);
+  }, [navigate, requiresAdmin, isAdmin, isLoading]);
+
+  // Show loading state while checking auth
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-tennis-green-600"></div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -16,6 +17,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, CreditCard, Mail, Lock, User } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 const signUpSchema = z.object({
   fullName: z.string().min(2, {
@@ -44,6 +46,7 @@ const SignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signUp, isLoading } = useAuth();
   
   const form = useForm<SignUpFormValues>({
     resolver: zodResolver(signUpSchema),
@@ -59,23 +62,16 @@ const SignUp = () => {
 
   const onSubmit = async (data: SignUpFormValues) => {
     try {
-      console.log("Form submitted:", data);
-      // TODO: Integrate with authentication and payment processing
-      
-      toast({
-        title: "Account created!",
-        description: "Your 14-day free trial has started. You won't be charged until the trial ends.",
+      // In a real application, you would process the payment information here
+      // For this demo, we're just passing the full name to our signUp function
+      await signUp(data.email, data.password, {
+        fullName: data.fullName,
       });
       
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 1500);
+      // The navigation is handled in the signUp function after successful registration
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Sign up failed",
-        description: "There was a problem with your request. Please try again.",
-      });
+      // Error is handled in the signUp function
+      console.error("Signup error:", error);
     }
   };
 
@@ -280,8 +276,12 @@ const SignUp = () => {
               </div>
 
               <div>
-                <Button type="submit" className="w-full">
-                  Start Free Trial
+                <Button 
+                  type="submit" 
+                  className="w-full"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Creating Account..." : "Start Free Trial"}
                 </Button>
               </div>
             </form>

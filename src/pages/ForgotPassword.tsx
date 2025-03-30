@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { Mail } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 const forgotPasswordSchema = z.object({
   email: z.string().email({
@@ -26,6 +27,7 @@ type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 
 const ForgotPassword = () => {
   const { toast } = useToast();
+  const { resetPassword, isLoading } = useAuth();
   
   const form = useForm<ForgotPasswordFormValues>({
     resolver: zodResolver(forgotPasswordSchema),
@@ -36,19 +38,11 @@ const ForgotPassword = () => {
 
   const onSubmit = async (data: ForgotPasswordFormValues) => {
     try {
-      console.log("Password reset requested for:", data.email);
-      // TODO: Integrate with authentication system
-      
-      toast({
-        title: "Reset email sent",
-        description: "Check your inbox for instructions to reset your password.",
-      });
+      await resetPassword(data.email);
+      // The success notification is handled in the resetPassword function
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Request failed",
-        description: "There was a problem sending your reset link. Please try again.",
-      });
+      // Error is handled in the resetPassword function
+      console.error("Password reset error:", error);
     }
   };
 
@@ -93,8 +87,12 @@ const ForgotPassword = () => {
               />
 
               <div>
-                <Button type="submit" className="w-full">
-                  Send reset link
+                <Button 
+                  type="submit" 
+                  className="w-full"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Sending..." : "Send reset link"}
                 </Button>
               </div>
 
