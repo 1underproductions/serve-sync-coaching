@@ -30,6 +30,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ImageUploader } from "@/components/ImageUploader";
 
 // Helper function to check if a field is empty
 const isFieldEmpty = (value: any): boolean => {
@@ -152,30 +153,24 @@ const Profile = () => {
     }
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const handleImageUpload = async (imageData: string) => {
     try {
       setIsSubmitting(true);
       
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const result = event.target?.result as string;
-        setAvatarSrc(result);
+      if (profile) {
+        // This is where the fix is - we explicitly include avatar_url in the update
+        await updateProfile({ 
+          avatar_url: imageData 
+        });
         
-        if (profile) {
-          await updateProfile({ 
-            avatar_url: result 
-          });
-        }
+        // Update local state after successful save
+        setAvatarSrc(imageData);
         
         toast({
           title: "Profile image updated",
           description: "Your profile image has been successfully updated.",
         });
-      };
-      reader.readAsDataURL(file);
+      }
     } catch (error) {
       console.error("Error uploading image:", error);
       toast({
@@ -221,13 +216,7 @@ const Profile = () => {
 
         <div className="grid gap-6 md:grid-cols-2">
           <div className="space-y-6">
-            <Card 
-              className={
-                isFieldEmpty(profile?.avatar_url) 
-                  ? "border-soft-peach bg-soft-peach/10" 
-                  : ""
-              }
-            >
+            <Card>
               <CardHeader>
                 <CardTitle>Profile Picture</CardTitle>
                 <CardDescription>
@@ -243,33 +232,17 @@ const Profile = () => {
                     </AvatarFallback>
                   </Avatar>
 
-                  <div className="mt-4">
-                    <label htmlFor="avatar-upload">
-                      <div className="cursor-pointer inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
-                        <Upload className="mr-2 h-4 w-4" />
-                        Upload new image
-                      </div>
-                    </label>
-                    <input
-                      id="avatar-upload"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleImageUpload}
-                      disabled={isSubmitting}
-                    />
-                  </div>
+                  <ImageUploader 
+                    initialImage={avatarSrc}
+                    onImageChange={handleImageUpload}
+                    isSubmitting={isSubmitting}
+                    className="mt-4"
+                  />
                 </div>
               </CardContent>
             </Card>
 
-            <Card 
-              className={
-                qualifications.length === 0 
-                  ? "border-soft-purple bg-soft-purple/10" 
-                  : ""
-              }
-            >
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Award className="mr-2 h-5 w-5 text-tennis-green-600" />
@@ -332,13 +305,7 @@ const Profile = () => {
               </CardContent>
             </Card>
 
-            <Card 
-              className={
-                (isFieldEmpty(form.watch('hourly_rate')) && packages.length === 0)
-                  ? "border-soft-blue bg-soft-blue/10" 
-                  : ""
-              }
-            >
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <DollarSign className="mr-2 h-5 w-5 text-tennis-green-600" />
@@ -398,21 +365,7 @@ const Profile = () => {
             </Card>
           </div>
 
-          <Card 
-            className={
-              Object.values({
-                full_name: form.watch('full_name'),
-                phone: form.watch('phone'),
-                location: form.watch('location'),
-                bio: form.watch('bio'),
-                website: form.watch('website'),
-                years_experience: form.watch('years_experience'),
-                hourly_rate: form.watch('hourly_rate')
-              }).some(isFieldEmpty)
-                ? "border-soft-gray bg-soft-gray/10" 
-                : ""
-            }
-          >
+          <Card>
             <CardHeader>
               <CardTitle>Account Information</CardTitle>
               <CardDescription>
