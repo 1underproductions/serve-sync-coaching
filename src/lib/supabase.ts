@@ -2,9 +2,45 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
 
-// These environment variables are already set after connecting to Supabase
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://cugwtwpgccpcjeumrkxf.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z3d0d3BnY2NwY2pldW1ya3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNjA1MDEsImV4cCI6MjA1ODkzNjUwMX0.DjWV3Jt7OcVaJh4QYQ8NsBpPtrI1m8FJ5O3n-SHhMrk';
+// Environment configuration
+export const environments = {
+  development: {
+    url: 'https://cugwtwpgccpcjeumrkxf.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z3d0d3BnY2NwY2pldW1ya3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNjA1MDEsImV4cCI6MjA1ODkzNjUwMX0.DjWV3Jt7OcVaJh4QYQ8NsBpPtrI1m8FJ5O3n-SHhMrk'
+  },
+  staging: {
+    // You'll need to replace these with your staging project credentials when available
+    url: import.meta.env.VITE_SUPABASE_URL_STAGING || 'https://cugwtwpgccpcjeumrkxf.supabase.co',
+    anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY_STAGING || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z3d0d3BnY2NwY2pldW1ya3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNjA1MDEsImV4cCI6MjA1ODkzNjUwMX0.DjWV3Jt7OcVaJh4QYQ8NsBpPtrI1m8FJ5O3n-SHhMrk'
+  },
+  production: {
+    // You'll need to replace these with your production project credentials when available
+    url: import.meta.env.VITE_SUPABASE_URL_PRODUCTION || 'https://cugwtwpgccpcjeumrkxf.supabase.co',
+    anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY_PRODUCTION || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z3d0d3BnY2NwY2pldW1ya3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNjA1MDEsImV4cCI6MjA1ODkzNjUwMX0.DjWV3Jt7OcVaJh4QYQ8NsBpPtrI1m8FJ5O3n-SHhMrk'
+  }
+};
+
+// Determine current environment
+const getCurrentEnvironment = () => {
+  // Check for specific environment variables or URL patterns
+  // In production deployment, you'd set NODE_ENV to 'production'
+  // In staging deployment, you'd set NODE_ENV to 'staging'
+  const envFromVar = import.meta.env.VITE_APP_ENV || 'development';
+  
+  // For local development with explicit env selection
+  if (['development', 'staging', 'production'].includes(envFromVar)) {
+    return envFromVar as 'development' | 'staging' | 'production';
+  }
+  
+  // Default to development
+  return 'development';
+};
+
+const environment = getCurrentEnvironment();
+console.log(`Running in ${environment} environment`);
+
+// Get environment-specific configuration
+const { url: supabaseUrl, anonKey: supabaseAnonKey } = environments[environment];
 
 // Create a single supabase client for interacting with your database
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
