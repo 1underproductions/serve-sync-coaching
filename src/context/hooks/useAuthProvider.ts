@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, sendCustomEmail } from '@/lib/supabase';
@@ -62,6 +61,7 @@ export const useAuthProvider = () => {
 
   const fetchUserProfile = async (userId: string) => {
     try {
+      console.log('Fetching user profile for id:', userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -74,29 +74,7 @@ export const useAuthProvider = () => {
       }
       
       if (data) {
-        // If the profile doesn't have a name but user metadata does, update the profile
-        if ((!data.full_name || data.full_name.trim() === '') && user?.user_metadata?.full_name) {
-          const updatedProfile = {
-            ...data,
-            full_name: user.user_metadata.full_name
-          };
-          
-          // Update the profile in the database
-          const { error: updateError } = await supabase
-            .from('profiles')
-            .update({ full_name: user.user_metadata.full_name })
-            .eq('id', userId);
-            
-          if (updateError) {
-            console.error('Error updating profile with user metadata:', updateError);
-          } else {
-            // Set the updated profile with the name from metadata
-            setProfile(updatedProfile as Profile);
-            setIsAdmin(updatedProfile.role === 'admin');
-            return;
-          }
-        }
-        
+        console.log('User profile fetched successfully:', data);
         setProfile(data as Profile);
         setIsAdmin(data.role === 'admin');
       }
@@ -117,25 +95,50 @@ export const useAuthProvider = () => {
 
     try {
       setIsLoading(true);
-      const { error } = await supabase
+      console.log('Updating profile with data:', profileData);
+      
+      // For debugging avatar uploads
+      if (profileData.avatar_url) {
+        console.log('Updating avatar, data length:', profileData.avatar_url.length);
+      }
+      
+      const { error, data } = await supabase
         .from('profiles')
         .update(profileData)
-        .eq('id', user.id);
+        .eq('id', user.id)
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating profile:', error);
+        throw new Error(error.message || 'Failed to update profile');
+      }
 
+      console.log('Profile updated successfully. Response:', data);
+      
       toast({
         title: "Profile updated",
         description: "Your profile has been successfully updated.",
       });
 
-      fetchUserProfile(user.id);
+      // Update the local profile state with the new data
+      if (data) {
+        setProfile(prevProfile => ({
+          ...prevProfile as Profile,
+          ...data
+        }));
+      } else {
+        // If no data was returned, refresh the profile from database
+        await fetchUserProfile(user.id);
+      }
     } catch (error: any) {
+      console.error('Error in updateProfile:', error);
       toast({
         variant: "destructive",
         title: "Update failed",
         description: error.message || "Failed to update profile",
       });
+      throw error;
     } finally {
       setIsLoading(false);
     }

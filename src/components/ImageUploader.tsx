@@ -39,7 +39,9 @@ export function ImageUploader({
         const result = reader.result as string;
         if (result) {
           try {
+            console.log("Starting to save image...");
             await onImageChange(result);
+            console.log("Image saved successfully");
             toast({
               title: "Profile Picture Updated",
               description: "Your profile picture has been successfully saved.",
@@ -51,10 +53,11 @@ export function ImageUploader({
             }
           } catch (error) {
             console.error('Failed to save image:', error);
+            const errorMessage = error instanceof Error ? error.message : "Unknown error";
             toast({
               variant: "destructive",
               title: "Upload Failed",
-              description: "There was a problem uploading your image.",
+              description: `There was a problem uploading your image. Error: ${errorMessage}`,
             });
           }
         }
