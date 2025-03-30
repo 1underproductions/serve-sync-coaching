@@ -2,15 +2,34 @@
 import { createClient } from '@supabase/supabase-js';
 
 // These environment variables will need to be set in your deployed application
-// For local development, you would replace these with your actual Supabase URL and anon key
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+// For local development, we provide fallback values to prevent errors
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder-url.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder-key';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase credentials not found. Please connect to Supabase in the Lovable interface.');
+// Create a mock client if real credentials aren't available
+const isMockClient = !import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+if (isMockClient) {
+  console.warn('Using mock Supabase client. Please connect to Supabase in the Lovable interface for full functionality.');
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Provide mock implementations for development without Supabase
+if (isMockClient) {
+  // Mock the auth methods
+  const originalAuth = supabase.auth;
+  supabase.auth = {
+    ...originalAuth,
+    // Provide mock implementations for commonly used methods
+    getSession: async () => ({ data: { session: null }, error: null }),
+    signUp: async () => ({ data: { user: null }, error: null }),
+    signInWithPassword: async () => ({ data: { user: null }, error: null }),
+    signOut: async () => ({ error: null }),
+    resetPasswordForEmail: async () => ({ error: null }),
+    onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
+  } as typeof originalAuth;
+}
 
 // Database types
 export type User = {
