@@ -4,17 +4,19 @@ import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import { User } from '@/lib/supabase';
+import { Profile } from '@/lib/supabase';
 
 type AuthContextType = {
   session: Session | null;
   user: SupabaseUser | null;
+  profile: Profile | null;
   isLoading: boolean;
   isAdmin: boolean;
   signUp: (email: string, password: string, metadata: any) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  updateProfile: (data: Partial<Profile>) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,6 +24,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
@@ -37,9 +40,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Check admin status when auth state changes
         if (updatedSession?.user) {
           setTimeout(() => {
-            checkUserRole(updatedSession.user.id);
+            fetchUserProfile(updatedSession.user.id);
           }, 0);
         } else {
+          setProfile(null);
           setIsAdmin(false);
         }
       }
@@ -57,7 +61,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(data.session?.user ?? null);
           
           if (data.session?.user) {
-            await checkUserRole(data.session.user.id);
+            await fetchUserProfile(data.session.user.id);
           }
         }
       } catch (error) {
@@ -74,22 +78,62 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  const checkUserRole = async (userId: string) => {
+  const fetchUserProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('role')
+        .select('*')
         .eq('id', userId)
         .single();
         
-      if (!error && data) {
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        return;
+      }
+      
+      if (data) {
+        setProfile(data as Profile);
         setIsAdmin(data.role === 'admin');
-      } else {
-        setIsAdmin(false);
       }
     } catch (error) {
-      console.error('Error checking user role:', error);
-      setIsAdmin(false);
+      console.error('Error in fetchUserProfile:', error);
+    }
+  };
+
+  const updateProfile = async (profileData: Partial<Profile>) => {
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Authentication error",
+        description: "You must be logged in to update your profile",
+      });
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const { error } = await supabase
+        .from('profiles')
+        .update(profileData)
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been successfully updated.",
+      });
+
+      // Refresh the profile data
+      fetchUserProfile(user.id);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Update failed",
+        description: error.message || "Failed to update profile",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -108,21 +152,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) throw error;
 
-      if (data.user) {
-        // Create a profile record in the profiles table
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([
-            { 
-              id: data.user.id,
-              full_name: metadata.fullName, 
-              email: email,
-              role: 'user' 
-            }
-          ]);
-          
-        if (profileError) throw profileError;
-          
+      if (data.user) {          
         toast({
           title: "Account created successfully!",
           description: "Welcome to ServeSync. Your 14-day trial has started.",
@@ -221,12 +251,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       value={{
         session,
         user,
+        profile,
         isLoading,
         isAdmin,
         signUp,
         signIn,
         signOut,
         resetPassword,
+        updateProfile,
       }}
     >
       {children}

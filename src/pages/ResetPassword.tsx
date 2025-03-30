@@ -35,6 +35,7 @@ type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 const ResetPassword = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -48,6 +49,7 @@ const ResetPassword = () => {
 
   const onSubmit = async (data: ResetPasswordFormValues) => {
     try {
+      setIsSubmitting(true);
       const { error } = await supabase.auth.updateUser({
         password: data.password,
       });
@@ -68,6 +70,8 @@ const ResetPassword = () => {
         title: "Update failed",
         description: error.message || "There was a problem updating your password. Please try again.",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -156,8 +160,12 @@ const ResetPassword = () => {
               />
 
               <div>
-                <Button type="submit" className="w-full">
-                  Reset Password
+                <Button 
+                  type="submit" 
+                  className="w-full"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Updating..." : "Reset Password"}
                 </Button>
               </div>
 
