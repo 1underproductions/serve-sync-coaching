@@ -12,7 +12,6 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { supabase } from "@/lib/supabase";
 
 export const ProfilePicture = () => {
   const { toast } = useToast();
@@ -49,9 +48,9 @@ export const ProfilePicture = () => {
       setAvatarSrc(imageData);
       
       // Directly update the profile with the new avatar
-      await updateProfile({ avatar_url: imageData });
+      const updatedProfile = await updateProfile({ avatar_url: imageData });
       
-      console.log("Profile picture updated successfully");
+      console.log("Profile picture updated successfully", updatedProfile);
       
       // Make sure we have the latest profile data
       if (user.id) {

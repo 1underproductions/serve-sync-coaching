@@ -1,7 +1,7 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
-import { supabase, sendCustomEmail } from '@/lib/supabase';
-import { Profile } from '@/lib/supabase';
+import { supabase, sendCustomEmail, Profile } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -37,6 +37,7 @@ export const useAuthProvider = () => {
       
       if (data) {
         console.log('User profile fetched successfully:', data);
+        // Ensure role is cast to the correct type
         const profileData: Profile = {
           ...data,
           role: (data.role === 'admin' ? 'admin' : 'user') as 'user' | 'admin'
@@ -105,7 +106,7 @@ export const useAuthProvider = () => {
         title: "Authentication error",
         description: "You must be logged in to update your profile",
       });
-      return;
+      return null;
     }
 
     try {
@@ -144,7 +145,14 @@ export const useAuthProvider = () => {
             .single();
 
           if (error) throw error;
-          updatedProfile = data;
+          
+          // Ensure the role is properly typed when retrieving from the database
+          if (data) {
+            updatedProfile = {
+              ...data,
+              role: (data.role === 'admin' ? 'admin' : 'user') as 'user' | 'admin'
+            };
+          }
           console.log('Profile data updated successfully:', data);
         } catch (error: any) {
           console.error('Failed to update profile data:', error);

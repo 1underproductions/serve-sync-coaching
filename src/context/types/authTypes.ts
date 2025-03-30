@@ -12,6 +12,6 @@ export type AuthContextType = {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
-  updateProfile: (data: Partial<Profile>) => Promise<void>;
+  updateProfile: (data: Partial<Profile>) => Promise<Profile | null>;
   fetchUserProfile: (userId?: string) => Promise<Profile | null>;
 };
