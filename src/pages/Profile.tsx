@@ -1,10 +1,9 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { User, Upload, Edit, Award, DollarSign, Info } from "lucide-react";
+import { User, Edit, Award, DollarSign, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import Layout from "@/components/layout/Layout";
@@ -31,15 +30,6 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ImageUploader } from "@/components/ImageUploader";
-
-// Helper function to check if a field is empty
-const isFieldEmpty = (value: any): boolean => {
-  if (value === undefined || value === null) return true;
-  if (typeof value === 'string') return value.trim() === '';
-  if (typeof value === 'number') return value === 0;
-  if (Array.isArray(value)) return value.length === 0;
-  return false;
-};
 
 const profileFormSchema = z.object({
   full_name: z.string().min(2, { message: "Name must be at least 2 characters" }),
@@ -158,24 +148,17 @@ const Profile = () => {
       setIsSubmitting(true);
       
       if (profile) {
-        // Send only the avatar_url to the API
         await updateProfile({ 
           avatar_url: imageData 
         });
         
-        // Update local state after successful save
         setAvatarSrc(imageData);
-        
-        toast({
-          title: "Profile image updated",
-          description: "Your profile image has been successfully updated.",
-        });
       }
     } catch (error) {
       console.error("Error uploading image:", error);
       toast({
         variant: "destructive",
-        title: "Upload failed",
+        title: "Upload Failed",
         description: "There was a problem uploading your image.",
       });
     } finally {
@@ -233,10 +216,9 @@ const Profile = () => {
                   </Avatar>
 
                   <ImageUploader 
-                    initialImage={avatarSrc}
                     onImageChange={handleImageUpload}
                     isSubmitting={isSubmitting}
-                    className="mt-4"
+                    className="mt-4 w-full max-w-xs"
                   />
                 </div>
               </CardContent>
