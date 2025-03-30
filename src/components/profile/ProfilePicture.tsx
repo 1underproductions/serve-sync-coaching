@@ -20,14 +20,14 @@ export const ProfilePicture = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [avatarSrc, setAvatarSrc] = useState<string | null>(profile?.avatar_url || null);
 
-  // Update avatar source when profile changes
+  // Always update avatar when profile changes
   useEffect(() => {
     if (profile?.avatar_url) {
       setAvatarSrc(profile.avatar_url);
     }
   }, [profile]);
 
-  // Refresh profile data when component mounts
+  // Refresh profile data when component mounts and when user changes
   useEffect(() => {
     if (user) {
       fetchUserProfile(user.id);
