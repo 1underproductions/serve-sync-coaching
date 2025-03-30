@@ -9,7 +9,7 @@ const Footer = () => {
       <div className="container">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
-            <h3 className="text-sm font-semibold mb-4">ServeSync</h3>
+            <h3 className="text-sm font-semibold mb-4">Tennexis</h3>
             <p className="text-sm text-muted-foreground">
               Professional tennis coaching management platform for coaches and academies.
             </p>
@@ -48,7 +48,7 @@ const Footer = () => {
         </div>
         <div className="mt-8 border-t pt-6 text-center">
           <p className="text-sm text-muted-foreground">
-            &copy; {year} ServeSync. All rights reserved.
+            &copy; {year} Tennexis. All rights reserved.
           </p>
         </div>
       </div>

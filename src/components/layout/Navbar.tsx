@@ -51,7 +51,7 @@ const Navbar = () => {
         {/* Branded Logo (Only visible on mobile) */}
         <div className="md:hidden flex-1 flex justify-center">
           <Link to="/dashboard" className="flex items-center">
-            <span className="text-xl font-bold text-tennis-green-600">ServeSync</span>
+            <span className="text-xl font-bold text-tennis-green-600">Tennexis</span>
           </Link>
         </div>
         

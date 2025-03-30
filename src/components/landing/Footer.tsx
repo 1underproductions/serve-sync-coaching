@@ -8,7 +8,7 @@ const Footer = () => {
       <div className="container">
         <div className="flex flex-col md:flex-row justify-between">
           <div className="mb-8 md:mb-0">
-            <span className="text-2xl font-bold">ServeSync</span>
+            <span className="text-2xl font-bold">Tennexis</span>
             <p className="mt-2 text-gray-400 max-w-md">The ultimate tennis coaching platform designed to help coaches manage their business with ease.</p>
             
             <div className="flex space-x-4 mt-4">
@@ -60,7 +60,7 @@ const Footer = () => {
           </div>
         </div>
         <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400">
-          <p>&copy; {new Date().getFullYear()} ServeSync. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Tennexis. All rights reserved.</p>
         </div>
       </div>
     </footer>

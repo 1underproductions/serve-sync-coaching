@@ -15,7 +15,7 @@ const Header = () => {
   return (
     <header className="bg-white border-b sticky top-0 z-50">
       <div className="container py-4 flex justify-between items-center">
-        <span className="text-2xl font-bold text-tennis-green-600">ServeSync</span>
+        <span className="text-2xl font-bold text-tennis-green-600">Tennexis</span>
         <div className="hidden md:flex space-x-6 items-center">
           <button 
             onClick={() => scrollToSection('features')} 

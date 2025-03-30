@@ -52,7 +52,7 @@ const Sidebar = () => {
     <div className="hidden md:flex flex-col h-screen border-r bg-white w-[240px] shrink-0">
       <div className="p-4 border-b">
         <Link to="/dashboard" className="flex items-center space-x-2">
-          <span className="text-xl font-bold text-tennis-green-600">ServeSync</span>
+          <span className="text-xl font-bold text-tennis-green-600">Tennexis</span>
         </Link>
       </div>
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
