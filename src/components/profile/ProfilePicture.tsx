@@ -44,6 +44,9 @@ export const ProfilePicture = () => {
       setIsSubmitting(true);
       console.log("Starting profile picture update...");
       
+      // Store the original avatar in case of error
+      const originalAvatar = profile?.avatar_url;
+      
       // Update local state immediately for better UX
       setAvatarSrc(imageData);
       
