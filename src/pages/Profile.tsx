@@ -211,7 +211,13 @@ const Profile = () => {
 
         <div className="grid gap-6 md:grid-cols-2">
           <div className="space-y-6">
-            <Card>
+            <Card 
+              className={
+                isFieldEmpty(profile?.avatar_url) 
+                  ? "border-soft-peach bg-soft-peach/10" 
+                  : ""
+              }
+            >
               <CardHeader>
                 <CardTitle>Profile Picture</CardTitle>
                 <CardDescription>
@@ -247,7 +253,13 @@ const Profile = () => {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card 
+              className={
+                qualifications.length === 0 
+                  ? "border-soft-purple bg-soft-purple/10" 
+                  : ""
+              }
+            >
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Award className="mr-2 h-5 w-5 text-tennis-green-600" />
@@ -310,7 +322,13 @@ const Profile = () => {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card 
+              className={
+                (isFieldEmpty(form.watch('hourly_rate')) && packages.length === 0)
+                  ? "border-soft-blue bg-soft-blue/10" 
+                  : ""
+              }
+            >
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <DollarSign className="mr-2 h-5 w-5 text-tennis-green-600" />
@@ -370,7 +388,21 @@ const Profile = () => {
             </Card>
           </div>
 
-          <Card>
+          <Card 
+            className={
+              Object.values({
+                full_name: form.watch('full_name'),
+                phone: form.watch('phone'),
+                location: form.watch('location'),
+                bio: form.watch('bio'),
+                website: form.watch('website'),
+                years_experience: form.watch('years_experience'),
+                hourly_rate: form.watch('hourly_rate')
+              }).some(isFieldEmpty)
+                ? "border-soft-gray bg-soft-gray/10" 
+                : ""
+            }
+          >
             <CardHeader>
               <CardTitle>Account Information</CardTitle>
               <CardDescription>
