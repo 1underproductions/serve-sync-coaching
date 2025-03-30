@@ -1,7 +1,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { PlusCircle, ZoomIn, ZoomOut, Move } from 'lucide-react';
+import { PlusCircle, ZoomIn, ZoomOut, Save } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 interface ImageUploaderProps {
   initialImage?: string | null;
@@ -21,6 +22,8 @@ export function ImageUploader({
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [isPinching, setIsPinching] = useState(false);
+  const [initialDistance, setInitialDistance] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
 
@@ -40,7 +43,6 @@ export function ImageUploader({
       setImage(result);
       setZoom(1);
       setPosition({ x: 0, y: 0 });
-      // Don't call onImageChange here, wait for user to complete adjustments
     };
     reader.readAsDataURL(file);
   };
@@ -73,12 +75,30 @@ export function ImageUploader({
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (!image || e.touches.length !== 1) return;
-    setIsDragging(true);
-    setDragStart({
-      x: e.touches[0].clientX - position.x,
-      y: e.touches[0].clientY - position.y
-    });
+    if (!image) return;
+    
+    // Handle pinch zoom with two fingers
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      setIsPinching(true);
+      
+      const dist = getDistanceBetweenTouches(e);
+      setInitialDistance(dist);
+    } 
+    // Handle drag with one finger
+    else if (e.touches.length === 1) {
+      setIsDragging(true);
+      setDragStart({
+        x: e.touches[0].clientX - position.x,
+        y: e.touches[0].clientY - position.y
+      });
+    }
+  };
+
+  const getDistanceBetweenTouches = (e: React.TouchEvent) => {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -94,16 +114,32 @@ export function ImageUploader({
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging || e.touches.length !== 1) return;
-    e.preventDefault();
-    
-    const newX = e.touches[0].clientX - dragStart.x;
-    const newY = e.touches[0].clientY - dragStart.y;
-    
-    setPosition({
-      x: newX,
-      y: newY
-    });
+    if (isPinching && e.touches.length === 2) {
+      e.preventDefault();
+      
+      // Calculate new distance between touches
+      const newDistance = getDistanceBetweenTouches(e);
+      
+      // Calculate zoom factor based on the distance change
+      const zoomFactor = newDistance / initialDistance;
+      const newZoom = Math.max(0.5, Math.min(3, zoom * zoomFactor));
+      
+      if (Math.abs(newZoom - zoom) > 0.01) {
+        setZoom(newZoom);
+        setInitialDistance(newDistance);
+      }
+    } 
+    else if (isDragging && e.touches.length === 1) {
+      e.preventDefault();
+      
+      const newX = e.touches[0].clientX - dragStart.x;
+      const newY = e.touches[0].clientY - dragStart.y;
+      
+      setPosition({
+        x: newX,
+        y: newY
+      });
+    }
   };
 
   const handleMouseUp = () => {
@@ -112,13 +148,14 @@ export function ImageUploader({
 
   const handleTouchEnd = () => {
     setIsDragging(false);
+    setIsPinching(false);
   };
 
   return (
     <div className={cn("flex flex-col items-center", className)}>
       <div 
         ref={imageContainerRef}
-        className="relative h-32 w-32 rounded-full overflow-hidden bg-gray-100 mb-4"
+        className="relative h-32 w-32 rounded-full overflow-hidden bg-gray-100 mb-3 border border-gray-200"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -146,36 +183,44 @@ export function ImageUploader({
       </div>
 
       {image && (
-        <div className="flex space-x-2 mb-4">
-          <button
+        <div className="flex items-center space-x-2 mb-3">
+          <Button
             type="button"
             onClick={handleZoomOut}
-            className="p-1 rounded-full bg-gray-100 hover:bg-gray-200"
+            variant="outline"
+            size="sm"
+            className="p-0 h-8 w-8 rounded-full"
             title="Zoom out"
           >
-            <ZoomOut className="h-5 w-5" />
-          </button>
+            <ZoomOut className="h-4 w-4" />
+          </Button>
           
-          <button
+          <Button
             type="button"
             onClick={handleZoomIn}
-            className="p-1 rounded-full bg-gray-100 hover:bg-gray-200"
+            variant="outline"
+            size="sm"
+            className="p-0 h-8 w-8 rounded-full"
             title="Zoom in"
           >
-            <ZoomIn className="h-5 w-5" />
-          </button>
-
-          <div className="flex items-center text-sm text-gray-500">
-            <Move className="h-4 w-4 mr-1" /> Drag to position
-          </div>
+            <ZoomIn className="h-4 w-4" />
+          </Button>
+          
+          <span className="text-xs text-gray-500">
+            {isPinching ? "Pinch to zoom" : "Drag to position"}
+          </span>
         </div>
       )}
 
       <div className="flex space-x-2">
-        <label 
-          className="cursor-pointer inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+        <Button
+          variant="outline"
+          size="sm"
+          className="relative"
+          disabled={isSubmitting}
+          onClick={() => fileInputRef.current?.click()}
         >
-          {image ? "Choose a different image" : "Select image"}
+          {image ? "Change Image" : "Select Image"}
           <input
             ref={fileInputRef}
             type="file"
@@ -184,17 +229,19 @@ export function ImageUploader({
             onChange={handleFileChange}
             disabled={isSubmitting}
           />
-        </label>
+        </Button>
 
         {image && (
-          <button
-            type="button"
+          <Button
+            size="sm"
+            variant="tennis"
             onClick={handleSave}
             disabled={isSubmitting}
-            className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-tennis-green-600 text-primary-foreground hover:bg-tennis-green-700 h-10 px-4 py-2"
+            className="flex items-center gap-1"
           >
-            {isSubmitting ? "Saving..." : "Save Image"}
-          </button>
+            <Save className="h-4 w-4" />
+            {isSubmitting ? "Saving..." : "Save"}
+          </Button>
         )}
       </div>
     </div>

@@ -158,7 +158,7 @@ const Profile = () => {
       setIsSubmitting(true);
       
       if (profile) {
-        // This is where the fix is - we explicitly include avatar_url in the update
+        // Send only the avatar_url to the API
         await updateProfile({ 
           avatar_url: imageData 
         });
