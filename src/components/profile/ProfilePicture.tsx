@@ -12,10 +12,11 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { supabase } from "@/lib/supabase";
 
 export const ProfilePicture = () => {
   const { toast } = useToast();
-  const { profile, updateProfile, user } = useAuth();
+  const { profile, user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Use a separate state for the avatar to avoid UI flicker during updates
@@ -24,7 +25,6 @@ export const ProfilePicture = () => {
   );
 
   const handleImageUpload = async (imageData: string) => {
-    // Check for user instead of profile first
     if (!user) {
       toast({
         variant: "destructive",
@@ -41,10 +41,16 @@ export const ProfilePicture = () => {
       // Update local state immediately for better UX
       setAvatarSrc(imageData);
       
-      // Then update the backend
-      await updateProfile({ 
-        avatar_url: imageData 
-      });
+      // Instead of using the updateProfile method from AuthContext,
+      // directly update the profiles table to avoid the infinite recursion error
+      const { error } = await supabase
+        .from('profiles')
+        .update({ avatar_url: imageData })
+        .eq('id', user.id);
+
+      if (error) {
+        throw error;
+      }
       
       console.log("Profile picture updated successfully");
       
@@ -52,7 +58,7 @@ export const ProfilePicture = () => {
         title: "Profile Picture Updated",
         description: "Your profile picture has been saved successfully.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error uploading profile picture:", error);
       
       // Revert to previous avatar if update fails
@@ -61,7 +67,7 @@ export const ProfilePicture = () => {
       toast({
         variant: "destructive",
         title: "Upload Failed",
-        description: "There was a problem updating your profile picture. Please try again.",
+        description: error.message || "There was a problem updating your profile picture. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
