@@ -50,10 +50,10 @@ export const ProfilePicture = () => {
       // Update local state immediately for better UX
       setAvatarSrc(imageData);
       
-      // Directly update the profile with the new avatar
-      const updatedProfile = await updateProfile({ avatar_url: imageData });
+      // Update the profile with the new avatar
+      await updateProfile({ avatar_url: imageData });
       
-      console.log("Profile picture updated successfully", updatedProfile);
+      console.log("Profile picture updated successfully");
       
       // Make sure we have the latest profile data
       if (user.id) {
@@ -69,7 +69,7 @@ export const ProfilePicture = () => {
       console.error("Error uploading profile picture:", error);
       
       // Revert to previous avatar if update fails
-      setAvatarSrc(profile?.avatar_url || null);
+      setAvatarSrc(originalAvatar || null);
       
       toast({
         variant: "destructive",

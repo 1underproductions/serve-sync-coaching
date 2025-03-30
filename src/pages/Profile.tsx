@@ -38,7 +38,7 @@ const Profile = () => {
   useEffect(() => {
     if (profile) {
       const isProfileIncomplete = !profile.bio || !profile.location || !profile.phone || !profile.years_experience;
-      setShowProfilePrompt(!isProfileIncomplete);
+      setShowProfilePrompt(isProfileIncomplete);
     }
   }, [profile]);
 

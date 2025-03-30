@@ -99,7 +99,7 @@ export const useAuthProvider = () => {
     };
   }, [fetchUserProfile]);
 
-  const updateProfile = async (profileData: Partial<Profile>) => {
+  const updateProfile = async (profileData: Partial<Profile>): Promise<Profile | null> => {
     if (!user) {
       toast({
         variant: "destructive",
@@ -125,6 +125,7 @@ export const useAuthProvider = () => {
           
           if (error) throw error;
           
+          // Remove avatar_url from further updates since it's handled separately
           const { avatar_url, ...otherProfileData } = profileData;
           profileData = otherProfileData;
           
@@ -135,6 +136,7 @@ export const useAuthProvider = () => {
         }
       }
       
+      // Update other profile data if there are any fields left to update
       if (Object.keys(profileData).length > 0) {
         try {
           const { error, data } = await supabase
@@ -160,6 +162,7 @@ export const useAuthProvider = () => {
         }
       }
       
+      // Fetch fresh profile data to ensure UI is consistent
       const freshProfile = await fetchUserProfile(user.id);
       
       toast({
