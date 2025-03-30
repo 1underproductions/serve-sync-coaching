@@ -19,13 +19,10 @@ export const ProfilePicture = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
   
-  // Update avatar whenever profile changes
   useEffect(() => {
     if (profile?.avatar_url) {
-      console.log("Profile picture component - setting avatar from profile:", profile.avatar_url);
       setAvatarSrc(profile.avatar_url);
     } else {
-      console.log("Profile has no avatar URL");
       setAvatarSrc(null);
     }
   }, [profile]);
@@ -40,23 +37,11 @@ export const ProfilePicture = () => {
       return;
     }
 
-    // Store original avatar for rollback in case of error
-    const originalAvatar = profile?.avatar_url || null;
-
     try {
       setIsSubmitting(true);
-      console.log("Starting profile picture update...");
-      
-      // Update local state immediately for better UX
-      setAvatarSrc(imageData);
       
       // Update the profile with the new avatar
       await updateProfile({ avatar_url: imageData });
-      
-      // Don't check for exact match - the database might resize or process the image
-      // Just check if we got a successful response from updateProfile
-      
-      console.log("Profile picture updated successfully");
       
       toast({
         title: "Profile Picture Updated",
@@ -64,9 +49,6 @@ export const ProfilePicture = () => {
       });
     } catch (error: any) {
       console.error("Error uploading profile picture:", error);
-      
-      // Revert to previous avatar if update fails
-      setAvatarSrc(originalAvatar);
       
       toast({
         variant: "destructive",

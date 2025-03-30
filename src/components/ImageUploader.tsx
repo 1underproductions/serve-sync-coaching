@@ -66,20 +66,11 @@ export function ImageUploader({
         if (result) {
           try {
             await onImageChange(result);
-            
-            // Reset the file input to allow selecting the same file again
-            if (fileInputRef.current) {
-              fileInputRef.current.value = '';
-            }
           } catch (error) {
-            console.error('Failed to save image:', error);
-            toast({
-              variant: "destructive",
-              title: "Upload Failed",
-              description: "There was a problem uploading your image. Please try again.",
-            });
-            
-            // Reset the file input
+            // Error is handled by the parent component
+            console.error('Error in parent component during image upload:', error);
+          } finally {
+            // Reset the file input to allow selecting the same file again
             if (fileInputRef.current) {
               fileInputRef.current.value = '';
             }

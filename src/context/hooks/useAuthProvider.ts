@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, sendCustomEmail, Profile } from '@/lib/supabase';
@@ -32,13 +31,11 @@ export const useAuthProvider = () => {
         
       if (error) {
         console.error('Error fetching user profile:', error);
-        // Return the existing profile if there's an error fetching the new one
         return profile;
       }
       
       if (data) {
         console.log('User profile fetched successfully:', data);
-        // Ensure role is cast to the correct type
         const profileData: Profile = {
           ...data,
           role: (data.role === 'admin' ? 'admin' : 'user') as 'user' | 'admin'
@@ -50,7 +47,6 @@ export const useAuthProvider = () => {
       }
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
-      // Return the existing profile if there's an exception
       return profile;
     }
     return profile;
@@ -116,85 +112,68 @@ export const useAuthProvider = () => {
       setIsLoading(true);
       console.log('Updating profile with data:', profileData);
       
-      let updatedProfile: Profile | null = profile;
+      let updatedProfile: Profile | null = null;
       
       if (profileData.avatar_url) {
-        console.log('Updating avatar, data length:', profileData.avatar_url.length);
+        console.log('Updating avatar...');
         
-        try {
-          // Store updated avatar locally first for immediate UI feedback
-          if (profile) {
-            updatedProfile = {
-              ...profile,
-              avatar_url: profileData.avatar_url
-            };
-            setProfile(updatedProfile);
-          }
-          
-          const { error } = await supabase.rpc('update_user_avatar', { 
-            new_avatar_url: profileData.avatar_url 
-          });
-          
-          if (error) {
-            console.error('Failed to update avatar via RPC:', error);
-            throw error;
-          }
-          
-          console.log('Avatar updated successfully via RPC');
-          
-          // Remove avatar_url from further updates since it's handled separately
-          const { avatar_url, ...otherProfileData } = profileData;
-          profileData = otherProfileData;
-        } catch (error: any) {
-          console.error('Failed to update avatar via RPC:', error);
-          
-          // If profile update failed and we've already updated local state,
-          // we need to revert it back to the original value
-          if (profile && updatedProfile !== profile) {
-            setProfile(profile);
-          }
-          
+        const { error } = await supabase.rpc('update_user_avatar', { 
+          new_avatar_url: profileData.avatar_url 
+        });
+        
+        if (error) {
+          console.error('Failed to update avatar:', error);
           throw error;
         }
+        
+        console.log('Avatar updated successfully');
+        
+        const { data, error: fetchError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+          
+        if (fetchError) {
+          console.error('Error fetching updated profile:', fetchError);
+          throw fetchError;
+        }
+        
+        const fetchedProfile: Profile = {
+          ...data,
+          role: (data.role === 'admin' ? 'admin' : 'user') as 'user' | 'admin'
+        };
+        
+        setProfile(fetchedProfile);
+        updatedProfile = fetchedProfile;
+        
+        const { avatar_url, ...otherProfileData } = profileData;
+        profileData = otherProfileData;
       }
       
-      // Update other profile data if there are any fields left to update
       if (Object.keys(profileData).length > 0) {
-        try {
-          const { error, data } = await supabase
-            .from('profiles')
-            .update(profileData)
-            .eq('id', user.id)
-            .select()
-            .single();
+        const { error, data } = await supabase
+          .from('profiles')
+          .update(profileData)
+          .eq('id', user.id)
+          .select()
+          .single();
 
-          if (error) {
-            console.error('Failed to update profile data:', error);
-            throw error;
-          }
-          
-          // Ensure the role is properly typed when retrieving from the database
-          if (data) {
-            updatedProfile = {
-              ...data,
-              role: (data.role === 'admin' ? 'admin' : 'user') as 'user' | 'admin'
-            };
-            setProfile(updatedProfile);
-            console.log('Profile data updated successfully:', data);
-          }
-        } catch (error: any) {
+        if (error) {
           console.error('Failed to update profile data:', error);
           throw error;
         }
+        
+        if (data) {
+          updatedProfile = {
+            ...data,
+            role: (data.role === 'admin' ? 'admin' : 'user') as 'user' | 'admin'
+          };
+          setProfile(updatedProfile);
+        }
       }
-      
-      toast({
-        title: "Profile updated",
-        description: "Your profile has been successfully updated.",
-      });
 
       return updatedProfile;
-      
     } catch (error: any) {
       console.error('Error in updateProfile:', error);
       toast({
