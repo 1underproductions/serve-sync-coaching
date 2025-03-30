@@ -74,6 +74,29 @@ export const useAuthProvider = () => {
       }
       
       if (data) {
+        // If the profile doesn't have a name but user metadata does, update the profile
+        if ((!data.full_name || data.full_name.trim() === '') && user?.user_metadata?.full_name) {
+          const updatedProfile = {
+            ...data,
+            full_name: user.user_metadata.full_name
+          };
+          
+          // Update the profile in the database
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ full_name: user.user_metadata.full_name })
+            .eq('id', userId);
+            
+          if (updateError) {
+            console.error('Error updating profile with user metadata:', updateError);
+          } else {
+            // Set the updated profile with the name from metadata
+            setProfile(updatedProfile as Profile);
+            setIsAdmin(updatedProfile.role === 'admin');
+            return;
+          }
+        }
+        
         setProfile(data as Profile);
         setIsAdmin(data.role === 'admin');
       }

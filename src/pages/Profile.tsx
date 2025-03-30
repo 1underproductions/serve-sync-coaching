@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { User, Upload, Edit, Award, DollarSign } from "lucide-react";
+import { User, Upload, Edit, Award, DollarSign, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import Layout from "@/components/layout/Layout";
@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const profileFormSchema = z.object({
   full_name: z.string().min(2, { message: "Name must be at least 2 characters" }),
@@ -54,6 +55,7 @@ const Profile = () => {
   const [coachingLevel, setCoachingLevel] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [packages, setPackages] = useState<any[]>([]);
+  const [showProfilePrompt, setShowProfilePrompt] = useState(true);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -86,29 +88,30 @@ const Profile = () => {
       if (profile.avatar_url) {
         setAvatarSrc(profile.avatar_url);
       }
+      
+      // Determine if we should show the profile completion prompt
+      const isProfileIncomplete = !profile.bio || !profile.location || !profile.phone || !profile.years_experience;
+      setShowProfilePrompt(isProfileIncomplete);
     }
     
-    // Load qualifications
+    // Load qualifications only if they've been explicitly set
     const savedQualifications = localStorage.getItem(QUALIFICATIONS_KEY);
     if (savedQualifications) {
       try {
         setQualifications(JSON.parse(savedQualifications));
       } catch (error) {
         console.error('Error parsing qualifications from localStorage:', error);
-        setQualifications(["LTA Level 3", "First Aid Certified", "Safeguarding Trained"]);
+        setQualifications([]);
       }
     } else {
-      // Default qualifications if none are saved
-      setQualifications(["LTA Level 3", "First Aid Certified", "Safeguarding Trained"]);
+      // Don't set default qualifications
+      setQualifications([]);
     }
 
-    // Load coaching level
+    // Load coaching level only if explicitly set
     const savedCoachingLevel = localStorage.getItem(COACHING_LEVEL_KEY);
     if (savedCoachingLevel) {
       setCoachingLevel(savedCoachingLevel);
-    } else {
-      // Default coaching level if none is saved
-      setCoachingLevel("LTA Level 3");
     }
     
     // Load packages
@@ -131,6 +134,7 @@ const Profile = () => {
         title: "Profile updated",
         description: "Your profile has been successfully updated.",
       });
+      setShowProfilePrompt(false);
     } catch (error) {
       console.error("Error updating profile:", error);
       toast({
@@ -205,6 +209,17 @@ const Profile = () => {
           </p>
         </div>
 
+        {showProfilePrompt && (
+          <Alert className="bg-blue-50 border-blue-200">
+            <Info className="h-4 w-4 text-blue-600" />
+            <AlertTitle className="text-blue-800">Complete your profile</AlertTitle>
+            <AlertDescription className="text-blue-700">
+              Welcome to Tennexis! Please take a moment to complete your profile information below. 
+              A complete profile helps build trust with your players and increases booking opportunities.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="grid gap-6 md:grid-cols-2">
           <div className="space-y-6">
             <Card>
@@ -251,36 +266,58 @@ const Profile = () => {
                   Coaching Qualifications
                 </CardTitle>
                 <CardDescription>
-                  Your coaching levels and certifications
+                  Add your coaching levels and certifications
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {coachingLevel && (
+                {coachingLevel ? (
                   <div className="mb-4">
                     <h3 className="text-sm font-medium mb-2">Primary Coaching Level</h3>
                     <Badge variant="custom" className="bg-tennis-green-700 text-white hover:bg-tennis-green-800">
                       {coachingLevel}
                     </Badge>
                   </div>
+                ) : (
+                  <div className="mb-4 p-3 bg-gray-50 rounded-md border border-gray-200">
+                    <p className="text-sm text-gray-700">
+                      Set your primary coaching level in the Settings page
+                    </p>
+                  </div>
                 )}
                 
                 <div>
                   <h3 className="text-sm font-medium mb-2">Certifications & Qualifications</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {qualifications.map((qual, index) => (
-                      <Badge 
-                        key={index} 
-                        variant="custom" 
-                        className="bg-tennis-green-100 text-tennis-green-800"
-                      >
-                        {qual}
-                      </Badge>
-                    ))}
-                  </div>
+                  
+                  {qualifications.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {qualifications.map((qual, index) => (
+                        <Badge 
+                          key={index} 
+                          variant="custom" 
+                          className="bg-tennis-green-100 text-tennis-green-800"
+                        >
+                          {qual}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
+                      <p className="text-sm text-gray-700">
+                        You haven't added any qualifications yet. Add them in the Settings page.
+                      </p>
+                    </div>
+                  )}
                 </div>
                 
-                <div className="mt-4 text-sm text-muted-foreground">
-                  <p>Manage your qualifications in Settings</p>
+                <div className="mt-4">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => navigate('/settings')}
+                    className="text-tennis-green-700 border-tennis-green-200 hover:bg-tennis-green-50"
+                  >
+                    Manage Qualifications in Settings
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -293,7 +330,7 @@ const Profile = () => {
                   Pricing Information
                 </CardTitle>
                 <CardDescription>
-                  Your hourly rate and package offerings
+                  Set your hourly rate and package offerings
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -304,7 +341,7 @@ const Profile = () => {
                   </div>
                 </div>
                 
-                {packages.length > 0 && (
+                {packages.length > 0 ? (
                   <div>
                     <h3 className="text-sm font-medium mb-2">Package Offerings</h3>
                     <div className="space-y-3">
@@ -324,10 +361,23 @@ const Profile = () => {
                       ))}
                     </div>
                   </div>
+                ) : (
+                  <div className="p-3 mb-4 bg-gray-50 rounded-md border border-gray-200">
+                    <p className="text-sm text-gray-700">
+                      You haven't created any packages yet. Set them up in the Settings page.
+                    </p>
+                  </div>
                 )}
                 
-                <div className="mt-4 text-sm text-muted-foreground">
-                  <p>Manage your pricing and packages in Settings</p>
+                <div className="mt-4">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => navigate('/settings')}
+                    className="text-tennis-green-700 border-tennis-green-200 hover:bg-tennis-green-50"
+                  >
+                    Manage Pricing in Settings
+                  </Button>
                 </div>
               </CardContent>
             </Card>
