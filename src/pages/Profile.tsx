@@ -38,24 +38,16 @@ const Profile = () => {
   return (
     <Layout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Profile</h1>
-          <p className="text-muted-foreground">
-            Manage your personal information and how it's displayed to players.
-          </p>
-        </div>
-
-        <ProfileAlert show={showProfilePrompt} />
-
+        {showProfilePrompt && <ProfileAlert />}
+        
         <div className="grid gap-6 md:grid-cols-2">
-          <div className="space-y-6">
-            <ProfilePicture />
-            <QualificationsCard />
-            <PricingCard hourlyRate={profile?.hourly_rate || 0} />
-          </div>
-
-          <ProfileForm onProfileUpdate={handleProfileUpdate} />
+          <ProfilePicture />
+          <QualificationsCard />
         </div>
+        
+        <PricingCard hourlyRate={profile?.hourly_rate || 0} />
+        
+        <ProfileForm onProfileUpdate={handleProfileUpdate} />
       </div>
     </Layout>
   );

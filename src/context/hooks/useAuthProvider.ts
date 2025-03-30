@@ -126,7 +126,10 @@ export const useAuthProvider = () => {
             new_avatar_url: profileData.avatar_url 
           });
           
-          if (error) throw error;
+          if (error) {
+            console.error('Failed to update avatar via RPC:', error);
+            throw error;
+          }
           
           // Update local profile state
           if (profile) {
@@ -135,13 +138,12 @@ export const useAuthProvider = () => {
               avatar_url: profileData.avatar_url
             };
             setProfile(updatedProfile);
+            console.log('Avatar updated successfully via RPC and local state updated');
           }
           
           // Remove avatar_url from further updates since it's handled separately
           const { avatar_url, ...otherProfileData } = profileData;
           profileData = otherProfileData;
-          
-          console.log('Avatar updated successfully via RPC');
         } catch (error: any) {
           console.error('Failed to update avatar via RPC:', error);
           throw error;
@@ -158,7 +160,10 @@ export const useAuthProvider = () => {
             .select()
             .single();
 
-          if (error) throw error;
+          if (error) {
+            console.error('Failed to update profile data:', error);
+            throw error;
+          }
           
           // Ensure the role is properly typed when retrieving from the database
           if (data) {
@@ -167,8 +172,8 @@ export const useAuthProvider = () => {
               role: (data.role === 'admin' ? 'admin' : 'user') as 'user' | 'admin'
             };
             setProfile(updatedProfile);
+            console.log('Profile data updated successfully:', data);
           }
-          console.log('Profile data updated successfully:', data);
         } catch (error: any) {
           console.error('Failed to update profile data:', error);
           throw error;

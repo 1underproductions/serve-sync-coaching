@@ -19,9 +19,6 @@ export const ProfilePicture = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
   
-  // Pre-declare originalAvatar before the upload function
-  const originalAvatar = profile?.avatar_url || null;
-
   // Update avatar whenever profile changes
   useEffect(() => {
     if (profile?.avatar_url) {
@@ -43,6 +40,9 @@ export const ProfilePicture = () => {
       return;
     }
 
+    // Store original avatar for rollback in case of error
+    const originalAvatar = profile?.avatar_url || null;
+
     try {
       setIsSubmitting(true);
       console.log("Starting profile picture update...");
@@ -51,7 +51,11 @@ export const ProfilePicture = () => {
       setAvatarSrc(imageData);
       
       // Update the profile with the new avatar
-      await updateProfile({ avatar_url: imageData });
+      const updatedProfile = await updateProfile({ avatar_url: imageData });
+      
+      if (updatedProfile?.avatar_url !== imageData) {
+        throw new Error("Avatar update failed to save correctly");
+      }
       
       console.log("Profile picture updated successfully");
       
