@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, sendCustomEmail } from '@/lib/supabase';
@@ -75,8 +76,13 @@ export const useAuthProvider = () => {
       
       if (data) {
         console.log('User profile fetched successfully:', data);
-        setProfile(data as Profile);
-        setIsAdmin(data.role === 'admin');
+        // Ensure role is properly cast to the expected type
+        const profileData: Profile = {
+          ...data,
+          role: (data.role === 'admin' ? 'admin' : 'user') as 'user' | 'admin'
+        };
+        setProfile(profileData);
+        setIsAdmin(profileData.role === 'admin');
       }
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
@@ -123,10 +129,19 @@ export const useAuthProvider = () => {
 
       // Update the local profile state with the new data
       if (data) {
-        setProfile(prevProfile => ({
-          ...prevProfile as Profile,
-          ...data
-        }));
+        // Ensure proper type casting for role
+        const updatedProfileData = {
+          ...data,
+          role: (data.role === 'admin' ? 'admin' : 'user') as 'user' | 'admin'
+        };
+        
+        setProfile((prevProfile) => {
+          if (!prevProfile) return updatedProfileData;
+          return {
+            ...prevProfile,
+            ...updatedProfileData
+          };
+        });
       } else {
         // If no data was returned, refresh the profile from database
         await fetchUserProfile(user.id);
