@@ -1,0 +1,101 @@
+
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { DollarSign } from 'lucide-react';
+import { useForm } from "react-hook-form";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+
+const PACKAGES_KEY = 'tennexis.packages';
+
+type PackageType = {
+  name: string;
+  sessions: number;
+  price: number;
+  discount: number;
+};
+
+export const PricingCard = ({ hourlyRate = 0 }) => {
+  const navigate = useNavigate();
+  const [packages, setPackages] = useState<PackageType[]>([]);
+
+  useEffect(() => {
+    const savedPackages = localStorage.getItem(PACKAGES_KEY);
+    if (savedPackages) {
+      try {
+        setPackages(JSON.parse(savedPackages));
+      } catch (error) {
+        console.error('Error parsing packages from localStorage:', error);
+        setPackages([]);
+      }
+    }
+  }, []);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center">
+          <DollarSign className="mr-2 h-5 w-5 text-tennis-green-600" />
+          Pricing Information
+        </CardTitle>
+        <CardDescription>
+          Set your hourly rate and package offerings
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="mb-4">
+          <h3 className="text-sm font-medium mb-2">Standard Hourly Rate</h3>
+          <div className="text-xl font-bold text-tennis-green-700">
+            ${hourlyRate}/hour
+          </div>
+        </div>
+        
+        {packages.length > 0 ? (
+          <div>
+            <h3 className="text-sm font-medium mb-2">Package Offerings</h3>
+            <div className="space-y-3">
+              {packages.map((pkg, index) => (
+                <div key={index} className="bg-gray-50 p-3 rounded-md">
+                  <div className="font-medium">{pkg.name}</div>
+                  <div className="text-sm text-gray-500">{pkg.sessions} sessions</div>
+                  <div className="flex justify-between items-center mt-1">
+                    <span className="font-medium text-tennis-green-700">${pkg.price}</span>
+                    {pkg.discount > 0 && (
+                      <Badge variant="custom" className="bg-tennis-blue-100 text-tennis-blue-800">
+                        {pkg.discount}% off
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="p-3 mb-4 bg-gray-50 rounded-md border border-gray-200">
+            <p className="text-sm text-gray-700">
+              You haven't created any packages yet. Set them up in the Settings page.
+            </p>
+          </div>
+        )}
+        
+        <div className="mt-4">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => navigate('/settings')}
+            className="text-tennis-green-700 border-tennis-green-200 hover:bg-tennis-green-50"
+          >
+            Manage Pricing in Settings
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
