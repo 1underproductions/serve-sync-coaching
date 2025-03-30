@@ -9,30 +9,9 @@ import { ProfileForm } from "@/components/profile/ProfileForm";
 import { ProfileAlert } from "@/components/profile/ProfileAlert";
 
 const Profile = () => {
-  const { profile, isLoading: authLoading, fetchUserProfile, user } = useAuth();
+  const { profile, isLoading: authLoading, user } = useAuth();
   const [showProfilePrompt, setShowProfilePrompt] = useState(true);
-  const [isProfileLoading, setIsProfileLoading] = useState(true);
-
-  // When component mounts or user changes, ensure we have the latest profile data
-  useEffect(() => {
-    const loadProfile = async () => {
-      if (user?.id) {
-        console.log("Profile page - fetching fresh profile data on mount/navigation");
-        setIsProfileLoading(true);
-        try {
-          await fetchUserProfile(user.id);
-        } catch (error) {
-          console.error("Error loading profile:", error);
-        } finally {
-          setIsProfileLoading(false);
-        }
-      } else {
-        setIsProfileLoading(false);
-      }
-    };
-    
-    loadProfile();
-  }, [fetchUserProfile, user?.id]);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
 
   // Update prompt visibility when profile changes
   useEffect(() => {

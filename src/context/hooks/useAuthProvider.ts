@@ -32,7 +32,8 @@ export const useAuthProvider = () => {
         
       if (error) {
         console.error('Error fetching user profile:', error);
-        return null;
+        // Return the existing profile if there's an error fetching the new one
+        return profile;
       }
       
       if (data) {
@@ -49,9 +50,11 @@ export const useAuthProvider = () => {
       }
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
+      // Return the existing profile if there's an exception
+      return profile;
     }
-    return null;
-  }, [user?.id]);
+    return profile;
+  }, [user?.id, profile]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -113,7 +116,7 @@ export const useAuthProvider = () => {
       setIsLoading(true);
       console.log('Updating profile with data:', profileData);
       
-      let updatedProfile: Profile | null = null;
+      let updatedProfile: Profile | null = profile;
       
       if (profileData.avatar_url) {
         console.log('Updating avatar, data length:', profileData.avatar_url.length);
@@ -124,6 +127,15 @@ export const useAuthProvider = () => {
           });
           
           if (error) throw error;
+          
+          // Update local profile state
+          if (profile) {
+            updatedProfile = {
+              ...profile,
+              avatar_url: profileData.avatar_url
+            };
+            setProfile(updatedProfile);
+          }
           
           // Remove avatar_url from further updates since it's handled separately
           const { avatar_url, ...otherProfileData } = profileData;
@@ -154,6 +166,7 @@ export const useAuthProvider = () => {
               ...data,
               role: (data.role === 'admin' ? 'admin' : 'user') as 'user' | 'admin'
             };
+            setProfile(updatedProfile);
           }
           console.log('Profile data updated successfully:', data);
         } catch (error: any) {
@@ -162,15 +175,12 @@ export const useAuthProvider = () => {
         }
       }
       
-      // Fetch fresh profile data to ensure UI is consistent
-      const freshProfile = await fetchUserProfile(user.id);
-      
       toast({
         title: "Profile updated",
         description: "Your profile has been successfully updated.",
       });
 
-      return freshProfile;
+      return updatedProfile;
       
     } catch (error: any) {
       console.error('Error in updateProfile:', error);

@@ -15,7 +15,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 export const ProfilePicture = () => {
   const { toast } = useToast();
-  const { profile, user, updateProfile, fetchUserProfile } = useAuth();
+  const { profile, user, updateProfile } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
   
@@ -54,12 +54,6 @@ export const ProfilePicture = () => {
       await updateProfile({ avatar_url: imageData });
       
       console.log("Profile picture updated successfully");
-      
-      // Make sure we have the latest profile data
-      if (user.id) {
-        await fetchUserProfile(user.id);
-        console.log("Profile refreshed after avatar update");
-      }
       
       toast({
         title: "Profile Picture Updated",
@@ -108,4 +102,3 @@ export const ProfilePicture = () => {
     </Card>
   );
 };
-
