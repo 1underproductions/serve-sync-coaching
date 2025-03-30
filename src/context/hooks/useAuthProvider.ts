@@ -22,9 +22,7 @@ export const useAuthProvider = () => {
         setUser(updatedSession?.user ?? null);
         
         if (updatedSession?.user) {
-          setTimeout(() => {
-            fetchUserProfile(updatedSession.user.id);
-          }, 0);
+          fetchUserProfile(updatedSession.user.id);
         } else {
           setProfile(null);
           setIsAdmin(false);
@@ -108,40 +106,69 @@ export const useAuthProvider = () => {
         console.log('Updating avatar, data length:', profileData.avatar_url.length);
       }
       
-      const { error, data } = await supabase
-        .from('profiles')
-        .update(profileData)
-        .eq('id', user.id)
-        .select()
-        .single();
+      let updatedProfile;
+      
+      try {
+        // First try to update using RPC to bypass RLS for avatar updates
+        if (profileData.avatar_url) {
+          const { error } = await supabase.rpc('update_user_avatar', { 
+            new_avatar_url: profileData.avatar_url 
+          });
+          
+          if (error) throw error;
+          
+          // Remove avatar_url from profileData since it's already updated
+          const { avatar_url, ...otherProfileData } = profileData;
+          profileData = otherProfileData;
+        }
+        
+        // Only proceed with standard update if there are other fields to update
+        if (Object.keys(profileData).length > 0) {
+          const { error, data } = await supabase
+            .from('profiles')
+            .update(profileData)
+            .eq('id', user.id)
+            .select()
+            .single();
 
-      if (error) {
-        console.error('Error updating profile:', error);
-        throw new Error(error.message || 'Failed to update profile');
+          if (error) throw error;
+          updatedProfile = data;
+        }
+        
+        // If we don't have the updated profile yet (only avatar was updated),
+        // fetch the fresh profile
+        if (!updatedProfile) {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+            
+          if (error) throw error;
+          updatedProfile = data;
+        }
+        
+      } catch (error: any) {
+        console.error('Failed to update profile:', error);
+        throw error;
       }
 
-      console.log('Profile updated successfully. Response:', data);
+      console.log('Profile updated successfully. Response:', updatedProfile);
       
       toast({
         title: "Profile updated",
         description: "Your profile has been successfully updated.",
       });
 
-      // Update the local profile state with the new data
-      if (data) {
+      // Update the local profile state with the fresh data
+      if (updatedProfile) {
         // Ensure proper type casting for role
         const updatedProfileData = {
-          ...data,
-          role: (data.role === 'admin' ? 'admin' : 'user') as 'user' | 'admin'
+          ...updatedProfile,
+          role: (updatedProfile.role === 'admin' ? 'admin' : 'user') as 'user' | 'admin'
         };
         
-        setProfile((prevProfile) => {
-          if (!prevProfile) return updatedProfileData;
-          return {
-            ...prevProfile,
-            ...updatedProfileData
-          };
-        });
+        setProfile(updatedProfileData);
       } else {
         // If no data was returned, refresh the profile from database
         await fetchUserProfile(user.id);
@@ -303,5 +330,6 @@ export const useAuthProvider = () => {
     signOut,
     resetPassword,
     updateProfile,
+    fetchUserProfile, // Expose this function so components can refresh profile data
   };
 };

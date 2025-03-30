@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
@@ -16,13 +16,20 @@ import { supabase } from "@/lib/supabase";
 
 export const ProfilePicture = () => {
   const { toast } = useToast();
-  const { profile, user } = useAuth();
+  const { profile, user, updateProfile } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Use a separate state for the avatar to avoid UI flicker during updates
   const [avatarSrc, setAvatarSrc] = useState<string | null>(
     profile?.avatar_url || null
   );
+
+  // Sync avatar state when profile changes
+  useEffect(() => {
+    if (profile?.avatar_url) {
+      setAvatarSrc(profile.avatar_url);
+    }
+  }, [profile?.avatar_url]);
 
   const handleImageUpload = async (imageData: string) => {
     if (!user) {
@@ -51,6 +58,15 @@ export const ProfilePicture = () => {
       }
       
       console.log("Profile picture updated successfully");
+      
+      // Also update the profile in auth context to ensure consistency across components
+      try {
+        await updateProfile({ avatar_url: imageData });
+        console.log("Auth context profile updated successfully");
+      } catch (profileError) {
+        console.warn("Note: Failed to update auth context, but avatar was saved in database:", profileError);
+        // We don't throw here since the DB update was successful
+      }
       
       toast({
         title: "Profile Picture Updated",

@@ -9,8 +9,14 @@ import { ProfileForm } from "@/components/profile/ProfileForm";
 import { ProfileAlert } from "@/components/profile/ProfileAlert";
 
 const Profile = () => {
-  const { profile, isLoading } = useAuth();
+  const { profile, isLoading, fetchUserProfile } = useAuth();
   const [showProfilePrompt, setShowProfilePrompt] = useState(true);
+
+  // When component mounts, ensure we have the latest profile data
+  useEffect(() => {
+    // Refresh profile data when the component mounts
+    fetchUserProfile && fetchUserProfile();
+  }, [fetchUserProfile]);
 
   useEffect(() => {
     if (profile) {
