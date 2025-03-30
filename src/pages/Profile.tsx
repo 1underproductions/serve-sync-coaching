@@ -11,15 +11,31 @@ import { ProfileAlert } from "@/components/profile/ProfileAlert";
 const Profile = () => {
   const { profile, isLoading, fetchUserProfile, user } = useAuth();
   const [showProfilePrompt, setShowProfilePrompt] = useState(true);
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
 
   // When component mounts, ensure we have the latest profile data
   useEffect(() => {
-    if (user?.id) {
-      // Refresh profile data when the component mounts
-      fetchUserProfile(user.id);
-    }
+    const loadProfile = async () => {
+      if (user?.id) {
+        setIsProfileLoading(true);
+        try {
+          // Refresh profile data when the component mounts
+          console.log("Profile page loading - fetching profile data");
+          await fetchUserProfile(user.id);
+        } catch (error) {
+          console.error("Error loading profile:", error);
+        } finally {
+          setIsProfileLoading(false);
+        }
+      } else {
+        setIsProfileLoading(false);
+      }
+    };
+    
+    loadProfile();
   }, [fetchUserProfile, user?.id]);
 
+  // Update prompt visibility when profile changes
   useEffect(() => {
     if (profile) {
       const isProfileIncomplete = !profile.bio || !profile.location || !profile.phone || !profile.years_experience;
@@ -31,7 +47,7 @@ const Profile = () => {
     setShowProfilePrompt(!isComplete);
   };
 
-  if (isLoading) {
+  if (isLoading || isProfileLoading) {
     return (
       <Layout>
         <div className="flex items-center justify-center h-64">

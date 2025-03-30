@@ -20,9 +20,10 @@ export const ProfilePicture = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
 
-  // Initialize avatar from profile and update when profile changes
+  // Update avatar whenever profile changes
   useEffect(() => {
     if (profile?.avatar_url) {
+      console.log("Setting avatar from profile:", profile.avatar_url);
       setAvatarSrc(profile.avatar_url);
     }
   }, [profile]);
@@ -56,7 +57,10 @@ export const ProfilePicture = () => {
       console.log("Profile picture updated successfully");
       
       // Refresh the profile data to ensure it has the latest avatar
-      await fetchUserProfile();
+      if (user.id) {
+        await fetchUserProfile(user.id);
+        console.log("Profile refreshed after avatar update");
+      }
       
       toast({
         title: "Profile Picture Updated",

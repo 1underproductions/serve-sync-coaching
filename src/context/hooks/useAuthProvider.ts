@@ -1,7 +1,6 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
-import { supabase, sendCustomEmail } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { Profile } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -45,17 +44,21 @@ export const useAuthProvider = () => {
           ...data,
           role: (data.role === 'admin' ? 'admin' : 'user') as 'user' | 'admin'
         };
+        
         setProfile(profileData);
         setIsAdmin(profileData.role === 'admin');
+        return profileData;
       }
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
     }
+    return null;
   }, [user?.id]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, updatedSession) => {
+        console.log("Auth state changed:", event);
         setSession(updatedSession);
         setUser(updatedSession?.user ?? null);
         
@@ -172,8 +175,17 @@ export const useAuthProvider = () => {
         description: "Your profile has been successfully updated.",
       });
 
-      // Always fetch the latest profile data after an update
-      await fetchUserProfile(user.id);
+      // Update local state with the fresh profile data
+      if (updatedProfile) {
+        const profileData: Profile = {
+          ...updatedProfile,
+          role: (updatedProfile.role === 'admin' ? 'admin' : 'user') as 'user' | 'admin'
+        };
+        setProfile(profileData);
+      } else {
+        // If no updated profile was returned, fetch it again
+        await fetchUserProfile(user.id);
+      }
       
     } catch (error: any) {
       console.error('Error in updateProfile:', error);
