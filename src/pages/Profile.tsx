@@ -38,7 +38,7 @@ const Profile = () => {
   return (
     <Layout>
       <div className="space-y-6">
-        {showProfilePrompt && <ProfileAlert />}
+        {showProfilePrompt && <ProfileAlert show={showProfilePrompt} />}
         
         <div className="grid gap-6 md:grid-cols-2">
           <ProfilePicture />
