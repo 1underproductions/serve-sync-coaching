@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, sendCustomEmail } from '@/lib/supabase';
@@ -15,15 +14,13 @@ export const useAuthProvider = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Define fetchUserProfile as a useCallback to avoid recreating it on every render
   const fetchUserProfile = useCallback(async (userId?: string) => {
     try {
-      // If no userId is provided, use the current user's ID
       const currentUserId = userId || user?.id;
       
       if (!currentUserId) {
         console.log('No user ID available to fetch profile');
-        return;
+        return null;
       }
       
       console.log('Fetching user profile for id:', currentUserId);
@@ -35,12 +32,11 @@ export const useAuthProvider = () => {
         
       if (error) {
         console.error('Error fetching user profile:', error);
-        return;
+        return null;
       }
       
       if (data) {
         console.log('User profile fetched successfully:', data);
-        // Ensure role is properly cast to the expected type
         const profileData: Profile = {
           ...data,
           role: (data.role === 'admin' ? 'admin' : 'user') as 'user' | 'admin'
@@ -64,7 +60,6 @@ export const useAuthProvider = () => {
         setUser(updatedSession?.user ?? null);
         
         if (updatedSession?.user) {
-          // Use setTimeout to avoid potential auth deadlocks
           setTimeout(() => {
             fetchUserProfile(updatedSession.user.id);
           }, 0);
@@ -117,29 +112,30 @@ export const useAuthProvider = () => {
       setIsLoading(true);
       console.log('Updating profile with data:', profileData);
       
-      // For debugging avatar uploads
+      let updatedProfile: Profile | null = null;
+      
       if (profileData.avatar_url) {
         console.log('Updating avatar, data length:', profileData.avatar_url.length);
-      }
-      
-      let updatedProfile;
-      
-      try {
-        // First try to update using RPC to bypass RLS for avatar updates
-        if (profileData.avatar_url) {
+        
+        try {
           const { error } = await supabase.rpc('update_user_avatar', { 
             new_avatar_url: profileData.avatar_url 
           });
           
           if (error) throw error;
           
-          // Remove avatar_url from profileData since it's already updated
           const { avatar_url, ...otherProfileData } = profileData;
           profileData = otherProfileData;
+          
+          console.log('Avatar updated successfully via RPC');
+        } catch (error: any) {
+          console.error('Failed to update avatar via RPC:', error);
+          throw error;
         }
-        
-        // Only proceed with standard update if there are other fields to update
-        if (Object.keys(profileData).length > 0) {
+      }
+      
+      if (Object.keys(profileData).length > 0) {
+        try {
           const { error, data } = await supabase
             .from('profiles')
             .update(profileData)
@@ -149,44 +145,21 @@ export const useAuthProvider = () => {
 
           if (error) throw error;
           updatedProfile = data;
+          console.log('Profile data updated successfully:', data);
+        } catch (error: any) {
+          console.error('Failed to update profile data:', error);
+          throw error;
         }
-        
-        // If we don't have the updated profile yet (only avatar was updated),
-        // fetch the fresh profile
-        if (!updatedProfile) {
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single();
-            
-          if (error) throw error;
-          updatedProfile = data;
-        }
-        
-      } catch (error: any) {
-        console.error('Failed to update profile:', error);
-        throw error;
       }
-
-      console.log('Profile updated successfully. Response:', updatedProfile);
+      
+      const freshProfile = await fetchUserProfile(user.id);
       
       toast({
         title: "Profile updated",
         description: "Your profile has been successfully updated.",
       });
 
-      // Update local state with the fresh profile data
-      if (updatedProfile) {
-        const profileData: Profile = {
-          ...updatedProfile,
-          role: (updatedProfile.role === 'admin' ? 'admin' : 'user') as 'user' | 'admin'
-        };
-        setProfile(profileData);
-      } else {
-        // If no updated profile was returned, fetch it again
-        await fetchUserProfile(user.id);
-      }
+      return freshProfile;
       
     } catch (error: any) {
       console.error('Error in updateProfile:', error);
@@ -218,7 +191,6 @@ export const useAuthProvider = () => {
       if (error) throw error;
 
       if (data.user) {
-        // Send custom confirmation email
         try {
           await sendCustomEmail('signup', email, {
             token_hash: data.session?.access_token,
@@ -230,7 +202,6 @@ export const useAuthProvider = () => {
             description: "Welcome to Tennexis. Please check your email to confirm your account.",
           });
           
-          // Don't navigate to dashboard yet since we need email confirmation
           navigate('/login');
         } catch (emailError) {
           console.error("Error sending custom email:", emailError);

@@ -9,18 +9,17 @@ import { ProfileForm } from "@/components/profile/ProfileForm";
 import { ProfileAlert } from "@/components/profile/ProfileAlert";
 
 const Profile = () => {
-  const { profile, isLoading, fetchUserProfile, user } = useAuth();
+  const { profile, isLoading: authLoading, fetchUserProfile, user } = useAuth();
   const [showProfilePrompt, setShowProfilePrompt] = useState(true);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
 
-  // When component mounts, ensure we have the latest profile data
+  // When component mounts or user changes, ensure we have the latest profile data
   useEffect(() => {
     const loadProfile = async () => {
       if (user?.id) {
+        console.log("Profile page - fetching fresh profile data on mount/navigation");
         setIsProfileLoading(true);
         try {
-          // Refresh profile data when the component mounts
-          console.log("Profile page loading - fetching profile data");
           await fetchUserProfile(user.id);
         } catch (error) {
           console.error("Error loading profile:", error);
@@ -47,7 +46,7 @@ const Profile = () => {
     setShowProfilePrompt(!isComplete);
   };
 
-  if (isLoading || isProfileLoading) {
+  if (authLoading || isProfileLoading) {
     return (
       <Layout>
         <div className="flex items-center justify-center h-64">

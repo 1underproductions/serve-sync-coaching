@@ -16,15 +16,18 @@ import { supabase } from "@/lib/supabase";
 
 export const ProfilePicture = () => {
   const { toast } = useToast();
-  const { profile, user, fetchUserProfile } = useAuth();
+  const { profile, user, updateProfile, fetchUserProfile } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
 
   // Update avatar whenever profile changes
   useEffect(() => {
     if (profile?.avatar_url) {
-      console.log("Setting avatar from profile:", profile.avatar_url);
+      console.log("Profile picture component - setting avatar from profile:", profile.avatar_url);
       setAvatarSrc(profile.avatar_url);
+    } else {
+      console.log("Profile has no avatar URL");
+      setAvatarSrc(null);
     }
   }, [profile]);
 
@@ -45,18 +48,12 @@ export const ProfilePicture = () => {
       // Update local state immediately for better UX
       setAvatarSrc(imageData);
       
-      // Call the RPC function to update avatar (bypasses RLS)
-      const { error } = await supabase.rpc('update_user_avatar', { 
-        new_avatar_url: imageData 
-      });
-
-      if (error) {
-        throw error;
-      }
+      // Directly update the profile with the new avatar
+      await updateProfile({ avatar_url: imageData });
       
       console.log("Profile picture updated successfully");
       
-      // Refresh the profile data to ensure it has the latest avatar
+      // Make sure we have the latest profile data
       if (user.id) {
         await fetchUserProfile(user.id);
         console.log("Profile refreshed after avatar update");
