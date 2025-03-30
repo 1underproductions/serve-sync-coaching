@@ -32,30 +32,51 @@ export function ImageUploader({
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const result = event.target?.result as string;
-      try {
-        await onImageChange(result);
-        toast({
-          title: "Profile Picture Updated",
-          description: "Your profile picture has been successfully saved.",
-        });
-        
-        // Reset the file input to allow selecting the same image again
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
+    try {
+      const reader = new FileReader();
+      
+      reader.onloadend = async () => {
+        const result = reader.result as string;
+        if (result) {
+          try {
+            await onImageChange(result);
+            toast({
+              title: "Profile Picture Updated",
+              description: "Your profile picture has been successfully saved.",
+            });
+            
+            // Reset the file input to allow selecting the same image again
+            if (fileInputRef.current) {
+              fileInputRef.current.value = '';
+            }
+          } catch (error) {
+            console.error('Failed to save image:', error);
+            toast({
+              variant: "destructive",
+              title: "Upload Failed",
+              description: "There was a problem uploading your image.",
+            });
+          }
         }
-      } catch (error) {
-        console.error('Failed to save image:', error);
+      };
+      
+      reader.onerror = () => {
         toast({
           variant: "destructive",
-          title: "Upload Failed",
-          description: "There was a problem uploading your image.",
+          title: "File Reading Failed",
+          description: "There was a problem reading the selected file.",
         });
-      }
-    };
-    reader.readAsDataURL(file);
+      };
+      
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error in file upload process:', error);
+      toast({
+        variant: "destructive",
+        title: "Upload Process Failed",
+        description: "There was a problem with the upload process.",
+      });
+    }
   };
 
   return (
