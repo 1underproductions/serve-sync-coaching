@@ -41,12 +41,10 @@ export const ProfilePicture = () => {
       // Update local state immediately for better UX
       setAvatarSrc(imageData);
       
-      // Instead of using the updateProfile method from AuthContext,
-      // directly update the profiles table to avoid the infinite recursion error
-      const { error } = await supabase
-        .from('profiles')
-        .update({ avatar_url: imageData })
-        .eq('id', user.id);
+      // Call the custom SQL function to update avatar
+      const { error } = await supabase.rpc('update_user_avatar', { 
+        new_avatar_url: imageData 
+      });
 
       if (error) {
         throw error;
