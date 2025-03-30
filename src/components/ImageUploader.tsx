@@ -22,6 +22,16 @@ export function ImageUploader({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Check file size (limit to 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        variant: "destructive",
+        title: "File Too Large",
+        description: "Please select an image under 5MB.",
+      });
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = async (event) => {
       const result = event.target?.result as string;
@@ -31,6 +41,11 @@ export function ImageUploader({
           title: "Profile Picture Updated",
           description: "Your profile picture has been successfully saved.",
         });
+        
+        // Reset the file input to allow selecting the same image again
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
       } catch (error) {
         console.error('Failed to save image:', error);
         toast({
