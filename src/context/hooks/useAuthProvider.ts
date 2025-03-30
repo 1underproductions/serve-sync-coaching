@@ -141,18 +141,22 @@ export const useAuthProvider = () => {
             token_hash: data.session?.access_token,
             redirect_to: `${window.location.origin}/dashboard`,
           });
+          
+          toast({
+            title: "Account created successfully!",
+            description: "Welcome to Tennexis. Please check your email to confirm your account.",
+          });
+          
+          // Don't navigate to dashboard yet since we need email confirmation
+          navigate('/login');
         } catch (emailError) {
           console.error("Error sending custom email:", emailError);
-          // Fall back to Supabase's default email if our custom one fails
+          toast({
+            variant: "destructive",
+            title: "Error sending confirmation email",
+            description: "Your account was created, but we couldn't send a confirmation email. Please contact support.",
+          });
         }
-          
-        toast({
-          title: "Account created successfully!",
-          description: "Welcome to Tennexis. Please check your email to confirm your account.",
-        });
-        
-        // Don't navigate to dashboard yet since we need email confirmation
-        navigate('/login');
       }
     } catch (error: any) {
       toast({

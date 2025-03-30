@@ -29,7 +29,7 @@ serve(async (req) => {
         subject: "Welcome to Tennexis - Please Confirm Your Account",
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
-            <img src="https://your-logo-url.com" alt="Tennexis" style="max-width: 150px; margin-bottom: 20px;" />
+            <img src="https://asset.brandfetch.io/idFdo8rNxK/idtYvV5iVs.jpeg" alt="Tennexis" style="max-width: 150px; margin-bottom: 20px;" />
             
             <h1 style="color: #3b82f6; margin-bottom: 20px;">Welcome to Tennexis!</h1>
             
@@ -57,7 +57,7 @@ serve(async (req) => {
             </p>
             
             <div style="border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 30px; font-size: 14px; color: #718096;">
-              <p>&copy; 2025 Tennexis. All rights reserved.</p>
+              <p>&copy; 2023 Tennexis. All rights reserved.</p>
               <p>
                 You're receiving this email because you signed up for Tennexis, the tennis coaching platform that helps you manage your coaching business.
               </p>
