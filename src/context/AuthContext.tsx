@@ -1,13 +1,14 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Session, User } from '@supabase/supabase-js';
+import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { User } from '@/lib/supabase';
 
 type AuthContextType = {
   session: Session | null;
-  user: User | null;
+  user: SupabaseUser | null;
   isLoading: boolean;
   isAdmin: boolean;
   signUp: (email: string, password: string, metadata: any) => Promise<void>;
@@ -20,72 +21,77 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check active session on initial load
-    const getSession = async () => {
-      setIsLoading(true);
-      try {
-        const { data, error } = await supabase.auth.getSession();
-        if (error) {
-          throw error;
-        }
-        setSession(data.session);
-        setUser(data.session?.user ?? null);
-        
-        // Check if user is admin
-        if (data.session?.user) {
-          const { data: userData, error: userError } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', data.session.user.id)
-            .single();
-            
-          if (!userError && userData) {
-            setIsAdmin(userData.role === 'admin');
-          }
-        }
-      } catch (error) {
-        console.error('Error getting session:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    getSession();
-
-    // Listen for auth changes
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, updatedSession) => {
+        setSession(updatedSession);
+        setUser(updatedSession?.user ?? null);
         
         // Check admin status when auth state changes
-        if (session?.user) {
-          const { data: userData, error: userError } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', session.user.id)
-            .single();
-            
-          if (!userError && userData) {
-            setIsAdmin(userData.role === 'admin');
-          }
+        if (updatedSession?.user) {
+          setTimeout(() => {
+            checkUserRole(updatedSession.user.id);
+          }, 0);
         } else {
           setIsAdmin(false);
         }
       }
     );
 
+    // THEN check for existing session
+    const initializeAuth = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error);
+        } else {
+          setSession(data.session);
+          setUser(data.session?.user ?? null);
+          
+          if (data.session?.user) {
+            await checkUserRole(data.session.user.id);
+          }
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeAuth();
+
     return () => {
-      authListener.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
   }, []);
+
+  const checkUserRole = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+        
+      if (!error && data) {
+        setIsAdmin(data.role === 'admin');
+      } else {
+        setIsAdmin(false);
+      }
+    } catch (error) {
+      console.error('Error checking user role:', error);
+      setIsAdmin(false);
+    }
+  };
 
   const signUp = async (email: string, password: string, metadata: any) => {
     try {
@@ -166,6 +172,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setIsLoading(true);
       const { error } = await supabase.auth.signOut();
+      
       if (error) throw error;
       
       navigate('/login');
@@ -191,7 +198,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
-
+      
       if (error) throw error;
 
       toast({
