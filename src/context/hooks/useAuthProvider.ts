@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, sendCustomEmail } from '@/lib/supabase';
 import { Profile } from '@/lib/supabase';
@@ -15,6 +15,44 @@ export const useAuthProvider = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // Define fetchUserProfile as a useCallback to avoid recreating it on every render
+  const fetchUserProfile = useCallback(async (userId?: string) => {
+    try {
+      // If no userId is provided, use the current user's ID
+      const currentUserId = userId || user?.id;
+      
+      if (!currentUserId) {
+        console.log('No user ID available to fetch profile');
+        return;
+      }
+      
+      console.log('Fetching user profile for id:', currentUserId);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', currentUserId)
+        .single();
+        
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        return;
+      }
+      
+      if (data) {
+        console.log('User profile fetched successfully:', data);
+        // Ensure role is properly cast to the expected type
+        const profileData: Profile = {
+          ...data,
+          role: (data.role === 'admin' ? 'admin' : 'user') as 'user' | 'admin'
+        };
+        setProfile(profileData);
+        setIsAdmin(profileData.role === 'admin');
+      }
+    } catch (error) {
+      console.error('Error in fetchUserProfile:', error);
+    }
+  }, [user?.id]);
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, updatedSession) => {
@@ -22,7 +60,10 @@ export const useAuthProvider = () => {
         setUser(updatedSession?.user ?? null);
         
         if (updatedSession?.user) {
-          fetchUserProfile(updatedSession.user.id);
+          // Use setTimeout to avoid potential auth deadlocks
+          setTimeout(() => {
+            fetchUserProfile(updatedSession.user.id);
+          }, 0);
         } else {
           setProfile(null);
           setIsAdmin(false);
@@ -56,36 +97,7 @@ export const useAuthProvider = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
-
-  const fetchUserProfile = async (userId: string) => {
-    try {
-      console.log('Fetching user profile for id:', userId);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-        
-      if (error) {
-        console.error('Error fetching user profile:', error);
-        return;
-      }
-      
-      if (data) {
-        console.log('User profile fetched successfully:', data);
-        // Ensure role is properly cast to the expected type
-        const profileData: Profile = {
-          ...data,
-          role: (data.role === 'admin' ? 'admin' : 'user') as 'user' | 'admin'
-        };
-        setProfile(profileData);
-        setIsAdmin(profileData.role === 'admin');
-      }
-    } catch (error) {
-      console.error('Error in fetchUserProfile:', error);
-    }
-  };
+  }, [fetchUserProfile]);
 
   const updateProfile = async (profileData: Partial<Profile>) => {
     if (!user) {
@@ -160,19 +172,9 @@ export const useAuthProvider = () => {
         description: "Your profile has been successfully updated.",
       });
 
-      // Update the local profile state with the fresh data
-      if (updatedProfile) {
-        // Ensure proper type casting for role
-        const updatedProfileData = {
-          ...updatedProfile,
-          role: (updatedProfile.role === 'admin' ? 'admin' : 'user') as 'user' | 'admin'
-        };
-        
-        setProfile(updatedProfileData);
-      } else {
-        // If no data was returned, refresh the profile from database
-        await fetchUserProfile(user.id);
-      }
+      // Always fetch the latest profile data after an update
+      await fetchUserProfile(user.id);
+      
     } catch (error: any) {
       console.error('Error in updateProfile:', error);
       toast({
@@ -330,6 +332,6 @@ export const useAuthProvider = () => {
     signOut,
     resetPassword,
     updateProfile,
-    fetchUserProfile, // Expose this function so components can refresh profile data
+    fetchUserProfile,
   };
 };

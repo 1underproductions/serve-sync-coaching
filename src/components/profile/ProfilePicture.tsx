@@ -16,20 +16,16 @@ import { supabase } from "@/lib/supabase";
 
 export const ProfilePicture = () => {
   const { toast } = useToast();
-  const { profile, user, updateProfile } = useAuth();
+  const { profile, user, fetchUserProfile } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Use a separate state for the avatar to avoid UI flicker during updates
-  const [avatarSrc, setAvatarSrc] = useState<string | null>(
-    profile?.avatar_url || null
-  );
+  const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
 
-  // Sync avatar state when profile changes
+  // Initialize avatar from profile and update when profile changes
   useEffect(() => {
     if (profile?.avatar_url) {
       setAvatarSrc(profile.avatar_url);
     }
-  }, [profile?.avatar_url]);
+  }, [profile]);
 
   const handleImageUpload = async (imageData: string) => {
     if (!user) {
@@ -48,7 +44,7 @@ export const ProfilePicture = () => {
       // Update local state immediately for better UX
       setAvatarSrc(imageData);
       
-      // Call the custom SQL function to update avatar
+      // Call the RPC function to update avatar (bypasses RLS)
       const { error } = await supabase.rpc('update_user_avatar', { 
         new_avatar_url: imageData 
       });
@@ -59,14 +55,8 @@ export const ProfilePicture = () => {
       
       console.log("Profile picture updated successfully");
       
-      // Also update the profile in auth context to ensure consistency across components
-      try {
-        await updateProfile({ avatar_url: imageData });
-        console.log("Auth context profile updated successfully");
-      } catch (profileError) {
-        console.warn("Note: Failed to update auth context, but avatar was saved in database:", profileError);
-        // We don't throw here since the DB update was successful
-      }
+      // Refresh the profile data to ensure it has the latest avatar
+      await fetchUserProfile();
       
       toast({
         title: "Profile Picture Updated",
