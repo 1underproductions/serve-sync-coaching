@@ -122,6 +122,15 @@ export const useAuthProvider = () => {
         console.log('Updating avatar, data length:', profileData.avatar_url.length);
         
         try {
+          // Store updated avatar locally first for immediate UI feedback
+          if (profile) {
+            updatedProfile = {
+              ...profile,
+              avatar_url: profileData.avatar_url
+            };
+            setProfile(updatedProfile);
+          }
+          
           const { error } = await supabase.rpc('update_user_avatar', { 
             new_avatar_url: profileData.avatar_url 
           });
@@ -131,21 +140,20 @@ export const useAuthProvider = () => {
             throw error;
           }
           
-          // Update local profile state
-          if (profile) {
-            updatedProfile = {
-              ...profile,
-              avatar_url: profileData.avatar_url
-            };
-            setProfile(updatedProfile);
-            console.log('Avatar updated successfully via RPC and local state updated');
-          }
+          console.log('Avatar updated successfully via RPC');
           
           // Remove avatar_url from further updates since it's handled separately
           const { avatar_url, ...otherProfileData } = profileData;
           profileData = otherProfileData;
         } catch (error: any) {
           console.error('Failed to update avatar via RPC:', error);
+          
+          // If profile update failed and we've already updated local state,
+          // we need to revert it back to the original value
+          if (profile && updatedProfile !== profile) {
+            setProfile(profile);
+          }
+          
           throw error;
         }
       }
