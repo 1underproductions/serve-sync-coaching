@@ -52,9 +52,14 @@ const Login = () => {
       await signIn(data.email, data.password);
       // Success handling is done in the Auth context
     } catch (error: any) {
-      setLoginError(error.message || "Login failed. Please check your credentials.");
       console.error("Login error details:", error);
+      setLoginError(error.message || "Login failed. Please check your credentials.");
     }
+  };
+
+  const fillDemoCredentials = () => {
+    form.setValue("email", "user@example.com");
+    form.setValue("password", "password123");
   };
 
   return (
@@ -157,9 +162,17 @@ const Login = () => {
                 </Button>
               </div>
               
-              <div className="mt-4 text-center text-sm">
-                <p className="text-gray-600">
-                  For testing, try: demo@tennexis.com / password123
+              <div className="mt-4 text-center">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={fillDemoCredentials}
+                >
+                  Try Demo Account
+                </Button>
+                <p className="mt-2 text-xs text-gray-500">
+                  For testing, use: user@example.com / password123
                 </p>
               </div>
             </form>

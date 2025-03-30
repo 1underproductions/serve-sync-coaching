@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -31,13 +30,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, updatedSession) => {
         setSession(updatedSession);
         setUser(updatedSession?.user ?? null);
         
-        // Check admin status when auth state changes
         if (updatedSession?.user) {
           setTimeout(() => {
             fetchUserProfile(updatedSession.user.id);
@@ -49,7 +46,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // THEN check for existing session
     const initializeAuth = async () => {
       try {
         const { data, error } = await supabase.auth.getSession();
@@ -124,7 +120,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         description: "Your profile has been successfully updated.",
       });
 
-      // Refresh the profile data
       fetchUserProfile(user.id);
     } catch (error: any) {
       toast({
@@ -155,7 +150,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (data.user) {          
         toast({
           title: "Account created successfully!",
-          description: "Welcome to ServeSync. Your 14-day trial has started.",
+          description: "Welcome to Tennexis. Your 14-day trial has started.",
         });
         
         navigate('/dashboard');
@@ -166,6 +161,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         title: "Error creating account",
         description: error.message || "An unexpected error occurred",
       });
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -174,12 +170,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signIn = async (email: string, password: string) => {
     try {
       setIsLoading(true);
+      console.log(`Attempting to sign in with: ${email}`);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Sign in error:", error);
+        throw error;
+      }
 
       toast({
         title: "Welcome back!",
@@ -188,11 +188,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       navigate('/dashboard');
     } catch (error: any) {
+      console.error("Sign in caught error:", error);
       toast({
         variant: "destructive",
         title: "Sign in failed",
         description: error.message || "Invalid email or password",
       });
+      throw error;
     } finally {
       setIsLoading(false);
     }
