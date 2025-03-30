@@ -19,7 +19,7 @@ const BenefitsSection = () => {
           >
             <span className="text-tennis-green-600 font-medium">BENEFITS</span>
             <h2 className="text-3xl md:text-4xl font-bold mt-3 mb-6">Focus on Coaching, <br />Not Administration</h2>
-            <p className="text-xl text-gray-600 mb-8">ServeSync handles the business side so you can spend more time on court doing what you love.</p>
+            <p className="text-xl text-gray-600 mb-8">Tennexis handles the business side so you can spend more time on court doing what you love.</p>
             <ul className="space-y-4">
               {[
                 "Reduce no-shows with automated reminders", 

@@ -22,7 +22,7 @@ const PricingSection = () => {
             className="w-full border rounded-2xl border-tennis-green-500 overflow-hidden shadow-lg"
           >
             <div className="p-6 bg-tennis-green-50 border-b border-tennis-green-200">
-              <h3 className="text-xl font-bold">ServeSync Pro</h3>
+              <h3 className="text-xl font-bold">Tennexis Pro</h3>
               <div className="mt-4">
                 <span className="text-4xl font-bold">$0</span>
                 <span className="text-gray-500 ml-2">for 2 weeks</span>
