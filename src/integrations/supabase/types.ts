@@ -63,6 +63,12 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      update_user_avatar: {
+        Args: {
+          new_avatar_url: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
