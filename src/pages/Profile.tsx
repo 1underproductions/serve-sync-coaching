@@ -1,5 +1,5 @@
-
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -49,6 +49,7 @@ const PACKAGES_KEY = 'tennexis.packages';
 
 const Profile = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { profile, updateProfile, isLoading } = useAuth();
   const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
   const [qualifications, setQualifications] = useState<string[]>([]);
@@ -71,7 +72,6 @@ const Profile = () => {
     },
   });
 
-  // Load profile data when available
   useEffect(() => {
     if (profile) {
       form.reset({
@@ -89,12 +89,10 @@ const Profile = () => {
         setAvatarSrc(profile.avatar_url);
       }
       
-      // Determine if we should show the profile completion prompt
       const isProfileIncomplete = !profile.bio || !profile.location || !profile.phone || !profile.years_experience;
       setShowProfilePrompt(isProfileIncomplete);
     }
     
-    // Load qualifications only if they've been explicitly set
     const savedQualifications = localStorage.getItem(QUALIFICATIONS_KEY);
     if (savedQualifications) {
       try {
@@ -104,17 +102,14 @@ const Profile = () => {
         setQualifications([]);
       }
     } else {
-      // Don't set default qualifications
       setQualifications([]);
     }
 
-    // Load coaching level only if explicitly set
     const savedCoachingLevel = localStorage.getItem(COACHING_LEVEL_KEY);
     if (savedCoachingLevel) {
       setCoachingLevel(savedCoachingLevel);
     }
     
-    // Load packages
     const savedPackages = localStorage.getItem(PACKAGES_KEY);
     if (savedPackages) {
       try {
@@ -154,17 +149,11 @@ const Profile = () => {
     try {
       setIsSubmitting(true);
       
-      // For now, we'll use the FileReader API to display the image locally
-      // In a production app, you would upload this to Supabase Storage
       const reader = new FileReader();
       reader.onload = async (event) => {
         const result = event.target?.result as string;
         setAvatarSrc(result);
         
-        // In a real implementation, we would upload to Supabase Storage here
-        // and then update the profile with the avatar_url
-
-        // For now we'll update the profile with just a placeholder
         if (profile) {
           await updateProfile({ 
             avatar_url: result 
@@ -258,7 +247,6 @@ const Profile = () => {
               </CardContent>
             </Card>
 
-            {/* Qualifications Card */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -322,7 +310,6 @@ const Profile = () => {
               </CardContent>
             </Card>
 
-            {/* Pricing Card */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
