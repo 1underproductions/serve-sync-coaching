@@ -47,9 +47,9 @@ export const ProfilePicture = () => {
     try {
       setIsSubmitting(true);
       
-      // Create a unique file path for the user's avatar
+      // Use a simpler file path structure - always use the same filename to overwrite previous uploads
       const fileExt = file.name.split('.').pop();
-      const filePath = `${user.id}/${Date.now()}.${fileExt}`;
+      const filePath = `profiles/${user.id}.${fileExt}`;
       
       // Upload the file to Supabase Storage
       const { error: uploadError } = await supabase.storage
@@ -67,16 +67,16 @@ export const ProfilePicture = () => {
         throw new Error('Failed to get public URL for uploaded image');
       }
       
-      // Update the avatar_url in the user's profile using the safe function or directly updating profiles
+      // First update the local UI
+      setAvatarSrc(data.publicUrl);
+      
+      // Update the avatar_url in the user's profile
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: data.publicUrl })
         .eq('id', user.id);
         
       if (updateError) throw updateError;
-      
-      // Update local state
-      setAvatarSrc(data.publicUrl);
       
       // Refresh profile data
       await fetchUserProfile(user.id);
