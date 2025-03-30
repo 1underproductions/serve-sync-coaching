@@ -62,6 +62,7 @@ export type Profile = {
   bio?: string;
   website?: string;
   years_experience?: number;
+  hourly_rate?: number;
   role: 'user' | 'admin';
   created_at: string;
   updated_at: string;

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { BellRing, Key, Mail, Smartphone, Shield, Save, Award, Plus, X, Calendar, Clock } from "lucide-react";
+import { BellRing, Key, Mail, Smartphone, Shield, Save, Award, Plus, X, Calendar, Clock, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Layout from "@/components/layout/Layout";
 import {
@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import PackageSettings from "@/components/settings/PackageSettings";
 
 const passwordFormSchema = z
   .object({
@@ -73,7 +74,6 @@ type NotificationFormValues = z.infer<typeof notificationFormSchema>;
 type QualificationFormValues = z.infer<typeof qualificationFormSchema>;
 type ReminderFormValues = z.infer<typeof reminderFormSchema>;
 
-// Sample qualification types that could be used
 const qualificationTypes = [
   { label: "LTA Level 1", value: "lta-level-1" },
   { label: "LTA Level 2", value: "lta-level-2" },
@@ -216,7 +216,8 @@ const Settings = () => {
         </div>
 
         <div className="grid gap-6">
-          {/* New Session Reminders Card */}
+          <PackageSettings />
+
           <Card>
             <CardHeader>
               <CardTitle>
@@ -357,7 +358,6 @@ const Settings = () => {
             </CardContent>
           </Card>
 
-          {/* Coaching Qualifications Card */}
           <Card>
             <CardHeader>
               <CardTitle>

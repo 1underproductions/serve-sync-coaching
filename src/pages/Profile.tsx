@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { User, Upload, Edit, Award } from "lucide-react";
+import { User, Upload, Edit, Award, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import Layout from "@/components/layout/Layout";
@@ -37,12 +37,14 @@ const profileFormSchema = z.object({
   location: z.string().optional(),
   website: z.string().url({ message: "Please enter a valid URL" }).optional().or(z.literal('')),
   years_experience: z.coerce.number().min(0).optional(),
+  hourly_rate: z.coerce.number().min(0).optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
-const QUALIFICATIONS_KEY = 'serveSync.qualifications';
-const COACHING_LEVEL_KEY = 'serveSync.coachingLevel';
+const QUALIFICATIONS_KEY = 'tennexis.qualifications';
+const COACHING_LEVEL_KEY = 'tennexis.coachingLevel';
+const PACKAGES_KEY = 'tennexis.packages';
 
 const Profile = () => {
   const { toast } = useToast();
@@ -51,6 +53,7 @@ const Profile = () => {
   const [qualifications, setQualifications] = useState<string[]>([]);
   const [coachingLevel, setCoachingLevel] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [packages, setPackages] = useState<any[]>([]);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -62,6 +65,7 @@ const Profile = () => {
       location: "",
       website: "",
       years_experience: 0,
+      hourly_rate: 0,
     },
   });
 
@@ -76,6 +80,7 @@ const Profile = () => {
         location: profile.location || "",
         website: profile.website || "",
         years_experience: profile.years_experience || 0,
+        hourly_rate: profile.hourly_rate || 0,
       });
       
       if (profile.avatar_url) {
@@ -105,14 +110,34 @@ const Profile = () => {
       // Default coaching level if none is saved
       setCoachingLevel("LTA Level 3");
     }
+    
+    // Load packages
+    const savedPackages = localStorage.getItem(PACKAGES_KEY);
+    if (savedPackages) {
+      try {
+        setPackages(JSON.parse(savedPackages));
+      } catch (error) {
+        console.error('Error parsing packages from localStorage:', error);
+        setPackages([]);
+      }
+    }
   }, [profile, form]);
 
   const onSubmit = async (data: ProfileFormValues) => {
     setIsSubmitting(true);
     try {
       await updateProfile(data);
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been successfully updated.",
+      });
     } catch (error) {
       console.error("Error updating profile:", error);
+      toast({
+        variant: "destructive",
+        title: "Update failed",
+        description: "There was a problem updating your profile.",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -259,6 +284,53 @@ const Profile = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Pricing Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <DollarSign className="mr-2 h-5 w-5 text-tennis-green-600" />
+                  Pricing Information
+                </CardTitle>
+                <CardDescription>
+                  Your hourly rate and package offerings
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="mb-4">
+                  <h3 className="text-sm font-medium mb-2">Standard Hourly Rate</h3>
+                  <div className="text-xl font-bold text-tennis-green-700">
+                    ${form.watch('hourly_rate') || 0}/hour
+                  </div>
+                </div>
+                
+                {packages.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-medium mb-2">Package Offerings</h3>
+                    <div className="space-y-3">
+                      {packages.map((pkg, index) => (
+                        <div key={index} className="bg-gray-50 p-3 rounded-md">
+                          <div className="font-medium">{pkg.name}</div>
+                          <div className="text-sm text-gray-500">{pkg.sessions} sessions</div>
+                          <div className="flex justify-between items-center mt-1">
+                            <span className="font-medium text-tennis-green-700">${pkg.price}</span>
+                            {pkg.discount > 0 && (
+                              <Badge variant="custom" className="bg-tennis-blue-100 text-tennis-blue-800">
+                                {pkg.discount}% off
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                <div className="mt-4 text-sm text-muted-foreground">
+                  <p>Manage your pricing and packages in Settings</p>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           <Card>
@@ -370,6 +442,20 @@ const Profile = () => {
                       )}
                     />
                   </div>
+                  
+                  <FormField
+                    control={form.control}
+                    name="hourly_rate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Hourly Rate ($)</FormLabel>
+                        <FormControl>
+                          <Input type="number" min="0" step="0.01" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   <CardFooter className="px-0 pt-4">
                     <Button 
