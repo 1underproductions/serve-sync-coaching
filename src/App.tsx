@@ -26,6 +26,12 @@ import Settings from "./pages/Settings";
 import Analytics from "./pages/Analytics";
 import PlayerDetail from "./pages/PlayerDetail";
 
+// Admin pages
+import AdminDashboard from "./pages/Admin/AdminDashboard";
+import AdminUsers from "./pages/Admin/AdminUsers";
+import AdminTransactions from "./pages/Admin/AdminTransactions";
+import AdminSettings from "./pages/Admin/AdminSettings";
+
 // We'll initialize the QueryClient with a default setting to retry failed requests
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -63,6 +69,13 @@ const App = () => (
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/profile" element={<Profile />} />
+          
+          {/* Admin Routes */}
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/transactions" element={<AdminTransactions />} />
+          <Route path="/admin/settings" element={<AdminSettings />} />
+          
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

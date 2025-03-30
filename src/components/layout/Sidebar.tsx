@@ -8,10 +8,12 @@ import {
   BarChart, 
   Settings, 
   LogOut, 
-  Home 
+  Home,
+  Shield
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useEffect, useState } from "react";
 
 const navItems = [
   { name: "Dashboard", path: "/dashboard", icon: Home },
@@ -23,11 +25,34 @@ const navItems = [
   { name: "Settings", path: "/settings", icon: Settings },
 ];
 
+const adminNavItems = [
+  { name: "Admin Dashboard", path: "/admin", icon: Shield },
+  { name: "Manage Users", path: "/admin/users", icon: Users },
+  { name: "Transactions", path: "/admin/transactions", icon: DollarSign },
+  { name: "Admin Settings", path: "/admin/settings", icon: Settings },
+];
+
 const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
   const currentPath = location.pathname;
+  const [isAdmin, setIsAdmin] = useState(false);
+  
+  // Check if user is admin (in a real app this would use authentication context)
+  useEffect(() => {
+    // For demonstration, we'll check localStorage
+    // In a real app, this would check from your auth provider
+    const userRole = localStorage.getItem("userRole");
+    setIsAdmin(userRole === "admin");
+    
+    // For demo purposes only - set admin role so admin section shows up
+    // Remove this in production with real auth
+    if (!userRole) {
+      localStorage.setItem("userRole", "admin");
+      setIsAdmin(true);
+    }
+  }, []);
 
   const handleLogout = () => {
     // In a real app, we would clear authentication tokens here
@@ -70,6 +95,36 @@ const Sidebar = () => {
             </Link>
           );
         })}
+        
+        {isAdmin && (
+          <>
+            <div className="mt-6 pt-6 border-t">
+              <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Admin
+              </div>
+              {adminNavItems.map((item) => {
+                const isActive = currentPath === item.path || 
+                  (item.path !== "/admin" && currentPath.startsWith(item.path));
+                  
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.path}
+                    className={cn(
+                      "flex items-center space-x-3 px-3 py-2 rounded-md transition-colors",
+                      isActive 
+                        ? "bg-tennis-green-50 text-tennis-green-700 font-medium" 
+                        : "text-gray-700 hover:bg-gray-100"
+                    )}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    <span>{item.name}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </>
+        )}
 
         <div className="mt-6 pt-6 border-t">
           <button 
