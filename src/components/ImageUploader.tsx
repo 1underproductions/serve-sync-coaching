@@ -18,6 +18,12 @@ export function ImageUploader({
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const handleClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -29,6 +35,26 @@ export function ImageUploader({
         title: "File Too Large",
         description: "Please select an image under 5MB.",
       });
+      
+      // Reset the file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        variant: "destructive",
+        title: "Invalid File Type",
+        description: "Please select an image file.",
+      });
+      
+      // Reset the file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
       return;
     }
 
@@ -39,26 +65,24 @@ export function ImageUploader({
         const result = reader.result as string;
         if (result) {
           try {
-            console.log("Starting to save image...");
             await onImageChange(result);
-            console.log("Image saved successfully");
-            toast({
-              title: "Profile Picture Updated",
-              description: "Your profile picture has been successfully saved.",
-            });
             
-            // Reset the file input to allow selecting the same image again
+            // Reset the file input to allow selecting the same file again
             if (fileInputRef.current) {
               fileInputRef.current.value = '';
             }
           } catch (error) {
             console.error('Failed to save image:', error);
-            const errorMessage = error instanceof Error ? error.message : "Unknown error";
             toast({
               variant: "destructive",
               title: "Upload Failed",
-              description: `There was a problem uploading your image. Error: ${errorMessage}`,
+              description: "There was a problem uploading your image. Please try again.",
             });
+            
+            // Reset the file input
+            if (fileInputRef.current) {
+              fileInputRef.current.value = '';
+            }
           }
         }
       };
@@ -69,6 +93,11 @@ export function ImageUploader({
           title: "File Reading Failed",
           description: "There was a problem reading the selected file.",
         });
+        
+        // Reset the file input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
       };
       
       reader.readAsDataURL(file);
@@ -79,6 +108,11 @@ export function ImageUploader({
         title: "Upload Process Failed",
         description: "There was a problem with the upload process.",
       });
+      
+      // Reset the file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -94,12 +128,12 @@ export function ImageUploader({
       />
       <Button 
         variant="outline" 
-        onClick={() => fileInputRef.current?.click()}
+        onClick={handleClick}
         disabled={isSubmitting}
         className="w-full"
       >
         <Upload className="mr-2 h-4 w-4" /> 
-        Add Image
+        {isSubmitting ? "Uploading..." : "Add Image"}
       </Button>
     </div>
   );

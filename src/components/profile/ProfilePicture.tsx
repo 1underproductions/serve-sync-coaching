@@ -16,26 +16,51 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 export const ProfilePicture = () => {
   const { toast } = useToast();
   const { profile, updateProfile } = useAuth();
-  const [avatarSrc, setAvatarSrc] = useState<string | null>(profile?.avatar_url || null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Use a separate state for the avatar to avoid UI flicker during updates
+  const [avatarSrc, setAvatarSrc] = useState<string | null>(
+    profile?.avatar_url || null
+  );
 
   const handleImageUpload = async (imageData: string) => {
+    if (!profile) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "You must be logged in to update your profile picture.",
+      });
+      return;
+    }
+
     try {
       setIsSubmitting(true);
+      console.log("Starting profile picture update...");
       
-      if (profile) {
-        await updateProfile({ 
-          avatar_url: imageData 
-        });
-        
-        setAvatarSrc(imageData);
-      }
+      // Update local state immediately for better UX
+      setAvatarSrc(imageData);
+      
+      // Then update the backend
+      await updateProfile({ 
+        avatar_url: imageData 
+      });
+      
+      console.log("Profile picture updated successfully");
+      
+      toast({
+        title: "Profile Picture Updated",
+        description: "Your profile picture has been saved successfully.",
+      });
     } catch (error) {
-      console.error("Error uploading image:", error);
+      console.error("Error uploading profile picture:", error);
+      
+      // Revert to previous avatar if update fails
+      setAvatarSrc(profile.avatar_url || null);
+      
       toast({
         variant: "destructive",
         title: "Upload Failed",
-        description: "There was a problem uploading your image.",
+        description: "There was a problem updating your profile picture. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
