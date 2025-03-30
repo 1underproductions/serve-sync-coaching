@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { User } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
@@ -12,20 +12,13 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { supabase } from '@/lib/supabase';
 
 export const ProfilePicture = () => {
   const { toast } = useToast();
-  const { profile, user, updateProfile } = useAuth();
+  const { profile, user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
-  
-  useEffect(() => {
-    if (profile?.avatar_url) {
-      setAvatarSrc(profile.avatar_url);
-    } else {
-      setAvatarSrc(null);
-    }
-  }, [profile]);
+  const [avatarSrc, setAvatarSrc] = useState<string | null>(profile?.avatar_url || null);
 
   const handleImageUpload = async (imageData: string) => {
     if (!user) {
@@ -40,18 +33,20 @@ export const ProfilePicture = () => {
     try {
       setIsSubmitting(true);
       
-      // Update local state immediately for better user experience
+      // Update local state immediately for better UX
       setAvatarSrc(imageData);
       
-      // Save to database (await here to catch potential errors)
-      await updateProfile({ avatar_url: imageData });
+      // Direct call to RPC function to update avatar
+      const { error } = await supabase.rpc('update_user_avatar', { 
+        new_avatar_url: imageData 
+      });
+      
+      if (error) throw error;
       
       toast({
         title: "Profile Picture Updated",
         description: "Your profile picture has been saved successfully.",
       });
-      
-      console.log("Avatar updated successfully");
     } catch (error: any) {
       console.error("Error uploading profile picture:", error);
       
