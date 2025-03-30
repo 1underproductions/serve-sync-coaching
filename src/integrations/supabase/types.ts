@@ -63,7 +63,7 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
-      update_user_avatar: {
+      update_user_avatar_safe: {
         Args: {
           new_avatar_url: string
         }

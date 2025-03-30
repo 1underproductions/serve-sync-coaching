@@ -111,62 +111,26 @@ export const useAuthProvider = () => {
     try {
       setIsLoading(true);
       
-      // Handle avatar update separately using the special RPC function
-      if (profileData.avatar_url) {
-        try {
-          const { error } = await supabase.rpc('update_user_avatar', { 
-            new_avatar_url: profileData.avatar_url 
-          });
-          
-          if (error) {
-            console.error('Failed to update avatar:', error);
-            throw error;
-          }
-          
-          // Update local profile with new avatar URL
-          const updatedProfile = profile ? {
-            ...profile,
-            avatar_url: profileData.avatar_url
-          } as Profile : null;
-          
-          if (updatedProfile) {
-            setProfile(updatedProfile);
-          }
-          
-          // Remove avatar_url from profileData to avoid trying to update it twice
-          const { avatar_url, ...otherProfileData } = profileData;
-          profileData = otherProfileData;
-          
-          return updatedProfile;
-        } catch (error) {
-          // Let the error bubble up to the outer catch block
-          throw error;
-        }
+      const { error, data } = await supabase
+        .from('profiles')
+        .update(profileData)
+        .eq('id', user.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Failed to update profile data:', error);
+        throw error;
       }
       
-      // Handle other profile updates if there are any fields left to update
-      if (Object.keys(profileData).length > 0) {
-        const { error, data } = await supabase
-          .from('profiles')
-          .update(profileData)
-          .eq('id', user.id)
-          .select()
-          .single();
-
-        if (error) {
-          console.error('Failed to update profile data:', error);
-          throw error;
-        }
+      if (data) {
+        const updatedProfile = {
+          ...data,
+          role: (data.role === 'admin' ? 'admin' : 'user') as 'user' | 'admin'
+        } as Profile;
         
-        if (data) {
-          const updatedProfile = {
-            ...data,
-            role: (data.role === 'admin' ? 'admin' : 'user') as 'user' | 'admin'
-          } as Profile;
-          
-          setProfile(updatedProfile);
-          return updatedProfile;
-        }
+        setProfile(updatedProfile);
+        return updatedProfile;
       }
 
       return profile;
