@@ -18,6 +18,9 @@ export const ProfilePicture = () => {
   const { profile, user, updateProfile, fetchUserProfile } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
+  
+  // Pre-declare originalAvatar before the upload function
+  const originalAvatar = profile?.avatar_url || null;
 
   // Update avatar whenever profile changes
   useEffect(() => {
@@ -44,9 +47,6 @@ export const ProfilePicture = () => {
       setIsSubmitting(true);
       console.log("Starting profile picture update...");
       
-      // Store the original avatar in case of error
-      const originalAvatar = profile?.avatar_url;
-      
       // Update local state immediately for better UX
       setAvatarSrc(imageData);
       
@@ -69,7 +69,7 @@ export const ProfilePicture = () => {
       console.error("Error uploading profile picture:", error);
       
       // Revert to previous avatar if update fails
-      setAvatarSrc(originalAvatar || null);
+      setAvatarSrc(originalAvatar);
       
       toast({
         variant: "destructive",
@@ -108,3 +108,4 @@ export const ProfilePicture = () => {
     </Card>
   );
 };
+
