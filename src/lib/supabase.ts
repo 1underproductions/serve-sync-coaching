@@ -47,7 +47,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    storage: localStorage
+    storage: localStorage // Explicitly set to use localStorage
   }
 });
 
@@ -117,4 +117,25 @@ export type Subscription = {
   current_period_end: string;
   created_at: string;
   stripe_subscription_id: string;
+};
+
+export type Package = {
+  id: string;
+  name: string;
+  sessions: number;
+  price: number;
+  description: string;
+  discount: number;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PackageData = {
+  id: string;
+  name: string;
+  sessions: number;
+  price: number;
+  description: string;
+  discount: number;
 };

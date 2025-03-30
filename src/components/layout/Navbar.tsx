@@ -20,23 +20,30 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { signOut, profile, isLoading } = useAuth();
   
-  const handleLogout = () => {
-    // In a real app, we would clear authentication tokens here
-    
-    // Show toast notification
-    toast({
-      title: "Logged out",
-      description: "You have been successfully logged out.",
-    });
-    
-    // Redirect to login page
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      // Navigation and toast handled in the signOut function
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
+  // Get initials for avatar fallback
+  const getInitials = () => {
+    if (!profile?.full_name) return "U";
+    return profile.full_name
+      .split(" ")
+      .map(name => name[0])
+      .join("")
+      .toUpperCase()
+      .substring(0, 2);
   };
 
   return (
@@ -83,13 +90,13 @@ const Navbar = () => {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 bg-tennis-green-100">
-                <span className="font-medium text-tennis-green-800">JD</span>
+                <span className="font-medium text-tennis-green-800">{getInitials()}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>John Doe</DropdownMenuLabel>
+              <DropdownMenuLabel>{profile?.full_name || 'User'}</DropdownMenuLabel>
               <DropdownMenuLabel className="font-normal text-xs text-muted-foreground">
-                coach@example.com
+                {profile?.email || 'Loading...'}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>

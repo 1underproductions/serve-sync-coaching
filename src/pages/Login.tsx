@@ -17,6 +17,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const loginSchema = z.object({
   email: z.string().email({
@@ -31,6 +32,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { signIn, isLoading } = useAuth();
@@ -44,11 +46,14 @@ const Login = () => {
   });
 
   const onSubmit = async (data: LoginFormValues) => {
+    setLoginError(null);
+    
     try {
       await signIn(data.email, data.password);
-    } catch (error) {
-      // Error is handled in the signIn function
-      console.error("Login error:", error);
+      // Success handling is done in the Auth context
+    } catch (error: any) {
+      setLoginError(error.message || "Login failed. Please check your credentials.");
+      console.error("Login error details:", error);
     }
   };
 
@@ -56,7 +61,7 @@ const Login = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <Link to="/" className="flex justify-center mb-4">
-          <span className="text-2xl font-bold text-tennis-green-600">ServeSync</span>
+          <span className="text-2xl font-bold text-tennis-green-600">Tennexis</span>
         </Link>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
           Sign in to your account
@@ -71,6 +76,12 @@ const Login = () => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          {loginError && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertDescription>{loginError}</AlertDescription>
+            </Alert>
+          )}
+          
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
@@ -144,6 +155,12 @@ const Login = () => {
                 >
                   {isLoading ? "Signing in..." : "Sign in"}
                 </Button>
+              </div>
+              
+              <div className="mt-4 text-center text-sm">
+                <p className="text-gray-600">
+                  For testing, try: demo@tennexis.com / password123
+                </p>
               </div>
             </form>
           </Form>
