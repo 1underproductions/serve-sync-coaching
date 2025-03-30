@@ -34,7 +34,7 @@ export const ProfilePicture = () => {
     }
   }, [user, fetchUserProfile]);
 
-  const handleImageUpload = async (imageData: string) => {
+  const handleImageUpload = async (file: File) => {
     if (!user) {
       toast({
         variant: "destructive",
@@ -47,17 +47,38 @@ export const ProfilePicture = () => {
     try {
       setIsSubmitting(true);
       
-      // Update local state immediately for better UX
-      setAvatarSrc(imageData);
+      // Create a unique file path for the user's avatar
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}/avatar.${fileExt}`;
       
-      // Direct call to RPC function to update avatar
-      const { error } = await supabase.rpc('update_user_avatar', { 
-        new_avatar_url: imageData 
-      });
+      // Upload the file to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('profile-images')
+        .upload(filePath, file, { upsert: true });
+        
+      if (uploadError) throw uploadError;
       
-      if (error) throw error;
+      // Get the public URL for the uploaded image
+      const { data } = supabase.storage
+        .from('profile-images')
+        .getPublicUrl(filePath);
+        
+      if (!data || !data.publicUrl) {
+        throw new Error('Failed to get public URL for uploaded image');
+      }
       
-      // Refresh profile data after successful update
+      // Update the avatar_url in the user's profile
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: data.publicUrl })
+        .eq('id', user.id);
+        
+      if (updateError) throw updateError;
+      
+      // Update local state
+      setAvatarSrc(data.publicUrl);
+      
+      // Refresh profile data
       await fetchUserProfile(user.id);
       
       toast({
@@ -66,9 +87,6 @@ export const ProfilePicture = () => {
       });
     } catch (error: any) {
       console.error("Error uploading profile picture:", error);
-      
-      // Revert to previous avatar on error
-      setAvatarSrc(profile?.avatar_url || null);
       
       toast({
         variant: "destructive",

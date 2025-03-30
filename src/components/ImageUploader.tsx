@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
 interface ImageUploaderProps {
-  onImageChange: (image: string) => Promise<void>;
+  onImageChange: (file: File) => Promise<void>;
   isSubmitting?: boolean;
   className?: string;
 }
@@ -59,48 +59,12 @@ export function ImageUploader({
     }
 
     try {
-      const reader = new FileReader();
-      
-      reader.onloadend = async () => {
-        const result = reader.result as string;
-        if (result) {
-          try {
-            await onImageChange(result);
-          } catch (error) {
-            // Error is handled by the parent component
-            console.error('Error in parent component during image upload:', error);
-          } finally {
-            // Reset the file input to allow selecting the same file again
-            if (fileInputRef.current) {
-              fileInputRef.current.value = '';
-            }
-          }
-        }
-      };
-      
-      reader.onerror = () => {
-        toast({
-          variant: "destructive",
-          title: "File Reading Failed",
-          description: "There was a problem reading the selected file.",
-        });
-        
-        // Reset the file input
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
-      };
-      
-      reader.readAsDataURL(file);
+      await onImageChange(file);
     } catch (error) {
-      console.error('Error in file upload process:', error);
-      toast({
-        variant: "destructive",
-        title: "Upload Process Failed",
-        description: "There was a problem with the upload process.",
-      });
-      
-      // Reset the file input
+      // Error is handled by the parent component
+      console.error('Error in parent component during image upload:', error);
+    } finally {
+      // Reset the file input to allow selecting the same file again
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
