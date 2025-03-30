@@ -89,7 +89,13 @@ export default {
 				"court": {
 					light: "#8BC34A",
 					dark: "#2196F3",
-				}
+				},
+				// Soft pastel colors for empty fields
+				"soft-gray": "#F1F0FB",
+				"soft-purple": "#E5DEFF",
+				"soft-pink": "#FFDEE2",
+				"soft-peach": "#FDE1D3",
+				"soft-blue": "#D3E4FD"
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
