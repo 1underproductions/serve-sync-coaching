@@ -1,6 +1,7 @@
+
 import { useParams, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { Layout } from "@/components/layout/Layout";
+import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -130,7 +131,7 @@ const PaymentDetail = () => {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Payment #{payment.id.slice(-6)}</CardTitle>
-                <Badge variant={payment.status === 'succeeded' ? 'success' : payment.status === 'pending' ? 'warning' : 'destructive'}>
+                <Badge variant={payment.status === 'succeeded' ? 'success' : payment.status === 'pending' ? 'primary' : 'destructive'}>
                   {payment.status === 'succeeded' ? 'Paid' : payment.status === 'pending' ? 'Pending' : 'Failed'}
                 </Badge>
               </div>
