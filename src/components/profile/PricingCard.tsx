@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DollarSign } from 'lucide-react';
-import { useForm } from "react-hook-form";
 import {
   Card,
   CardHeader,
@@ -12,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useAuth } from '@/context/AuthContext';
 
 const PACKAGES_KEY = 'tennexis.packages';
 
@@ -20,11 +20,14 @@ type PackageType = {
   sessions: number;
   price: number;
   discount: number;
+  description?: string;
 };
 
-export const PricingCard = ({ hourlyRate = 0 }) => {
+export const PricingCard = () => {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [packages, setPackages] = useState<PackageType[]>([]);
+  const hourlyRate = profile?.hourly_rate || 0;
 
   useEffect(() => {
     const savedPackages = localStorage.getItem(PACKAGES_KEY);
