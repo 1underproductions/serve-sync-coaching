@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, sendCustomEmail, Profile } from '@/lib/supabase';
@@ -110,6 +111,7 @@ export const useAuthProvider = () => {
 
     try {
       setIsLoading(true);
+      console.log('Updating profile with data:', profileData);
       
       const { error, data } = await supabase
         .from('profiles')
@@ -124,6 +126,7 @@ export const useAuthProvider = () => {
       }
       
       if (data) {
+        console.log('Profile updated successfully, received data:', data);
         const updatedProfile = {
           ...data,
           role: (data.role === 'admin' ? 'admin' : 'user') as 'user' | 'admin'

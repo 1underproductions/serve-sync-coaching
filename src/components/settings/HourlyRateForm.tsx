@@ -26,7 +26,7 @@ type HourlyRateFormValues = z.infer<typeof hourlyRateSchema>;
 
 export const HourlyRateForm = () => {
   const { toast } = useToast();
-  const { profile, updateProfile } = useAuth();
+  const { profile, updateProfile, fetchUserProfile } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const hourlyRateForm = useForm<HourlyRateFormValues>({
@@ -51,6 +51,9 @@ export const HourlyRateForm = () => {
       console.log('Updating hourly rate with data:', { hourly_rate: data.hourlyRate });
       
       await updateProfile({ hourly_rate: data.hourlyRate });
+      
+      // Refresh the profile to ensure we have the latest data
+      await fetchUserProfile();
       
       toast({
         title: "Hourly Rate Updated",

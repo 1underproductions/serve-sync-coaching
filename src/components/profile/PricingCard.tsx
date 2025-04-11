@@ -18,7 +18,14 @@ export const PricingCard = () => {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const [packages, setPackages] = useState<PackageData[]>([]);
-  const hourlyRate = profile?.hourly_rate || 0;
+  const [displayRate, setDisplayRate] = useState<number>(0);
+  
+  // Update display rate whenever profile changes
+  useEffect(() => {
+    if (profile && profile.hourly_rate !== undefined) {
+      setDisplayRate(profile.hourly_rate);
+    }
+  }, [profile]);
 
   useEffect(() => {
     // Load packages from localStorage
@@ -49,7 +56,7 @@ export const PricingCard = () => {
         <div className="mb-4">
           <h3 className="text-sm font-medium mb-2">Standard Hourly Rate</h3>
           <div className="text-xl font-bold text-tennis-green-700">
-            ${hourlyRate}/hour
+            ${displayRate}/hour
           </div>
         </div>
         
