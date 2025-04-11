@@ -25,8 +25,8 @@ const FAQ = () => {
       answer: "Getting started is easy! Simply sign up for a free trial account, complete your profile, and start adding your players. Our intuitive interface will guide you through setting up your schedule and coaching packages."
     },
     {
-      question: "Can my players book sessions directly through the platform?",
-      answer: "Yes! Once you've added your players to the system, they can log in to their own portal where they can view your availability and book sessions based on the rules you set up."
+      question: "How does the scheduling system work?",
+      answer: "As a coach, you can create sessions in your calendar, assign them to players, and manage your availability. The platform provides a clear overview of your schedule and helps you organize your coaching time efficiently."
     },
     {
       question: "How does billing work?",
