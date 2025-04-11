@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -31,6 +30,10 @@ type FormValues = z.infer<typeof formSchema>;
 const Contact = () => {
   const { toast } = useToast();
   
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -44,8 +47,6 @@ const Contact = () => {
   const onSubmit = (values: FormValues) => {
     console.log(values);
     
-    // Here you would typically send the form data to your backend
-    // For now, we'll just show a success toast
     toast({
       title: "Message sent!",
       description: "Thank you for reaching out. We'll get back to you soon.",
@@ -140,7 +141,7 @@ const Contact = () => {
             </div>
             
             <div>
-              <div className="bg-white p-8 rounded-lg shadow-sm mb-8">
+              <div className="bg-white p-8 rounded-lg shadow-sm">
                 <h2 className="text-2xl font-semibold mb-6">Contact Information</h2>
                 
                 <div className="space-y-6">
@@ -174,24 +175,6 @@ const Contact = () => {
                         +44 (0) 1234 567 890
                       </a>
                     </div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-white p-8 rounded-lg shadow-sm">
-                <h2 className="text-2xl font-semibold mb-6">Business Hours</h2>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span>Monday - Friday</span>
-                    <span className="font-medium">9:00 AM - 6:00 PM</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Saturday</span>
-                    <span className="font-medium">10:00 AM - 4:00 PM</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Sunday</span>
-                    <span className="font-medium">Closed</span>
                   </div>
                 </div>
               </div>
