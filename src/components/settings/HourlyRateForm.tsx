@@ -46,6 +46,10 @@ export const HourlyRateForm = () => {
   const onHourlyRateSubmit = async (data: HourlyRateFormValues) => {
     try {
       setIsSubmitting(true);
+      
+      // Log the data we're about to send for debugging
+      console.log('Updating hourly rate with data:', { hourly_rate: data.hourlyRate });
+      
       await updateProfile({ hourly_rate: data.hourlyRate });
       
       toast({

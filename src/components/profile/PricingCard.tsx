@@ -12,24 +12,17 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from '@/context/AuthContext';
-
-const PACKAGES_KEY = 'tennexis.packages';
-
-type PackageType = {
-  name: string;
-  sessions: number;
-  price: number;
-  discount: number;
-  description?: string;
-};
+import { PackageData } from '@/lib/supabase';
 
 export const PricingCard = () => {
   const navigate = useNavigate();
   const { profile } = useAuth();
-  const [packages, setPackages] = useState<PackageType[]>([]);
+  const [packages, setPackages] = useState<PackageData[]>([]);
   const hourlyRate = profile?.hourly_rate || 0;
 
   useEffect(() => {
+    // Load packages from localStorage
+    const PACKAGES_KEY = 'tennexis.packages';
     const savedPackages = localStorage.getItem(PACKAGES_KEY);
     if (savedPackages) {
       try {
