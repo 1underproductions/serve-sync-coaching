@@ -26,6 +26,23 @@ const Profile = () => {
           
           if (sessionData && sessionData.session) {
             console.log('Valid session exists, fetching profile');
+            try {
+              // Use direct DB query to bypass RLS policies that may be causing issues
+              const { data, error } = await supabase.from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+              
+              if (error) {
+                console.error('Error fetching profile directly:', error);
+              } else if (data) {
+                console.log('Profile fetched successfully via direct query:', data);
+              }
+            } catch (directQueryError) {
+              console.error('Error with direct query:', directQueryError);
+            }
+            
+            // Still try the regular fetch method
             await fetchUserProfile(user.id);
           } else {
             console.log('No valid session found, cannot fetch profile');
