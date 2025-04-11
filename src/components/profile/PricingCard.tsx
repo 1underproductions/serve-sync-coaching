@@ -23,7 +23,10 @@ export const PricingCard = () => {
   // Update display rate whenever profile changes
   useEffect(() => {
     if (profile && profile.hourly_rate !== undefined) {
-      setDisplayRate(profile.hourly_rate);
+      console.log('PricingCard: Profile updated with hourly rate:', profile.hourly_rate);
+      setDisplayRate(Number(profile.hourly_rate));
+    } else {
+      console.log('PricingCard: Profile or hourly_rate is undefined:', profile);
     }
   }, [profile]);
 

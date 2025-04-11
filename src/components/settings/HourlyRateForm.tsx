@@ -39,7 +39,8 @@ export const HourlyRateForm = () => {
   // Update the form when profile changes (e.g., after initial load)
   useEffect(() => {
     if (profile?.hourly_rate) {
-      hourlyRateForm.setValue('hourlyRate', profile.hourly_rate);
+      console.log('HourlyRateForm: Setting form value from profile:', profile.hourly_rate);
+      hourlyRateForm.setValue('hourlyRate', Number(profile.hourly_rate));
     }
   }, [profile, hourlyRateForm]);
 
@@ -50,7 +51,8 @@ export const HourlyRateForm = () => {
       // Log the data we're about to send for debugging
       console.log('Updating hourly rate with data:', { hourly_rate: data.hourlyRate });
       
-      await updateProfile({ hourly_rate: data.hourlyRate });
+      const updatedProfile = await updateProfile({ hourly_rate: data.hourlyRate });
+      console.log('Profile updated response:', updatedProfile);
       
       // Refresh the profile to ensure we have the latest data
       await fetchUserProfile();
