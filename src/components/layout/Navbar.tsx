@@ -1,5 +1,6 @@
 
-import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
   CalendarClock, 
@@ -10,7 +11,11 @@ import {
   Menu,
   Bell,
   Search,
-  LogOut
+  LogOut,
+  Home,
+  BarChart,
+  Settings,
+  X
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -20,11 +25,30 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
 import { useAuth } from "@/context/AuthContext";
+import { cn } from "@/lib/utils";
+
+const navItems = [
+  { name: "Dashboard", path: "/dashboard", icon: Home },
+  { name: "Schedule", path: "/schedule", icon: CalendarClock },
+  { name: "Players", path: "/players", icon: Users },
+  { name: "Messages", path: "/messages", icon: MessageSquare },
+  { name: "Payments", path: "/payments", icon: DollarSign },
+  { name: "Analytics", path: "/analytics", icon: BarChart },
+  { name: "Settings", path: "/settings", icon: Settings },
+];
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { signOut, profile, isLoading } = useAuth();
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   
   const handleLogout = async () => {
     try {
@@ -49,11 +73,62 @@ const Navbar = () => {
   return (
     <header className="sticky top-0 z-40 border-b bg-white">
       <div className="container flex h-16 items-center justify-between px-4">
-        {/* Mobile Menu Button (Only visible on mobile) */}
-        <button className="md:hidden p-2 rounded-md hover:bg-gray-100">
-          <Menu className="h-5 w-5" />
-          <span className="sr-only">Menu</span>
-        </button>
+        {/* Mobile Menu Button */}
+        <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+          <DrawerTrigger asChild className="md:hidden">
+            <Button variant="ghost" size="icon" className="p-2 rounded-md hover:bg-gray-100">
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Menu</span>
+            </Button>
+          </DrawerTrigger>
+          <DrawerContent className="h-[80vh]">
+            <div className="p-4 border-b flex items-center justify-between">
+              <Link to="/dashboard" className="flex items-center" onClick={() => setIsDrawerOpen(false)}>
+                <span className="text-xl font-bold text-tennis-green-600">Tennexis</span>
+              </Link>
+              <DrawerClose asChild>
+                <Button variant="ghost" size="icon">
+                  <X className="h-5 w-5" />
+                </Button>
+              </DrawerClose>
+            </div>
+            <div className="p-4 space-y-2">
+              {navItems.map((item) => {
+                const isActive = location.pathname === item.path || 
+                  (item.path !== "/dashboard" && location.pathname.startsWith(item.path));
+                  
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.path}
+                    className={cn(
+                      "flex items-center space-x-3 px-3 py-3 rounded-md transition-colors w-full",
+                      isActive 
+                        ? "bg-tennis-green-50 text-tennis-green-700 font-medium" 
+                        : "text-gray-700 hover:bg-gray-100"
+                    )}
+                    onClick={() => setIsDrawerOpen(false)}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    <span>{item.name}</span>
+                  </Link>
+                );
+              })}
+              <div className="pt-4 mt-4 border-t">
+                <button 
+                  onClick={() => {
+                    setIsDrawerOpen(false);
+                    handleLogout();
+                  }}
+                  className="flex w-full items-center space-x-3 px-3 py-3 rounded-md text-gray-700 hover:bg-gray-100 transition-colors"
+                >
+                  <LogOut className="h-5 w-5" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            </div>
+          </DrawerContent>
+        </Drawer>
         
         {/* Branded Logo (Only visible on mobile) */}
         <div className="md:hidden flex-1 flex justify-center">
@@ -107,7 +182,7 @@ const Navbar = () => {
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link to="/settings" className="cursor-pointer">
-                  <CalendarClock className="mr-2 h-4 w-4" />
+                  <Settings className="mr-2 h-4 w-4" />
                   <span>Settings</span>
                 </Link>
               </DropdownMenuItem>
