@@ -29,6 +29,9 @@ import Settings from "./pages/Settings";
 import Analytics from "./pages/Analytics";
 import PlayerDetail from "./pages/PlayerDetail";
 import Contact from "./pages/Contact";
+import FAQ from "./pages/FAQ";
+import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
 
 // Admin pages
 import AdminDashboard from "./pages/Admin/AdminDashboard";
@@ -77,6 +80,9 @@ const App = () => (
             <Route path="/settings" element={<Settings />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:postId" element={<BlogPost />} />
             
             {/* Admin Routes */}
             <Route path="/admin" element={<AdminDashboard />} />
