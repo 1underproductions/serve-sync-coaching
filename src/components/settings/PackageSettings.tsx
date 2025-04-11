@@ -25,8 +25,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PackageData } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 
 const PACKAGES_KEY = 'tennexis.packages';
+const HOURLY_RATE_KEY = 'tennexis.hourlyRate';
+
+const hourlyRateSchema = z.object({
+  hourlyRate: z.coerce.number().min(10, { message: "Hourly rate must be at least $10" }),
+});
 
 const packageFormSchema = z.object({
   name: z.string().min(2, { message: "Package name must be at least 2 characters" }),
@@ -35,14 +41,23 @@ const packageFormSchema = z.object({
   description: z.string().default(""),
 });
 
+type HourlyRateFormValues = z.infer<typeof hourlyRateSchema>;
 type PackageFormValues = z.infer<typeof packageFormSchema>;
 
 const PackageSettings = () => {
   const { toast } = useToast();
+  const { profile, updateProfile } = useAuth();
   const [packages, setPackages] = useState<PackageData[]>([]);
   const [editingPackage, setEditingPackage] = useState<string | null>(null);
 
-  const form = useForm<PackageFormValues>({
+  const hourlyRateForm = useForm<HourlyRateFormValues>({
+    resolver: zodResolver(hourlyRateSchema),
+    defaultValues: {
+      hourlyRate: profile?.hourly_rate || 50,
+    },
+  });
+
+  const packageForm = useForm<PackageFormValues>({
     resolver: zodResolver(packageFormSchema),
     defaultValues: {
       name: "",
@@ -67,6 +82,23 @@ const PackageSettings = () => {
   const savePackages = (updatedPackages: PackageData[]) => {
     setPackages(updatedPackages);
     localStorage.setItem(PACKAGES_KEY, JSON.stringify(updatedPackages));
+  };
+
+  const onHourlyRateSubmit = async (data: HourlyRateFormValues) => {
+    try {
+      await updateProfile({ hourly_rate: data.hourlyRate });
+      
+      toast({
+        title: "Hourly Rate Updated",
+        description: `Your hourly rate is now set to $${data.hourlyRate}/hour.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Could not update hourly rate.",
+        variant: "destructive",
+      });
+    }
   };
 
   const onSubmit = (data: PackageFormValues) => {
@@ -104,7 +136,7 @@ const PackageSettings = () => {
     }
     
     setEditingPackage(null);
-    form.reset({
+    packageForm.reset({
       name: "",
       sessions: 5,
       price: 0,
@@ -113,7 +145,7 @@ const PackageSettings = () => {
   };
 
   const calculateDiscount = (packagePrice: number, sessions: number) => {
-    const hourlyRate = 50;
+    const hourlyRate = hourlyRateForm.getValues().hourlyRate;
     const fullPrice = hourlyRate * sessions;
     
     if (fullPrice <= 0 || packagePrice >= fullPrice) return 0;
@@ -125,7 +157,7 @@ const PackageSettings = () => {
   const editPackage = (packageId: string) => {
     const packageToEdit = packages.find(pkg => pkg.id === packageId);
     if (packageToEdit) {
-      form.reset({
+      packageForm.reset({
         name: packageToEdit.name,
         sessions: packageToEdit.sessions,
         price: packageToEdit.price,
@@ -141,7 +173,7 @@ const PackageSettings = () => {
     
     if (editingPackage === packageId) {
       setEditingPackage(null);
-      form.reset({
+      packageForm.reset({
         name: "",
         sessions: 5,
         price: 0,
@@ -159,14 +191,46 @@ const PackageSettings = () => {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center">
-          <Package className="mr-2 h-5 w-5 text-tennis-green-600" />
-          <span>Package Offerings</span>
+          <DollarSign className="mr-2 h-5 w-5 text-tennis-green-600" />
+          <span>Pricing Information</span>
         </CardTitle>
         <CardDescription>
-          Create discount packages for multiple sessions to encourage players to book more lessons.
+          Set your hourly rate and create package offerings
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        <Form {...hourlyRateForm}>
+          <form onSubmit={hourlyRateForm.handleSubmit(onHourlyRateSubmit)} className="space-y-4">
+            <FormField
+              control={hourlyRateForm.control}
+              name="hourlyRate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Hourly Rate</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      min="10" 
+                      step="1" 
+                      placeholder="Enter your hourly coaching rate" 
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Set the standard hourly rate for your coaching sessions
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Button type="submit" variant="tennis">
+              <Save className="mr-2 h-4 w-4" />
+              Save Hourly Rate
+            </Button>
+          </form>
+        </Form>
+
+        {/* Existing package creation and management code remains the same */}
         {packages.length > 0 ? (
           <div className="space-y-4">
             <h3 className="text-sm font-medium">Your Package Offerings</h3>
@@ -232,10 +296,10 @@ const PackageSettings = () => {
           <h3 className="text-sm font-medium mb-4">
             {editingPackage ? "Edit Package" : "Create New Package"}
           </h3>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <Form {...packageForm}>
+            <form onSubmit={packageForm.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
-                control={form.control}
+                control={packageForm.control}
                 name="name"
                 render={({ field }) => (
                   <FormItem>
@@ -250,7 +314,7 @@ const PackageSettings = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <FormField
-                  control={form.control}
+                  control={packageForm.control}
                   name="sessions"
                   render={({ field }) => (
                     <FormItem>
@@ -264,7 +328,7 @@ const PackageSettings = () => {
                 />
 
                 <FormField
-                  control={form.control}
+                  control={packageForm.control}
                   name="price"
                   render={({ field }) => (
                     <FormItem>
@@ -288,7 +352,7 @@ const PackageSettings = () => {
               </div>
 
               <FormField
-                control={form.control}
+                control={packageForm.control}
                 name="description"
                 render={({ field }) => (
                   <FormItem>
@@ -308,7 +372,7 @@ const PackageSettings = () => {
                     variant="outline" 
                     onClick={() => {
                       setEditingPackage(null);
-                      form.reset({
+                      packageForm.reset({
                         name: "",
                         sessions: 5,
                         price: 0,
@@ -336,6 +400,7 @@ const PackageSettings = () => {
             </form>
           </Form>
         </div>
+        {/* ... */}
       </CardContent>
     </Card>
   );
