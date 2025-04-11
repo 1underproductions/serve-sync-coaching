@@ -9,20 +9,51 @@ import { ProfileForm } from "@/components/profile/ProfileForm";
 import { ProfileAlert } from "@/components/profile/ProfileAlert";
 
 const Profile = () => {
-  const { profile, isLoading: authLoading, user } = useAuth();
+  const { profile, isLoading: authLoading, user, fetchUserProfile } = useAuth();
   const [showProfilePrompt, setShowProfilePrompt] = useState(true);
-  const [isProfileLoading, setIsProfileLoading] = useState(false);
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
 
+  // Fetch profile on initial load to ensure we have fresh data
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (user?.id) {
+        setIsProfileLoading(true);
+        try {
+          console.log('Profile page: Fetching user profile on initial load');
+          await fetchUserProfile();
+        } catch (error) {
+          console.error('Error fetching profile on Profile page:', error);
+        } finally {
+          setIsProfileLoading(false);
+        }
+      } else {
+        console.log('Profile page: No user ID available yet');
+        setIsProfileLoading(false);
+      }
+    };
+    
+    loadProfile();
+  }, [user?.id, fetchUserProfile]);
+  
   // Update prompt visibility when profile changes
   useEffect(() => {
     if (profile) {
+      console.log('Profile page: Profile data available:', profile);
       const isProfileIncomplete = !profile.bio || !profile.location || !profile.phone || !profile.years_experience;
       setShowProfilePrompt(isProfileIncomplete);
     }
   }, [profile]);
 
-  const handleProfileUpdate = (isComplete: boolean) => {
+  const handleProfileUpdate = async (isComplete: boolean) => {
     setShowProfilePrompt(!isComplete);
+    // Refresh profile data after update
+    if (user?.id) {
+      try {
+        await fetchUserProfile();
+      } catch (error) {
+        console.error('Error refreshing profile after update:', error);
+      }
+    }
   };
 
   if (authLoading || isProfileLoading) {

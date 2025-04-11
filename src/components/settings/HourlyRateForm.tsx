@@ -32,15 +32,17 @@ export const HourlyRateForm = () => {
   const hourlyRateForm = useForm<HourlyRateFormValues>({
     resolver: zodResolver(hourlyRateSchema),
     defaultValues: {
-      hourlyRate: profile?.hourly_rate || 50,
+      hourlyRate: profile?.hourly_rate ? Number(profile.hourly_rate) : 50,
     },
   });
 
   // Update the form when profile changes (e.g., after initial load)
   useEffect(() => {
-    if (profile?.hourly_rate) {
+    if (profile?.hourly_rate !== undefined && profile?.hourly_rate !== null) {
       console.log('HourlyRateForm: Setting form value from profile:', profile.hourly_rate);
       hourlyRateForm.setValue('hourlyRate', Number(profile.hourly_rate));
+    } else {
+      console.log('HourlyRateForm: No hourly rate in profile or profile not loaded yet:', profile);
     }
   }, [profile, hourlyRateForm]);
 
@@ -55,7 +57,8 @@ export const HourlyRateForm = () => {
       console.log('Profile updated response:', updatedProfile);
       
       // Refresh the profile to ensure we have the latest data
-      await fetchUserProfile();
+      const refreshedProfile = await fetchUserProfile();
+      console.log('Profile refreshed after update:', refreshedProfile);
       
       toast({
         title: "Hourly Rate Updated",

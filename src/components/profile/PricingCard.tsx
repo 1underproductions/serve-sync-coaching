@@ -20,13 +20,15 @@ export const PricingCard = () => {
   const [packages, setPackages] = useState<PackageData[]>([]);
   const [displayRate, setDisplayRate] = useState<number>(0);
   
-  // Update display rate whenever profile changes
+  // Initialize and update display rate whenever profile changes
   useEffect(() => {
-    if (profile && profile.hourly_rate !== undefined) {
+    if (profile && profile.hourly_rate !== null && profile.hourly_rate !== undefined) {
       console.log('PricingCard: Profile updated with hourly rate:', profile.hourly_rate);
       setDisplayRate(Number(profile.hourly_rate));
     } else {
       console.log('PricingCard: Profile or hourly_rate is undefined:', profile);
+      // Set default rate as fallback
+      setDisplayRate(0);
     }
   }, [profile]);
 
