@@ -26,7 +26,7 @@ type HourlyRateFormValues = z.infer<typeof hourlyRateSchema>;
 
 export const HourlyRateForm = () => {
   const { toast } = useToast();
-  const { profile, fetchUserProfile, user } = useAuth();
+  const { profile, fetchUserProfile } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const hourlyRateForm = useForm<HourlyRateFormValues>({
@@ -50,40 +50,28 @@ export const HourlyRateForm = () => {
     try {
       setIsSubmitting(true);
       
-      if (!user?.id) {
-        console.error('Cannot update hourly rate: No user ID available');
-        toast({
-          title: "Error",
-          description: "You must be logged in to update your hourly rate.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
       // Log the data we're about to send for debugging
       console.log('Updating hourly rate with data:', { hourly_rate: data.hourlyRate });
       
-      // Use the function API instead of direct table operations
-      // This avoids RLS policy recursion issues
+      // Use the RPC function to update the hourly rate
       const { error } = await fetch('https://cugwtwpgccpcjeumrkxf.supabase.co/rest/v1/rpc/update_hourly_rate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z3d0d3BnY2NwY2pldW1ya3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNjA1MDEsImV4cCI6MjA1ODkzNjUwMX0.DjWV3Jt7OcVaJh4QYQ8NsBpPtrI1m8FJ5O3n-SHhMrk',
-          'Authorization': `Bearer ${(await fetch('https://cugwtwpgccpcjeumrkxf.supabase.co/auth/v1/token?grant_type=session_refresh', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z3d0d3BnY2NwY2pldW1ya3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNjA1MDEsImV4cCI6MjA1ODkzNjUwMX0.DjWV3Jt7OcVaJh4QYQ8NsBpPtrI1m8FJ5O3n-SHhMrk'
-            },
-            credentials: 'include'
-          })).headers.get('Authorization')}`
+          'Authorization': `Bearer ${sessionStorage.getItem('supabase.auth.token')}`,
         },
         body: JSON.stringify({ 
           hourly_rate: data.hourlyRate
         }),
-        credentials: 'include'
-      }).then(res => res.json()).catch(e => ({ error: e }));
+      }).then(res => {
+        if (!res.ok) {
+          return res.text().then(text => {
+            throw new Error(`Function API error: ${text}`);
+          });
+        }
+        return res.json();
+      });
         
       if (error) {
         console.error('Function API update error:', error);
@@ -93,18 +81,14 @@ export const HourlyRateForm = () => {
       console.log('Profile hourly rate updated successfully via function API');
       
       // Now refresh the profile
-      try {
-        const refreshedProfile = await fetchUserProfile();
-        console.log('Profile refreshed after update:', refreshedProfile);
-      } catch (refreshError) {
-        console.warn('Non-critical error refreshing profile after update:', refreshError);
-      }
+      await fetchUserProfile();
+      console.log('Profile refreshed after update');
       
       toast({
         title: "Hourly Rate Updated",
         description: `Your hourly rate is now set to $${data.hourlyRate}/hour.`,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating hourly rate:', error);
       toast({
         title: "Error",

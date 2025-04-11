@@ -66,6 +66,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      update_hourly_rate: {
+        Args: { hourly_rate: number }
+        Returns: undefined
+      }
       update_user_avatar_safe: {
         Args: { new_avatar_url: string }
         Returns: undefined

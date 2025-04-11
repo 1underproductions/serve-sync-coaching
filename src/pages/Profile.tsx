@@ -21,32 +21,21 @@ const Profile = () => {
         setIsProfileLoading(true);
         try {
           console.log('Profile page: Fetching user profile on initial load');
-          // Check if session is valid before fetching profile
-          const { data: sessionData } = await supabase.auth.getSession();
           
-          if (sessionData && sessionData.session) {
-            console.log('Valid session exists, fetching profile');
-            try {
-              // Use direct DB query to bypass RLS policies that may be causing issues
-              const { data, error } = await supabase.from('profiles')
-                .select('*')
-                .eq('id', user.id)
-                .single();
-              
-              if (error) {
-                console.error('Error fetching profile directly:', error);
-              } else if (data) {
-                console.log('Profile fetched successfully via direct query:', data);
-              }
-            } catch (directQueryError) {
-              console.error('Error with direct query:', directQueryError);
-            }
-            
-            // Still try the regular fetch method
-            await fetchUserProfile(user.id);
-          } else {
-            console.log('No valid session found, cannot fetch profile');
+          // Direct DB query to get fresh profile data
+          const { data, error } = await supabase.from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+          
+          if (error) {
+            console.error('Error fetching profile directly:', error);
+          } else if (data) {
+            console.log('Profile fetched successfully via direct query:', data);
           }
+          
+          // Also refresh through auth context
+          await fetchUserProfile(user.id);
         } catch (error) {
           console.error('Error fetching profile on Profile page:', error);
         } finally {
@@ -75,7 +64,7 @@ const Profile = () => {
     // Refresh profile data after update
     if (user?.id) {
       try {
-        await fetchUserProfile();
+        await fetchUserProfile(user.id);
       } catch (error) {
         console.error('Error refreshing profile after update:', error);
       }

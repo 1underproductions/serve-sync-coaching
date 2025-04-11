@@ -13,49 +13,62 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from '@/context/AuthContext';
 import { PackageData } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 export const PricingCard = () => {
   const navigate = useNavigate();
   const { profile, user, fetchUserProfile } = useAuth();
   const [packages, setPackages] = useState<PackageData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [displayRate, setDisplayRate] = useState<number>(0);
   
-  // Initially refresh profile data when component mounts if user is logged in
+  // Fetch fresh profile data when component mounts
   useEffect(() => {
-    const refreshProfileData = async () => {
+    const loadProfileData = async () => {
       if (user?.id) {
         try {
-          console.log('PricingCard: Refreshing profile data on mount');
-          await fetchUserProfile(user.id);
+          setIsLoading(true);
+          console.log('PricingCard: Fetching fresh profile data');
+          
+          // Direct query to get the latest hourly rate
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('hourly_rate')
+            .eq('id', user.id)
+            .single();
+            
+          if (error) {
+            console.error('Error fetching hourly rate:', error);
+          } else if (data && data.hourly_rate !== null) {
+            console.log('Hourly rate fetched directly:', data.hourly_rate);
+            setDisplayRate(Number(data.hourly_rate));
+          }
+          
+          // Also refresh the full profile
+          await fetchUserProfile();
         } catch (error) {
-          console.error('PricingCard: Error refreshing profile:', error);
+          console.error('PricingCard: Error loading profile data:', error);
+        } finally {
+          setIsLoading(false);
         }
+      } else {
+        setIsLoading(false);
       }
     };
     
-    refreshProfileData();
+    loadProfileData();
   }, [user?.id, fetchUserProfile]);
   
-  // Initialize and update display rate whenever profile changes
+  // Update display rate when profile changes
   useEffect(() => {
-    if (profile) {
-      console.log('PricingCard: Profile updated:', profile);
-      
-      if (profile.hourly_rate !== null && profile.hourly_rate !== undefined) {
-        console.log('PricingCard: Setting hourly rate from profile:', profile.hourly_rate);
-        setDisplayRate(Number(profile.hourly_rate));
-      } else {
-        console.log('PricingCard: No hourly rate in profile, using default');
-        setDisplayRate(0);
-      }
-    } else {
-      console.log('PricingCard: No profile data available');
-      setDisplayRate(0);
+    if (profile && profile.hourly_rate !== null && profile.hourly_rate !== undefined) {
+      console.log('PricingCard: Setting hourly rate from updated profile:', profile.hourly_rate);
+      setDisplayRate(Number(profile.hourly_rate));
     }
   }, [profile]);
 
+  // Load packages
   useEffect(() => {
-    // Load packages from localStorage
     const PACKAGES_KEY = 'tennexis.packages';
     const savedPackages = localStorage.getItem(PACKAGES_KEY);
     if (savedPackages) {
@@ -82,9 +95,13 @@ export const PricingCard = () => {
       <CardContent>
         <div className="mb-4">
           <h3 className="text-sm font-medium mb-2">Standard Hourly Rate</h3>
-          <div className="text-xl font-bold text-tennis-green-700">
-            ${displayRate}/hour
-          </div>
+          {isLoading ? (
+            <div className="animate-pulse h-7 w-24 bg-gray-200 rounded"></div>
+          ) : (
+            <div className="text-xl font-bold text-tennis-green-700">
+              ${displayRate}/hour
+            </div>
+          )}
         </div>
         
         {packages.length > 0 ? (
