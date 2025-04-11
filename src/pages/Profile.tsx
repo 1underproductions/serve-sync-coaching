@@ -45,7 +45,7 @@ const Profile = () => {
           <QualificationsCard />
         </div>
         
-        <PricingCard hourlyRate={profile?.hourly_rate || 0} />
+        <PricingCard />
         
         <ProfileForm onProfileUpdate={handleProfileUpdate} />
       </div>
