@@ -7,6 +7,7 @@ import { QualificationsCard } from "@/components/profile/QualificationsCard";
 import { PricingCard } from "@/components/profile/PricingCard";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { ProfileAlert } from "@/components/profile/ProfileAlert";
+import { supabase } from "@/lib/supabase";
 
 const Profile = () => {
   const { profile, isLoading: authLoading, user, fetchUserProfile } = useAuth();
@@ -20,7 +21,15 @@ const Profile = () => {
         setIsProfileLoading(true);
         try {
           console.log('Profile page: Fetching user profile on initial load');
-          await fetchUserProfile();
+          // Check if session is valid before fetching profile
+          const { data: sessionData } = await supabase.auth.getSession();
+          
+          if (sessionData && sessionData.session) {
+            console.log('Valid session exists, fetching profile');
+            await fetchUserProfile(user.id);
+          } else {
+            console.log('No valid session found, cannot fetch profile');
+          }
         } catch (error) {
           console.error('Error fetching profile on Profile page:', error);
         } finally {

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, sendCustomEmail, Profile } from '@/lib/supabase';
@@ -32,7 +31,7 @@ export const useAuthProvider = () => {
         
       if (error) {
         console.error('Error fetching user profile:', error);
-        return profile;
+        throw error;
       }
       
       if (data) {
@@ -46,12 +45,13 @@ export const useAuthProvider = () => {
         setIsAdmin(profileData.role === 'admin');
         return profileData;
       }
+      
+      return null;
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
-      return profile;
+      return null;
     }
-    return profile;
-  }, [user?.id, profile]);
+  }, [user?.id]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -77,13 +77,14 @@ export const useAuthProvider = () => {
         
         if (error) {
           console.error('Error getting session:', error);
-        } else {
+        } else if (data.session) {
+          console.log('Session found on initialization:', data.session.user.id);
           setSession(data.session);
-          setUser(data.session?.user ?? null);
+          setUser(data.session.user);
           
-          if (data.session?.user) {
-            await fetchUserProfile(data.session.user.id);
-          }
+          await fetchUserProfile(data.session.user.id);
+        } else {
+          console.log('No session found on initialization');
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
@@ -110,8 +111,7 @@ export const useAuthProvider = () => {
     }
 
     try {
-      setIsLoading(true);
-      console.log('Updating profile with data:', profileData);
+      console.log('Updating profile with data:', profileData, 'for user:', user.id);
       
       const { error, data } = await supabase
         .from('profiles')
@@ -122,6 +122,11 @@ export const useAuthProvider = () => {
 
       if (error) {
         console.error('Failed to update profile data:', error);
+        toast({
+          variant: "destructive",
+          title: "Profile update failed",
+          description: error.message || "Database error while updating profile",
+        });
         throw error;
       }
       
@@ -136,12 +141,10 @@ export const useAuthProvider = () => {
         return updatedProfile;
       }
 
-      return profile;
+      return null;
     } catch (error: any) {
       console.error('Error in updateProfile:', error);
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
 

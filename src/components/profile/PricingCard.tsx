@@ -16,18 +16,40 @@ import { PackageData } from '@/lib/supabase';
 
 export const PricingCard = () => {
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, user, fetchUserProfile } = useAuth();
   const [packages, setPackages] = useState<PackageData[]>([]);
   const [displayRate, setDisplayRate] = useState<number>(0);
   
+  // Initially refresh profile data when component mounts if user is logged in
+  useEffect(() => {
+    const refreshProfileData = async () => {
+      if (user?.id) {
+        try {
+          console.log('PricingCard: Refreshing profile data on mount');
+          await fetchUserProfile(user.id);
+        } catch (error) {
+          console.error('PricingCard: Error refreshing profile:', error);
+        }
+      }
+    };
+    
+    refreshProfileData();
+  }, [user?.id, fetchUserProfile]);
+  
   // Initialize and update display rate whenever profile changes
   useEffect(() => {
-    if (profile && profile.hourly_rate !== null && profile.hourly_rate !== undefined) {
-      console.log('PricingCard: Profile updated with hourly rate:', profile.hourly_rate);
-      setDisplayRate(Number(profile.hourly_rate));
+    if (profile) {
+      console.log('PricingCard: Profile updated:', profile);
+      
+      if (profile.hourly_rate !== null && profile.hourly_rate !== undefined) {
+        console.log('PricingCard: Setting hourly rate from profile:', profile.hourly_rate);
+        setDisplayRate(Number(profile.hourly_rate));
+      } else {
+        console.log('PricingCard: No hourly rate in profile, using default');
+        setDisplayRate(0);
+      }
     } else {
-      console.log('PricingCard: Profile or hourly_rate is undefined:', profile);
-      // Set default rate as fallback
+      console.log('PricingCard: No profile data available');
       setDisplayRate(0);
     }
   }, [profile]);

@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabase";
 
 const hourlyRateSchema = z.object({
   hourlyRate: z.coerce.number().min(10, { message: "Hourly rate must be at least $10" }),
@@ -26,7 +27,7 @@ type HourlyRateFormValues = z.infer<typeof hourlyRateSchema>;
 
 export const HourlyRateForm = () => {
   const { toast } = useToast();
-  const { profile, updateProfile, fetchUserProfile } = useAuth();
+  const { profile, updateProfile, fetchUserProfile, user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const hourlyRateForm = useForm<HourlyRateFormValues>({
@@ -50,13 +51,33 @@ export const HourlyRateForm = () => {
     try {
       setIsSubmitting(true);
       
+      if (!user?.id) {
+        console.error('Cannot update hourly rate: No user ID available');
+        toast({
+          title: "Error",
+          description: "You must be logged in to update your hourly rate.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       // Log the data we're about to send for debugging
       console.log('Updating hourly rate with data:', { hourly_rate: data.hourlyRate });
       
-      const updatedProfile = await updateProfile({ hourly_rate: data.hourlyRate });
-      console.log('Profile updated response:', updatedProfile);
+      // Direct database operation for reliability
+      const { error } = await supabase
+        .from('profiles')
+        .update({ hourly_rate: data.hourlyRate })
+        .eq('id', user.id);
+        
+      if (error) {
+        console.error('Direct Supabase update error:', error);
+        throw error;
+      }
       
-      // Refresh the profile to ensure we have the latest data
+      console.log('Profile hourly rate updated successfully in database');
+      
+      // Now refresh the profile
       const refreshedProfile = await fetchUserProfile();
       console.log('Profile refreshed after update:', refreshedProfile);
       
