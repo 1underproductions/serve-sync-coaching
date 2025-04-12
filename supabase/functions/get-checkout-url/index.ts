@@ -54,7 +54,7 @@ serve(async (req) => {
       cancelPath,
       sessionId,
       playerEmail,
-      sendEmail
+      sendEmail 
     } = await req.json();
 
     if (!amount || amount <= 0) {
@@ -64,16 +64,20 @@ serve(async (req) => {
       });
     }
 
+    // Handle special values for playerId and sessionId
+    const finalPlayerId = playerId === "none" ? null : playerId || null;
+    const finalSessionId = sessionId === "none" ? null : sessionId || null;
+
     // Create payment link in the database
     const { data: paymentLinkData, error: dbError } = await supabaseClient.rpc(
       "create_payment_link",
       {
-        p_player_id: playerId || null,
+        p_player_id: finalPlayerId,
         p_description: description || "Tennis coaching session",
         p_amount: amount,
         p_currency: currency,
         p_expires_in_days: 30,
-        p_session_id: sessionId || null
+        p_session_id: finalSessionId
       }
     );
 
@@ -114,8 +118,8 @@ serve(async (req) => {
       metadata: {
         payment_link_id: paymentLinkData,
         coach_id: user.id,
-        player_id: playerId || null,
-        session_id: sessionId || null
+        player_id: finalPlayerId,
+        session_id: finalSessionId
       },
     });
 

@@ -104,9 +104,9 @@ const NewPayment = () => {
               // If the session has a player, select that player
               if (session.playerId && !playerId) {
                 setValue("playerId", session.playerId);
-                const player = parsedPlayers.find((p: Player) => p.id === session.playerId);
-                if (player) {
-                  setSelectedPlayer(player);
+                const playerFromSession = parsedSessions.find((p: Player) => p.id === session.playerId);
+                if (playerFromSession) {
+                  setSelectedPlayer(playerFromSession);
                 }
               }
             }
@@ -295,7 +295,7 @@ const NewPayment = () => {
                         <SelectValue placeholder="Select a player (optional)" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {players.map((player) => (
                           <SelectItem key={player.id} value={player.id}>
                             {player.name} {player.email ? `(${player.email})` : ''}
@@ -322,7 +322,7 @@ const NewPayment = () => {
                         <SelectValue placeholder="Link to a session (optional)" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {sessions.map((session) => (
                           <SelectItem key={session.id} value={session.id}>
                             {session.title} ({new Date(session.date).toLocaleDateString()})
