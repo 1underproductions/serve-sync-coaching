@@ -1,102 +1,161 @@
 
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Calendar, Clock, MapPin, User } from "lucide-react";
+import { 
+  CalendarIcon, 
+  ClockIcon, 
+  MapPinIcon, 
+  UserIcon, 
+  ArrowLeft,
+  Edit,
+  Trash2,
+  DollarSign
+} from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
+import { format, parseISO } from "date-fns";
 import SessionNotes from "@/components/session/SessionNotes";
-import SessionFeedback from "@/components/session/SessionFeedback";
 import CoachingPlan from "@/components/session/CoachingPlan";
 import ProgressTracking from "@/components/session/ProgressTracking";
-import { toast } from "@/hooks/use-toast";
-import { format, parseISO } from "date-fns";
+import SessionFeedback from "@/components/session/SessionFeedback";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const SessionDetail = () => {
   const { sessionId } = useParams();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const [session, setSession] = useState(null);
-  const [player, setPlayer] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Get the active tab from query params or default to "notes"
-  const activeTab = searchParams.get("tab") || "notes";
-
   useEffect(() => {
-    const fetchSessionAndPlayer = () => {
+    const fetchSessionDetail = () => {
       try {
-        // Fetch session
         const sessionsStr = localStorage.getItem("sessions");
-        if (!sessionsStr) {
+        if (sessionsStr) {
+          const sessions = JSON.parse(sessionsStr);
+          const foundSession = sessions.find((s) => s.id === sessionId);
+          
+          if (foundSession) {
+            setSession(foundSession);
+          } else {
+            toast({
+              variant: "destructive",
+              title: "Not found",
+              description: "Session does not exist",
+            });
+            navigate("/schedule");
+          }
+        } else {
           toast({
-            title: "Error",
-            description: "No sessions found",
-            variant: "destructive"
+            title: "No sessions",
+            description: "You don't have any sessions yet",
           });
           navigate("/schedule");
-          return;
-        }
-
-        const sessions = JSON.parse(sessionsStr);
-        const foundSession = sessions.find(s => s.id === sessionId);
-        
-        if (!foundSession) {
-          toast({
-            title: "Session not found",
-            description: "The requested session could not be found",
-            variant: "destructive"
-          });
-          navigate("/schedule");
-          return;
-        }
-        
-        setSession(foundSession);
-        
-        // Fetch player
-        const playersStr = localStorage.getItem("players");
-        if (!playersStr) return;
-        
-        const players = JSON.parse(playersStr);
-        const foundPlayer = players.find(p => p.id === foundSession.playerId);
-        
-        if (foundPlayer) {
-          setPlayer(foundPlayer);
         }
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Error fetching session:", error);
         toast({
+          variant: "destructive",
           title: "Error",
-          description: "Failed to load session details",
-          variant: "destructive"
+          description: "Could not load session details",
         });
       } finally {
         setLoading(false);
       }
     };
 
-    fetchSessionAndPlayer();
+    fetchSessionDetail();
   }, [sessionId, navigate]);
 
-  const formatDate = (dateStr) => {
+  const handleDeleteSession = () => {
     try {
-      return format(parseISO(dateStr), 'MMMM d, yyyy');
-    } catch (e) {
-      return dateStr;
+      const sessionsStr = localStorage.getItem("sessions");
+      if (sessionsStr) {
+        const sessions = JSON.parse(sessionsStr);
+        const updatedSessions = sessions.filter((s) => s.id !== sessionId);
+        localStorage.setItem("sessions", JSON.stringify(updatedSessions));
+        
+        toast({
+          title: "Session deleted",
+          description: "The session has been removed from your schedule",
+        });
+        
+        navigate("/schedule");
+      }
+    } catch (error) {
+      console.error("Error deleting session:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete the session",
+      });
     }
   };
 
-  // Function to handle tab change and update URL
-  const handleTabChange = (value) => {
-    navigate(`/session/${sessionId}?tab=${value}`);
+  const formatDate = (dateString) => {
+    try {
+      return format(parseISO(dateString), "EEEE, MMMM d, yyyy");
+    } catch (e) {
+      // If dateString is a Date object
+      try {
+        return format(new Date(dateString), "EEEE, MMMM d, yyyy");
+      } catch (error) {
+        console.error("Error formatting date:", error);
+        return "Invalid date";
+      }
+    }
   };
 
   if (loading) {
     return (
       <Layout>
-        <div className="flex justify-center items-center h-64">
-          <p>Loading session details...</p>
+        <div className="container max-w-4xl py-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => navigate("/schedule")}
+                className="mr-4"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div className="animate-pulse bg-gray-200 h-8 w-48 rounded"></div>
+            </div>
+          </div>
+          <Card>
+            <CardHeader>
+              <div className="animate-pulse bg-gray-200 h-7 w-3/4 rounded mb-2"></div>
+              <div className="animate-pulse bg-gray-200 h-4 w-1/2 rounded"></div>
+            </CardHeader>
+            <CardContent>
+              <div className="animate-pulse space-y-4">
+                <div className="bg-gray-200 h-6 w-full rounded"></div>
+                <div className="bg-gray-200 h-6 w-full rounded"></div>
+                <div className="bg-gray-200 h-6 w-full rounded"></div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </Layout>
     );
@@ -105,15 +164,31 @@ const SessionDetail = () => {
   if (!session) {
     return (
       <Layout>
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">Session not found</p>
-          <Button 
-            className="mt-4" 
-            variant="outline" 
-            onClick={() => navigate("/schedule")}
-          >
-            Return to Schedule
-          </Button>
+        <div className="container max-w-4xl py-8">
+          <div className="flex items-center mb-6">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => navigate("/schedule")}
+              className="mr-4"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-3xl font-bold">Session Not Found</h1>
+          </div>
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <h2 className="text-xl font-semibold mb-2">
+                The requested session could not be found
+              </h2>
+              <p className="text-muted-foreground mb-6">
+                The session may have been deleted or you may have followed an invalid link.
+              </p>
+              <Button onClick={() => navigate("/schedule")}>
+                Return to Schedule
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </Layout>
     );
@@ -121,141 +196,141 @@ const SessionDetail = () => {
 
   return (
     <Layout>
-      <div className="mb-6">
-        <Button variant="outline" size="icon" className="mr-3" onClick={() => navigate("/schedule")}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <span className={`text-xs px-2 py-1 rounded-full align-middle mr-3 ${
-          session.type === "individual"
-            ? "bg-tennis-green-100 text-tennis-green-800"
-            : session.type === "group"
-              ? "bg-tennis-blue-100 text-tennis-blue-800"
-              : "bg-orange-100 text-orange-800"
-        }`}>
-          {session.type === "individual" 
-            ? "Individual" 
-            : session.type === "group" 
-              ? "Group" 
-              : "Tournament"}
-        </span>
-      </div>
+      <div className="container max-w-4xl py-8">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => navigate("/schedule")}
+              className="mr-4"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-3xl font-bold">{session.title}</h1>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(`/session/${sessionId}/edit`)}
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              Edit
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Session</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete this session? This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDeleteSession}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Session Details Card */}
-        <Card className="md:col-span-1 shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-2xl font-bold">Session Details</CardTitle>
+        <Card className="mb-8">
+          <CardHeader>
+            <div className="flex justify-between items-start">
+              <div>
+                <CardTitle>{session.title}</CardTitle>
+                <CardDescription>
+                  {session.type && (
+                    <Badge className="mt-2" variant="outline">
+                      {session.type.charAt(0).toUpperCase() + session.type.slice(1)} Session
+                    </Badge>
+                  )}
+                </CardDescription>
+              </div>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-tennis-green-50 text-tennis-green-700 border-tennis-green-200 hover:bg-tennis-green-100"
+                onClick={() => navigate(`/payments/new?sessionId=${sessionId}`)}
+              >
+                <DollarSign className="h-4 w-4 mr-2" />
+                Create Payment Link
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-5">
-            {player && (
-              <div className="flex items-start">
-                <User className="h-5 w-5 mr-3 text-muted-foreground mt-0.5" />
-                <div>
-                  <p className="font-semibold text-lg">
-                    <Link to={`/players/${player.id}`} className="hover:underline">
-                      {player.name}
-                    </Link>
-                  </p>
-                  <p className="text-muted-foreground">
-                    {player.skill} • {player.age} years old
-                  </p>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <div className="flex items-center text-muted-foreground">
+                  <CalendarIcon className="h-4 w-4 mr-2" />
+                  <span>
+                    {typeof session.date === "string"
+                      ? formatDate(session.date)
+                      : formatDate(session.date)}
+                  </span>
+                </div>
+                <div className="flex items-center text-muted-foreground">
+                  <ClockIcon className="h-4 w-4 mr-2" />
+                  <span>
+                    {session.startTime} - {session.endTime}
+                  </span>
+                </div>
+                <div className="flex items-center text-muted-foreground">
+                  <MapPinIcon className="h-4 w-4 mr-2" />
+                  <span>{session.location}</span>
                 </div>
               </div>
-            )}
-            
-            <div className="flex items-center">
-              <Calendar className="h-5 w-5 mr-3 text-muted-foreground" />
-              <p>{formatDate(session.date)}</p>
-            </div>
-            
-            <div className="flex items-center">
-              <Clock className="h-5 w-5 mr-3 text-muted-foreground" />
-              <p>{session.startTime} - {session.endTime}</p>
-            </div>
-            
-            <div className="flex items-center">
-              <MapPin className="h-5 w-5 mr-3 text-muted-foreground" />
-              <p>{session.location}</p>
-            </div>
-
-            <div className="flex flex-col space-y-3 mt-8">
-              <Button variant="outline" size="lg" className="justify-center w-full">
-                Edit Session
-              </Button>
-              
-              {player && (
-                <Button 
-                  variant="outline" 
-                  size="lg"
-                  className="justify-center w-full"
-                  asChild
-                >
-                  <Link to={`/players/${player.id}`}>
-                    <User className="h-4 w-4 mr-2" />
-                    View Player Profile
-                  </Link>
-                </Button>
-              )}
+              <div className="space-y-3">
+                <div className="flex items-center text-muted-foreground">
+                  <UserIcon className="h-4 w-4 mr-2" />
+                  <span>Player: {session.playerName || session.player || "Not specified"}</span>
+                </div>
+                {session.isRecurring && (
+                  <div className="flex items-start text-muted-foreground">
+                    <CalendarIcon className="h-4 w-4 mr-2 mt-0.5" />
+                    <span>
+                      This is a recurring session that repeats weekly.
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Session Management Card */}
-        <div className="md:col-span-2">
-          <Card className="shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-2xl font-bold">Session Management</CardTitle>
-            </CardHeader>
-            <Tabs 
-              defaultValue={activeTab} 
-              onValueChange={handleTabChange}
-              className="w-full"
-            >
-              <div className="px-6 border-b">
-                <TabsList className="bg-transparent p-0 h-12 w-full justify-start space-x-6">
-                  <TabsTrigger 
-                    value="notes" 
-                    className="py-3 px-1 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-tennis-green-600 data-[state=active]:shadow-none data-[state=active]:bg-transparent"
-                  >
-                    Notes
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="feedback" 
-                    className="py-3 px-1 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-tennis-green-600 data-[state=active]:shadow-none data-[state=active]:bg-transparent"
-                  >
-                    Feedback
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="plan" 
-                    className="py-3 px-1 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-tennis-green-600 data-[state=active]:shadow-none data-[state=active]:bg-transparent"
-                  >
-                    Coaching Plan
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="progress" 
-                    className="py-3 px-1 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-tennis-green-600 data-[state=active]:shadow-none data-[state=active]:bg-transparent"
-                  >
-                    Progress
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-              <CardContent className="pt-6">
-                <TabsContent value="notes" className="mt-0 p-0">
-                  <SessionNotes session={session} />
-                </TabsContent>
-                <TabsContent value="feedback" className="mt-0 p-0">
-                  <SessionFeedback session={session} player={player} />
-                </TabsContent>
-                <TabsContent value="plan" className="mt-0 p-0">
-                  <CoachingPlan session={session} player={player} />
-                </TabsContent>
-                <TabsContent value="progress" className="mt-0 p-0">
-                  <ProgressTracking session={session} player={player} />
-                </TabsContent>
-              </CardContent>
-            </Tabs>
-          </Card>
-        </div>
+        <Tabs defaultValue="notes" className="w-full">
+          <TabsList className="w-full grid grid-cols-2 md:grid-cols-4">
+            <TabsTrigger value="notes">Session Notes</TabsTrigger>
+            <TabsTrigger value="plan">Coaching Plan</TabsTrigger>
+            <TabsTrigger value="progress">Progress</TabsTrigger>
+            <TabsTrigger value="feedback">Feedback</TabsTrigger>
+          </TabsList>
+          <TabsContent value="notes">
+            <SessionNotes sessionId={sessionId} />
+          </TabsContent>
+          <TabsContent value="plan">
+            <CoachingPlan sessionId={sessionId} />
+          </TabsContent>
+          <TabsContent value="progress">
+            <ProgressTracking sessionId={sessionId} />
+          </TabsContent>
+          <TabsContent value="feedback">
+            <SessionFeedback sessionId={sessionId} />
+          </TabsContent>
+        </Tabs>
       </div>
     </Layout>
   );

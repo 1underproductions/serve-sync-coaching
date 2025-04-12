@@ -45,7 +45,17 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { amount, description, playerId, currency = "USD", successPath, cancelPath } = await req.json();
+    const { 
+      amount, 
+      description, 
+      playerId, 
+      currency = "USD", 
+      successPath, 
+      cancelPath,
+      sessionId,
+      playerEmail,
+      sendEmail 
+    } = await req.json();
 
     if (!amount || amount <= 0) {
       return new Response(JSON.stringify({ error: "Invalid amount" }), {
@@ -63,6 +73,7 @@ serve(async (req) => {
         p_amount: amount,
         p_currency: currency,
         p_expires_in_days: 30,
+        p_session_id: sessionId || null
       }
     );
 
@@ -104,6 +115,7 @@ serve(async (req) => {
         payment_link_id: paymentLinkData,
         coach_id: user.id,
         player_id: playerId || null,
+        session_id: sessionId || null
       },
     });
 
@@ -112,6 +124,29 @@ serve(async (req) => {
       .from("payment_links")
       .update({ stripe_checkout_id: session.id })
       .eq("id", paymentLinkData);
+
+    // If email sending is requested and we have a player email
+    if (sendEmail && playerEmail) {
+      try {
+        await supabaseClient.functions.invoke('custom-email', {
+          body: { 
+            type: 'payment-link', 
+            email: playerEmail, 
+            data: {
+              payment_url: session.url,
+              coach_name: profile?.full_name || "Your tennis coach",
+              description: description || "Tennis coaching session",
+              amount: amount,
+              currency: currency.toUpperCase()
+            }
+          }
+        });
+        console.log("Payment link email sent to:", playerEmail);
+      } catch (emailError) {
+        console.error("Failed to send payment email:", emailError);
+        // We don't want to fail the whole request if just the email fails
+      }
+    }
 
     return new Response(JSON.stringify({ id: paymentLinkData, url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
