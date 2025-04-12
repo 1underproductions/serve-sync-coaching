@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -32,14 +31,9 @@ import Contact from "./pages/Contact";
 import FAQ from "./pages/FAQ";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
+import NewPayment from "@/pages/NewPayment";
+import PaymentSuccess from "@/pages/PaymentSuccess";
 
-// Admin pages
-import AdminDashboard from "./pages/Admin/AdminDashboard";
-import AdminUsers from "./pages/Admin/AdminUsers";
-import AdminTransactions from "./pages/Admin/AdminTransactions";
-import AdminSettings from "./pages/Admin/AdminSettings";
-
-// We'll initialize the QueryClient with a default setting to retry failed requests
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -49,53 +43,51 @@ const queryClient = new QueryClient({
   },
 });
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
+function App() {
+  return (
+    <AuthProvider>
       <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/sign-up" element={<SignUp />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/schedule" element={<Schedule />} />
-            <Route path="/schedule/new" element={<NewSession />} />
-            <Route path="/session/:sessionId" element={<SessionDetail />} />
-            <Route path="/session/:sessionId/edit" element={<SessionEdit />} />
-            <Route path="/players" element={<Players />} />
-            <Route path="/players/new" element={<NewPlayer />} />
-            <Route path="/players/:playerId" element={<PlayerDetail />} />
-            <Route path="/messages" element={<Messages />} />
-            <Route path="/messages/new" element={<NewMessage />} />
-            <Route path="/message/:messageId" element={<MessageDetail />} />
-            <Route path="/payments" element={<Payments />} />
-            <Route path="/payment/:paymentId" element={<PaymentDetail />} />
-            <Route path="/account/billing" element={<AccountBilling />} />
-            <Route path="/analytics" element={<Analytics />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/faq" element={<FAQ />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/blog/:postId" element={<BlogPost />} />
-            
-            {/* Admin Routes */}
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/users" element={<AdminUsers />} />
-            <Route path="/admin/transactions" element={<AdminTransactions />} />
-            <Route path="/admin/settings" element={<AdminSettings />} />
-            
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
+        <Toaster />
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/sign-up" element={<SignUp />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/schedule" element={<Schedule />} />
+          <Route path="/schedule/new" element={<NewSession />} />
+          <Route path="/session/:sessionId" element={<SessionDetail />} />
+          <Route path="/session/:sessionId/edit" element={<SessionEdit />} />
+          <Route path="/players" element={<Players />} />
+          <Route path="/players/new" element={<NewPlayer />} />
+          <Route path="/players/:playerId" element={<PlayerDetail />} />
+          <Route path="/messages" element={<Messages />} />
+          <Route path="/messages/new" element={<NewMessage />} />
+          <Route path="/message/:messageId" element={<MessageDetail />} />
+          <Route path="/payments" element={<Payments />} />
+          <Route path="/payment/:paymentId" element={<PaymentDetail />} />
+          <Route path="/account/billing" element={<AccountBilling />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/faq" element={<FAQ />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:postId" element={<BlogPost />} />
+          <Route path="/payments/new" element={<NewPayment />} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
+          
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/transactions" element={<AdminTransactions />} />
+          <Route path="/admin/settings" element={<AdminSettings />} />
+          
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+    </AuthProvider>
+  );
+}
 
 export default App;

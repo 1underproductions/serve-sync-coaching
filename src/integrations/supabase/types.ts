@@ -9,6 +9,171 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      coach_preferences: {
+        Row: {
+          auto_email_session_notes: boolean | null
+          coach_id: string
+          include_progress_metrics: boolean | null
+          include_video_links: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          auto_email_session_notes?: boolean | null
+          coach_id: string
+          include_progress_metrics?: boolean | null
+          include_video_links?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          auto_email_session_notes?: boolean | null
+          coach_id?: string
+          include_progress_metrics?: boolean | null
+          include_video_links?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_preferences_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_links: {
+        Row: {
+          amount: number
+          coach_id: string
+          created_at: string | null
+          currency: string | null
+          description: string | null
+          expires_at: string | null
+          id: string
+          player_id: string | null
+          status: string | null
+          stripe_checkout_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          coach_id: string
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          player_id?: string | null
+          status?: string | null
+          stripe_checkout_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          coach_id?: string
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          player_id?: string | null
+          status?: string | null
+          stripe_checkout_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_links_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_contacts: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          is_primary_payer: boolean | null
+          name: string
+          phone: string | null
+          player_id: string
+          receive_invoices: boolean | null
+          receive_session_notes: boolean | null
+          relationship: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          is_primary_payer?: boolean | null
+          name: string
+          phone?: string | null
+          player_id: string
+          receive_invoices?: boolean | null
+          receive_session_notes?: boolean | null
+          relationship?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          is_primary_payer?: boolean | null
+          name?: string
+          phone?: string | null
+          player_id?: string
+          receive_invoices?: boolean | null
+          receive_session_notes?: boolean | null
+          relationship?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      player_portals: {
+        Row: {
+          access_code: string
+          coach_id: string
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          player_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          access_code: string
+          coach_id: string
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          player_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          access_code?: string
+          coach_id?: string
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          player_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_portals_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -62,6 +227,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_payment_link: {
+        Args: {
+          p_player_id: string
+          p_description: string
+          p_amount: number
+          p_currency?: string
+          p_expires_in_days?: number
+        }
+        Returns: string
+      }
+      create_player_portal: {
+        Args: { p_player_id: string; p_expires_in_days?: number }
+        Returns: string
+      }
+      generate_access_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_auth_user_id: {
         Args: Record<PropertyKey, never>
         Returns: string
