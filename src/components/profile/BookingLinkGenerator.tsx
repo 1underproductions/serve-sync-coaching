@@ -1,13 +1,12 @@
-
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useAuth } from '@/context/AuthContext';
+import { toast } from '@/hooks/use-toast';
+import { Copy, Share2, Check } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Check, Copy, Share2 } from 'lucide-react';
-import { useAuth } from '@/context/useAuth';
-import { toast } from '@/hooks/use-toast';
 
 const BookingLinkGenerator = () => {
   const { user } = useAuth();
@@ -105,11 +104,6 @@ const BookingLinkGenerator = () => {
           </div>
         </div>
       </CardContent>
-      <CardFooter>
-        <p className="text-sm text-muted-foreground">
-          When enabled, players can view your availability and book sessions that will appear in your schedule.
-        </p>
-      </CardFooter>
     </Card>
   );
 };

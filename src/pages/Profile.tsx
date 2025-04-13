@@ -8,6 +8,7 @@ import { PricingCard } from "@/components/profile/PricingCard";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { ProfileAlert } from "@/components/profile/ProfileAlert";
 import { supabase } from "@/lib/supabase";
+import BookingLinkGenerator from "@/components/profile/BookingLinkGenerator";
 
 const Profile = () => {
   const { profile, isLoading: authLoading, user, fetchUserProfile } = useAuth();
@@ -92,6 +93,8 @@ const Profile = () => {
         </div>
         
         <PricingCard />
+        
+        <BookingLinkGenerator />
         
         <ProfileForm onProfileUpdate={handleProfileUpdate} />
       </div>
