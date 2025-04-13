@@ -6,11 +6,33 @@ import { Package } from "lucide-react";
 
 type PackageListProps = {
   packages: PackageData[];
+  isLoading?: boolean;
   onEdit: (packageId: string) => void;
   onDelete: (packageId: string) => void;
 };
 
-export const PackageList = ({ packages, onEdit, onDelete }: PackageListProps) => {
+export const PackageList = ({ packages, isLoading = false, onEdit, onDelete }: PackageListProps) => {
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <h3 className="text-sm font-medium">Your Package Offerings</h3>
+        <div className="grid gap-4 md:grid-cols-2">
+          {[1, 2].map((i) => (
+            <div key={i} className="border rounded-lg p-4 animate-pulse">
+              <div className="h-5 bg-gray-200 rounded w-1/2 mb-2"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/4 mb-3"></div>
+              <div className="h-6 bg-gray-200 rounded w-1/3 mb-3"></div>
+              <div className="flex gap-2 mt-3">
+                <div className="h-8 bg-gray-200 rounded w-16"></div>
+                <div className="h-8 bg-gray-200 rounded w-16"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   if (packages.length === 0) {
     return (
       <div className="text-center py-8 border rounded-lg bg-muted/20">

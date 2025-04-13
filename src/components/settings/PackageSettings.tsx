@@ -19,6 +19,7 @@ const PackageSettings = () => {
   
   const {
     packages,
+    isLoading,
     editingPackage,
     setEditingPackage,
     handleSubmit,
@@ -42,7 +43,8 @@ const PackageSettings = () => {
 
         <div className="space-y-4">
           <PackageList 
-            packages={packages} 
+            packages={packages}
+            isLoading={isLoading}
             onEdit={editPackage} 
             onDelete={deletePackage} 
           />

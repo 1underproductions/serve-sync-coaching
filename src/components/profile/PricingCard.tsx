@@ -12,8 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from '@/context/AuthContext';
-import { PackageData } from '@/lib/supabase';
-import { supabase } from '@/lib/supabase';
+import { PackageData, supabase } from '@/lib/supabase';
 
 export const PricingCard = () => {
   const navigate = useNavigate();
@@ -67,19 +66,31 @@ export const PricingCard = () => {
     }
   }, [profile]);
 
-  // Load packages
+  // Load packages from Supabase
   useEffect(() => {
-    const PACKAGES_KEY = 'tennexis.packages';
-    const savedPackages = localStorage.getItem(PACKAGES_KEY);
-    if (savedPackages) {
+    const fetchPackages = async () => {
+      if (!user?.id) return;
+      
       try {
-        setPackages(JSON.parse(savedPackages));
+        console.log('PricingCard: Fetching packages from Supabase');
+        const { data, error } = await supabase
+          .from('packages')
+          .select('*')
+          .order('created_at', { ascending: false });
+          
+        if (error) {
+          console.error('Error fetching packages:', error);
+        } else if (data) {
+          console.log('Packages fetched successfully:', data);
+          setPackages(data);
+        }
       } catch (error) {
-        console.error('Error parsing packages from localStorage:', error);
-        setPackages([]);
+        console.error('Unexpected error fetching packages:', error);
       }
-    }
-  }, []);
+    };
+    
+    fetchPackages();
+  }, [user?.id]);
 
   return (
     <Card>
@@ -108,8 +119,8 @@ export const PricingCard = () => {
           <div>
             <h3 className="text-sm font-medium mb-2">Package Offerings</h3>
             <div className="space-y-3">
-              {packages.map((pkg, index) => (
-                <div key={index} className="bg-gray-50 p-3 rounded-md">
+              {packages.map((pkg) => (
+                <div key={pkg.id} className="bg-gray-50 p-3 rounded-md">
                   <div className="font-medium">{pkg.name}</div>
                   <div className="text-sm text-gray-500">{pkg.sessions} sessions</div>
                   <div className="flex justify-between items-center mt-1">
