@@ -76,32 +76,18 @@ const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
         // Format date to ISO string for the query
         const formattedDate = format(date, 'yyyy-MM-dd');
         
-        // Fetch existing sessions for the selected date
+        // Fetch existing sessions for the selected date using direct query instead of RPC
         const { data: sessions, error } = await supabase
-          .rpc('get_coach_sessions', { 
-            coach_id_param: coachId,
-            date_param: formattedDate
-          });
-
-        if (error) {
-          console.error('Error fetching sessions:', error);
-          
-          // Fallback to direct query if the RPC call fails
-          const { data: directSessions, error: directError } = await supabase
-            .from('sessions')
-            .select('id, title, start_time, end_time, location')
-            .eq('coach_id', coachId)
-            .gte('start_time', `${formattedDate}T00:00:00`)
-            .lt('start_time', `${format(addDays(date, 1), 'yyyy-MM-dd')}T00:00:00`);
+          .from('sessions')
+          .select('id, title, start_time, end_time, location')
+          .eq('coach_id', coachId)
+          .gte('start_time', `${formattedDate}T00:00:00`)
+          .lt('start_time', `${format(addDays(date, 1), 'yyyy-MM-dd')}T00:00:00`);
             
-          if (directError) throw directError;
+        if (error) throw error;
           
-          // Generate time slots
-          generateTimeSlots(directSessions || []);
-        } else {
-          // Generate time slots if RPC was successful
-          generateTimeSlots(sessions || []);
-        }
+        // Generate time slots
+        generateTimeSlots(sessions || []);
       } catch (error) {
         console.error('Error fetching availability:', error);
         toast({
