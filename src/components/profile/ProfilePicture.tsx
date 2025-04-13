@@ -49,7 +49,14 @@ export const ProfilePicture = () => {
       
       // Use a simpler file path structure - always use the same filename to overwrite previous uploads
       const fileExt = file.name.split('.').pop();
-      const filePath = `profiles/${user.id}.${fileExt}`;
+      const filePath = `avatars/${user.id}.${fileExt}`;
+      
+      // Create bucket if it doesn't exist
+      const { data: bucketData, error: bucketError } = await supabase.storage.getBucket('profile-images');
+      if (bucketError && bucketError.message.includes('does not exist')) {
+        // Create the bucket if it doesn't exist
+        await supabase.storage.createBucket('profile-images', { public: true });
+      }
       
       // Upload the file to Supabase Storage
       const { error: uploadError } = await supabase.storage
@@ -70,13 +77,22 @@ export const ProfilePicture = () => {
       // First update the local UI
       setAvatarSrc(data.publicUrl);
       
-      // Update the avatar_url in the user's profile
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: data.publicUrl })
-        .eq('id', user.id);
+      // Use the security definer function to update avatar safely
+      const { error: updateError } = await supabase.rpc('update_user_avatar_safe', {
+        new_avatar_url: data.publicUrl
+      });
         
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Failed to update avatar URL using RPC function:', updateError);
+        
+        // Fallback to direct update
+        const { error: directUpdateError } = await supabase
+          .from('profiles')
+          .update({ avatar_url: data.publicUrl })
+          .eq('id', user.id);
+          
+        if (directUpdateError) throw directUpdateError;
+      }
       
       // Refresh profile data
       await fetchUserProfile(user.id);

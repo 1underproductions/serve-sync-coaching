@@ -21,3 +21,6 @@ enabled = true
 
 [functions.stripe-webhook]
 verify_jwt = false
+
+[functions.update-avatar]
+verify_jwt = true

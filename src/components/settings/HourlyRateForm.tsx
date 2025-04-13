@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabase";
 
 const hourlyRateSchema = z.object({
   hourlyRate: z.coerce.number().min(10, { message: "Hourly rate must be at least $10" }),
@@ -53,32 +54,17 @@ export const HourlyRateForm = () => {
       // Log the data we're about to send for debugging
       console.log('Updating hourly rate with data:', { hourly_rate: data.hourlyRate });
       
-      // Use the RPC function to update the hourly rate
-      const { error } = await fetch('https://cugwtwpgccpcjeumrkxf.supabase.co/rest/v1/rpc/update_hourly_rate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z3d0d3BnY2NwY2pldW1ya3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNjA1MDEsImV4cCI6MjA1ODkzNjUwMX0.DjWV3Jt7OcVaJh4QYQ8NsBpPtrI1m8FJ5O3n-SHhMrk',
-          'Authorization': `Bearer ${sessionStorage.getItem('supabase.auth.token')}`,
-        },
-        body: JSON.stringify({ 
-          hourly_rate: data.hourlyRate
-        }),
-      }).then(res => {
-        if (!res.ok) {
-          return res.text().then(text => {
-            throw new Error(`Function API error: ${text}`);
-          });
-        }
-        return res.json();
+      // Call the RPC function to update hourly rate
+      const { error } = await supabase.rpc('update_hourly_rate', {
+        hourly_rate: data.hourlyRate
       });
         
       if (error) {
-        console.error('Function API update error:', error);
+        console.error('RPC update error:', error);
         throw error;
       }
       
-      console.log('Profile hourly rate updated successfully via function API');
+      console.log('Profile hourly rate updated successfully via RPC function');
       
       // Now refresh the profile
       await fetchUserProfile();

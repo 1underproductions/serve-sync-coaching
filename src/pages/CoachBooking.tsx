@@ -18,25 +18,29 @@ const CoachBooking = () => {
       if (!coachId) return;
 
       try {
-        // We'll use a more specific query with fewer fields to reduce chances of policy errors
+        console.log('Attempting to fetch coach profile for ID:', coachId);
+        
+        // We'll specify a public API with a simpler query
         const { data, error } = await supabase
           .from('profiles')
           .select('full_name, avatar_url, bio, location, hourly_rate')
           .eq('id', coachId)
-          .single();
+          .limit(1);  // We're not using single() to avoid error if no row found
 
         if (error) {
-          console.error('Error fetching coach profile:', error);
+          console.error('Error in coach profile query:', error);
           throw error;
         }
         
-        if (!data) {
+        if (!data || data.length === 0) {
+          console.log('No coach found with ID:', coachId);
           setError('Coach not found');
         } else {
-          setCoach({...data, id: coachId});
+          console.log('Coach profile retrieved successfully:', data[0]);
+          setCoach({...data[0], id: coachId});
         }
       } catch (error: any) {
-        console.error('Error fetching coach profile:', error);
+        console.error('Exception in fetchCoachProfile:', error);
         setError(error.message || 'Could not load coach information');
         
         toast({

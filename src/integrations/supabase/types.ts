@@ -322,6 +322,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       update_hourly_rate: {
         Args: { hourly_rate: number }
         Returns: undefined
