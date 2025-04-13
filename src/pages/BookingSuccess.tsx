@@ -23,28 +23,45 @@ const BookingSuccess = () => {
       }
 
       try {
-        // First, get the payment link that contains the session ID
+        // Query directly from supabase - no need to call an API
         const { data: paymentLink, error: paymentError } = await supabase
           .from('payment_links')
           .select('*')
           .eq('stripe_checkout_id', stripeSessionId)
           .single();
 
-        if (paymentError) throw paymentError;
+        if (paymentError) {
+          console.error('Error fetching payment link:', paymentError);
+          setLoading(false);
+          return;
+        }
         
-        if (!paymentLink.session_id) {
+        // If there's no session_id, we can't fetch session details
+        if (!paymentLink?.session_id) {
           setLoading(false);
           return;
         }
 
-        // Now get the session details
+        // Now get the session details using a direct Supabase query
         const { data: sessionData, error: sessionError } = await supabase
           .from('sessions')
-          .select('*, profiles:coach_id(full_name, avatar_url, email, phone)')
+          .select(`
+            *,
+            coach:coach_id (
+              full_name, 
+              avatar_url, 
+              email, 
+              phone
+            )
+          `)
           .eq('id', paymentLink.session_id)
           .single();
 
-        if (sessionError) throw sessionError;
+        if (sessionError) {
+          console.error('Error fetching session:', sessionError);
+          setLoading(false);
+          return;
+        }
         
         // Update the session payment status to paid
         await supabase
@@ -131,18 +148,18 @@ const BookingSuccess = () => {
                 <div className="mt-6 pt-4 border-t">
                   <h4 className="font-medium mb-2">Coach</h4>
                   <div className="flex items-center">
-                    {session.profiles?.avatar_url ? (
+                    {session.coach?.avatar_url ? (
                       <img 
-                        src={session.profiles.avatar_url} 
-                        alt={session.profiles.full_name} 
+                        src={session.coach.avatar_url} 
+                        alt={session.coach.full_name} 
                         className="h-10 w-10 rounded-full mr-3"
                       />
                     ) : (
                       <div className="h-10 w-10 rounded-full bg-gray-200 mr-3"></div>
                     )}
                     <div>
-                      <p className="font-medium">{session.profiles?.full_name}</p>
-                      <p className="text-sm text-muted-foreground">{session.profiles?.email}</p>
+                      <p className="font-medium">{session.coach?.full_name}</p>
+                      <p className="text-sm text-muted-foreground">{session.coach?.email}</p>
                     </div>
                   </div>
                 </div>

@@ -20,14 +20,6 @@ interface TimeSlot {
   available: boolean;
 }
 
-interface Session {
-  id: string;
-  title: string;
-  start_time: string;
-  end_time: string;
-  location: string;
-}
-
 interface Coach {
   full_name: string;
   hourly_rate: number;
@@ -86,53 +78,30 @@ const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
         
         // Fetch existing sessions for the selected date
         const { data: sessions, error } = await supabase
-          .from('sessions')
-          .select('id, title, start_time, end_time, location')
-          .eq('coach_id', coachId)
-          .gte('start_time', `${formattedDate}T00:00:00`)
-          .lt('start_time', `${format(addDays(date, 1), 'yyyy-MM-dd')}T00:00:00`);
-          
-        if (error) throw error;
+          .rpc('get_coach_sessions', { 
+            coach_id_param: coachId,
+            date_param: formattedDate
+          });
 
-        // Generate time slots (e.g., every 30 minutes from 8am to 8pm)
-        const slots: TimeSlot[] = [];
-        const startHour = 8; // 8am
-        const endHour = 20; // 8pm
-        const now = new Date();
-        
-        for (let hour = startHour; hour < endHour; hour++) {
-          for (let minute = 0; minute < 60; minute += 30) {
-            const slotStartTime = new Date(date);
-            slotStartTime.setHours(hour, minute, 0, 0);
+        if (error) {
+          console.error('Error fetching sessions:', error);
+          
+          // Fallback to direct query if the RPC call fails
+          const { data: directSessions, error: directError } = await supabase
+            .from('sessions')
+            .select('id, title, start_time, end_time, location')
+            .eq('coach_id', coachId)
+            .gte('start_time', `${formattedDate}T00:00:00`)
+            .lt('start_time', `${format(addDays(date, 1), 'yyyy-MM-dd')}T00:00:00`);
             
-            // Don't show past time slots for today
-            if (format(date, 'yyyy-MM-dd') === format(now, 'yyyy-MM-dd') && isBefore(slotStartTime, now)) {
-              continue;
-            }
-            
-            const slotEndTime = addMinutes(slotStartTime, 30);
-            
-            // Check if this slot overlaps with any existing session
-            const isAvailable = !sessions?.some(session => {
-              const sessionStart = parseISO(session.start_time);
-              const sessionEnd = parseISO(session.end_time);
-              
-              return (
-                (isAfter(slotStartTime, sessionStart) && isBefore(slotStartTime, sessionEnd)) ||
-                (isAfter(slotEndTime, sessionStart) && isBefore(slotEndTime, sessionEnd)) ||
-                (isBefore(slotStartTime, sessionStart) && isAfter(slotEndTime, sessionEnd))
-              );
-            });
-            
-            slots.push({
-              start: format(slotStartTime, 'HH:mm'),
-              end: format(slotEndTime, 'HH:mm'),
-              available: isAvailable
-            });
-          }
+          if (directError) throw directError;
+          
+          // Generate time slots
+          generateTimeSlots(directSessions || []);
+        } else {
+          // Generate time slots if RPC was successful
+          generateTimeSlots(sessions || []);
         }
-        
-        setTimeSlots(slots);
       } catch (error) {
         console.error('Error fetching availability:', error);
         toast({
@@ -140,13 +109,57 @@ const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
           description: 'Could not load availability',
           variant: 'destructive',
         });
-      } finally {
+        // Generate empty time slots on error
+        setTimeSlots([]);
         setIsLoading(false);
       }
     };
     
     fetchAvailability();
   }, [date, coachId]);
+
+  // Helper function to generate time slots
+  const generateTimeSlots = (sessions: any[]) => {
+    const slots: TimeSlot[] = [];
+    const startHour = 8; // 8am
+    const endHour = 20; // 8pm
+    const now = new Date();
+    
+    for (let hour = startHour; hour < endHour; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        const slotStartTime = new Date(date!);
+        slotStartTime.setHours(hour, minute, 0, 0);
+        
+        // Don't show past time slots for today
+        if (format(date!, 'yyyy-MM-dd') === format(now, 'yyyy-MM-dd') && isBefore(slotStartTime, now)) {
+          continue;
+        }
+        
+        const slotEndTime = addMinutes(slotStartTime, 30);
+        
+        // Check if this slot overlaps with any existing session
+        const isAvailable = !sessions?.some(session => {
+          const sessionStart = parseISO(session.start_time);
+          const sessionEnd = parseISO(session.end_time);
+          
+          return (
+            (isAfter(slotStartTime, sessionStart) && isBefore(slotStartTime, sessionEnd)) ||
+            (isAfter(slotEndTime, sessionStart) && isBefore(slotEndTime, sessionEnd)) ||
+            (isBefore(slotStartTime, sessionStart) && isAfter(slotEndTime, sessionEnd))
+          );
+        });
+        
+        slots.push({
+          start: format(slotStartTime, 'HH:mm'),
+          end: format(slotEndTime, 'HH:mm'),
+          available: isAvailable
+        });
+      }
+    }
+    
+    setTimeSlots(slots);
+    setIsLoading(false);
+  };
 
   // Combine adjacent time slots based on selected duration
   const combineTimeSlots = () => {

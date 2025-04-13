@@ -51,6 +51,7 @@ export type Database = {
           expires_at: string | null
           id: string
           player_id: string | null
+          session_id: string | null
           status: string | null
           stripe_checkout_id: string | null
           updated_at: string | null
@@ -64,6 +65,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           player_id?: string | null
+          session_id?: string | null
           status?: string | null
           stripe_checkout_id?: string | null
           updated_at?: string | null
@@ -77,6 +79,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           player_id?: string | null
+          session_id?: string | null
           status?: string | null
           stripe_checkout_id?: string | null
           updated_at?: string | null
@@ -87,6 +90,13 @@ export type Database = {
             columns: ["coach_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_links_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -221,6 +231,69 @@ export type Database = {
           years_experience?: number | null
         }
         Relationships: []
+      }
+      sessions: {
+        Row: {
+          coach_id: string
+          created_at: string
+          description: string | null
+          end_time: string
+          id: string
+          location: string | null
+          payment_status: string
+          player_id: string | null
+          requires_prepayment: boolean | null
+          start_time: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          description?: string | null
+          end_time: string
+          id?: string
+          location?: string | null
+          payment_status?: string
+          player_id?: string | null
+          requires_prepayment?: boolean | null
+          start_time: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          description?: string | null
+          end_time?: string
+          id?: string
+          location?: string | null
+          payment_status?: string
+          player_id?: string | null
+          requires_prepayment?: boolean | null
+          start_time?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sessions_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
