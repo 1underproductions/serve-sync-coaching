@@ -11,22 +11,34 @@ const CoachBooking = () => {
   const { coachId } = useParams();
   const [coach, setCoach] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchCoachProfile = async () => {
       if (!coachId) return;
 
       try {
+        // We'll use a more specific query with fewer fields to reduce chances of policy errors
         const { data, error } = await supabase
           .from('profiles')
-          .select('id, full_name, avatar_url, bio, location, hourly_rate, years_experience')
+          .select('full_name, avatar_url, bio, location, hourly_rate')
           .eq('id', coachId)
           .single();
 
-        if (error) throw error;
-        setCoach(data);
-      } catch (error) {
+        if (error) {
+          console.error('Error fetching coach profile:', error);
+          throw error;
+        }
+        
+        if (!data) {
+          setError('Coach not found');
+        } else {
+          setCoach({...data, id: coachId});
+        }
+      } catch (error: any) {
         console.error('Error fetching coach profile:', error);
+        setError(error.message || 'Could not load coach information');
+        
         toast({
           title: 'Error',
           description: 'Could not load coach information',
@@ -51,7 +63,7 @@ const CoachBooking = () => {
     );
   }
 
-  if (!coach) {
+  if (error || !coach) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-muted/20 p-4">
         <Card className="w-full max-w-3xl">
@@ -63,6 +75,7 @@ const CoachBooking = () => {
           </CardHeader>
           <CardContent>
             <p>The coach may have deactivated their booking page or the URL may be incorrect.</p>
+            {error && <p className="mt-2 text-sm text-muted-foreground">Error: {error}</p>}
           </CardContent>
         </Card>
       </div>
@@ -90,12 +103,9 @@ const CoachBooking = () => {
               )}
               
               <div>
-                <h1 className="text-3xl font-bold">{coach.full_name}</h1>
+                <h1 className="text-3xl font-bold">{coach.full_name || 'Tennis Coach'}</h1>
                 <p className="text-muted-foreground">
-                  {coach.years_experience 
-                    ? `${coach.years_experience} years experience` 
-                    : 'Tennis Coach'}
-                  {coach.location ? ` • ${coach.location}` : ''}
+                  {coach.location ? `${coach.location}` : 'Tennis Coach'}
                 </p>
               </div>
             </div>
