@@ -54,17 +54,27 @@ export const HourlyRateForm = () => {
       // Log the data we're about to send for debugging
       console.log('Updating hourly rate with data:', { hourly_rate: data.hourlyRate });
       
-      // Call the RPC function to update hourly rate
-      const { error } = await supabase.rpc('update_hourly_rate', {
+      // First try using the RPC function
+      let result = await supabase.rpc('update_hourly_rate', {
         hourly_rate: data.hourlyRate
       });
+      
+      if (result.error) {
+        console.error('RPC update error, falling back to direct update:', result.error);
         
-      if (error) {
-        console.error('RPC update error:', error);
-        throw error;
+        // Fallback: Try direct update if RPC fails
+        result = await supabase
+          .from('profiles')
+          .update({ hourly_rate: data.hourlyRate })
+          .eq('id', profile?.id || '');
+          
+        if (result.error) {
+          console.error('Direct update also failed:', result.error);
+          throw result.error;
+        }
       }
       
-      console.log('Profile hourly rate updated successfully via RPC function');
+      console.log('Profile hourly rate updated successfully');
       
       // Now refresh the profile
       await fetchUserProfile();
@@ -78,7 +88,7 @@ export const HourlyRateForm = () => {
       console.error('Error updating hourly rate:', error);
       toast({
         title: "Error",
-        description: "Could not update hourly rate. Please try again later.",
+        description: error.message || "Could not update hourly rate. Please try again later.",
         variant: "destructive",
       });
     } finally {
