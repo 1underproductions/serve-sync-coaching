@@ -1,0 +1,7 @@
+
+[deploy]
+allowed_origins = ["*"]
+
+# Disable JWT verification since Stripe needs to call this endpoint
+verify_jwt = false
+

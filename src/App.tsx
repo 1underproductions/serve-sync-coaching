@@ -38,6 +38,8 @@ import AdminDashboard from "@/pages/Admin/AdminDashboard";
 import AdminUsers from "@/pages/Admin/AdminUsers";
 import AdminTransactions from "@/pages/Admin/AdminTransactions";
 import AdminSettings from "@/pages/Admin/AdminSettings";
+import CoachBooking from "@/pages/CoachBooking";
+import BookingSuccess from "@/pages/BookingSuccess";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -85,6 +87,8 @@ function App() {
               <Route path="/blog/:postId" element={<BlogPost />} />
               <Route path="/payments/new" element={<NewPayment />} />
               <Route path="/payment-success" element={<PaymentSuccess />} />
+              <Route path="/booking/:coachId" element={<CoachBooking />} />
+              <Route path="/booking-success" element={<BookingSuccess />} />
               
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/users" element={<AdminUsers />} />

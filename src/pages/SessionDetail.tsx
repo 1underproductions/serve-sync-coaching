@@ -319,16 +319,16 @@ const SessionDetail = () => {
             <TabsTrigger value="feedback">Feedback</TabsTrigger>
           </TabsList>
           <TabsContent value="notes">
-            <SessionNotes sessionId={sessionId || ""} />
+            <SessionNotes session={session} />
           </TabsContent>
           <TabsContent value="plan">
-            <CoachingPlan sessionId={sessionId || ""} />
+            <CoachingPlan session={session} player={session.player} />
           </TabsContent>
           <TabsContent value="progress">
-            <ProgressTracking sessionId={sessionId || ""} />
+            <ProgressTracking session={session} player={session.player} />
           </TabsContent>
           <TabsContent value="feedback">
-            <SessionFeedback sessionId={sessionId || ""} />
+            <SessionFeedback session={session} player={session.player} />
           </TabsContent>
         </Tabs>
       </div>

@@ -54,7 +54,9 @@ serve(async (req) => {
       cancelPath,
       sessionId,
       playerEmail,
-      sendEmail 
+      sendEmail,
+      isDeposit = false,
+      cancellationPolicy = "24_hours" 
     } = await req.json();
 
     if (!amount || amount <= 0) {
@@ -96,6 +98,16 @@ serve(async (req) => {
       .eq("id", user.id)
       .single();
 
+    // Add metadata for cancellation policy and deposit status
+    const metadata = {
+      payment_link_id: paymentLinkData,
+      coach_id: user.id,
+      player_id: finalPlayerId,
+      session_id: finalSessionId,
+      is_deposit: isDeposit ? "true" : "false",
+      cancellation_policy: cancellationPolicy
+    };
+
     // Create a Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
@@ -104,7 +116,9 @@ serve(async (req) => {
           price_data: {
             currency: currency.toLowerCase(),
             product_data: {
-              name: description || "Tennis coaching session",
+              name: isDeposit 
+                ? `Deposit for: ${description || "Tennis coaching session"}`
+                : description || "Tennis coaching session",
               description: `Payment to ${profile?.full_name || "Tennis Coach"}`,
             },
             unit_amount: Math.round(amount * 100), // Convert to cents
@@ -115,18 +129,17 @@ serve(async (req) => {
       mode: "payment",
       success_url: `${req.headers.get("origin")}${successPath || "/payment-success"}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.get("origin")}${cancelPath || "/payments"}`,
-      metadata: {
-        payment_link_id: paymentLinkData,
-        coach_id: user.id,
-        player_id: finalPlayerId,
-        session_id: finalSessionId
-      },
+      metadata: metadata,
     });
 
     // Update payment link with Stripe checkout ID
     await supabaseClient
       .from("payment_links")
-      .update({ stripe_checkout_id: session.id })
+      .update({ 
+        stripe_checkout_id: session.id,
+        is_deposit: isDeposit,
+        cancellation_policy: cancellationPolicy 
+      })
       .eq("id", paymentLinkData);
 
     // If email sending is requested and we have a player email
@@ -141,7 +154,11 @@ serve(async (req) => {
               coach_name: profile?.full_name || "Your tennis coach",
               description: description || "Tennis coaching session",
               amount: amount,
-              currency: currency.toUpperCase()
+              currency: currency.toUpperCase(),
+              is_deposit: isDeposit,
+              cancellation_policy: cancellationPolicy === "24_hours" 
+                ? "You may cancel up to 24 hours before the session for a full refund. After that, you will be charged the full amount."
+                : "This payment is non-refundable once processed."
             }
           }
         });

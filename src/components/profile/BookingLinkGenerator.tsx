@@ -1,0 +1,117 @@
+
+import { useState } from 'react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Check, Copy, Share2 } from 'lucide-react';
+import { useAuth } from '@/context/useAuth';
+import { toast } from '@/hooks/use-toast';
+
+const BookingLinkGenerator = () => {
+  const { user } = useAuth();
+  const [copied, setCopied] = useState(false);
+  const [enableBooking, setEnableBooking] = useState(true);
+  
+  const bookingLink = user?.id 
+    ? `${window.location.origin}/booking/${user.id}` 
+    : '';
+
+  const handleCopyLink = () => {
+    if (!bookingLink) return;
+    
+    navigator.clipboard.writeText(bookingLink);
+    setCopied(true);
+    toast({
+      title: 'Link copied',
+      description: 'Booking link copied to clipboard',
+    });
+    
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleShareLink = () => {
+    if (!bookingLink) return;
+    
+    if (navigator.share) {
+      navigator.share({
+        title: 'Book a Tennis Session',
+        text: 'Book a tennis session with me',
+        url: bookingLink,
+      }).catch((error) => console.log('Error sharing', error));
+    } else {
+      handleCopyLink();
+    }
+  };
+
+  // In a real implementation, this would toggle the availability in the database
+  const handleToggleBooking = (checked: boolean) => {
+    setEnableBooking(checked);
+    toast({
+      title: checked ? 'Booking enabled' : 'Booking disabled',
+      description: checked 
+        ? 'Players can now book sessions through your public booking page' 
+        : 'Your public booking page is now disabled',
+    });
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Public Booking Link</CardTitle>
+        <CardDescription>
+          Share this link with players to let them book sessions directly on your calendar
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center space-x-2">
+          <Switch 
+            id="enable-booking" 
+            checked={enableBooking}
+            onCheckedChange={handleToggleBooking}
+          />
+          <Label htmlFor="enable-booking">Enable public bookings</Label>
+        </div>
+        
+        <div className="space-y-1">
+          <Label htmlFor="booking-link">Your booking link</Label>
+          <div className="flex gap-2">
+            <Input 
+              id="booking-link"
+              value={bookingLink}
+              readOnly
+              disabled={!enableBooking}
+              className="flex-1"
+            />
+            <Button
+              variant="outline"
+              size="icon"
+              disabled={!enableBooking}
+              onClick={handleCopyLink}
+              className="shrink-0"
+            >
+              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              disabled={!enableBooking}
+              onClick={handleShareLink}
+              className="shrink-0"
+            >
+              <Share2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+      <CardFooter>
+        <p className="text-sm text-muted-foreground">
+          When enabled, players can view your availability and book sessions that will appear in your schedule.
+        </p>
+      </CardFooter>
+    </Card>
+  );
+};
+
+export default BookingLinkGenerator;

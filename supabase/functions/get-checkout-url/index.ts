@@ -15,11 +15,15 @@ serve(async (req) => {
   }
 
   try {
-    // Initialize Stripe
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-      apiVersion: "2023-10-16",
-      httpClient: Stripe.createFetchHttpClient(),
-    });
+    const url = new URL(req.url);
+    const paymentLinkId = url.searchParams.get("id");
+
+    if (!paymentLinkId) {
+      return new Response(JSON.stringify({ error: "Payment link ID is required" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
 
     // Initialize Supabase client with Deno runtime
     const supabaseClient = createClient(
@@ -32,127 +36,38 @@ serve(async (req) => {
       }
     );
 
-    // Get the current user and verify authentication
-    const {
-      data: { user },
-    } = await supabaseClient.auth.getUser();
-
-    if (!user) {
-      return new Response(JSON.stringify({ error: "Not authenticated" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 401,
-      });
-    }
-
-    // Parse request body
-    const { 
-      amount, 
-      description, 
-      playerId, 
-      currency = "USD", 
-      successPath, 
-      cancelPath,
-      sessionId,
-      playerEmail,
-      sendEmail 
-    } = await req.json();
-
-    if (!amount || amount <= 0) {
-      return new Response(JSON.stringify({ error: "Invalid amount" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
-      });
-    }
-
-    // Handle special values for playerId and sessionId
-    const finalPlayerId = playerId === "none" ? null : playerId || null;
-    const finalSessionId = sessionId === "none" ? null : sessionId || null;
-
-    // Create payment link in the database
-    const { data: paymentLinkData, error: dbError } = await supabaseClient.rpc(
-      "create_payment_link",
-      {
-        p_player_id: finalPlayerId,
-        p_description: description || "Tennis coaching session",
-        p_amount: amount,
-        p_currency: currency,
-        p_expires_in_days: 30,
-        p_session_id: finalSessionId
-      }
-    );
-
-    if (dbError) {
-      console.error("Database error:", dbError);
-      return new Response(JSON.stringify({ error: "Failed to create payment link" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      });
-    }
-
-    // Get coach profile for metadata
-    const { data: profile } = await supabaseClient
-      .from("profiles")
-      .select("full_name, email")
-      .eq("id", user.id)
+    // Attempt to get the payment link data
+    const { data: paymentLinkData, error } = await supabaseClient
+      .from("payment_links")
+      .select("stripe_checkout_id, coach_id, amount, currency, description")
+      .eq("id", paymentLinkId)
       .single();
 
-    // Create a Stripe checkout session
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: currency.toLowerCase(),
-            product_data: {
-              name: description || "Tennis coaching session",
-              description: `Payment to ${profile?.full_name || "Tennis Coach"}`,
-            },
-            unit_amount: Math.round(amount * 100), // Convert to cents
-          },
-          quantity: 1,
-        },
-      ],
-      mode: "payment",
-      success_url: `${req.headers.get("origin")}${successPath || "/payment-success"}?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.get("origin")}${cancelPath || "/payments"}`,
-      metadata: {
-        payment_link_id: paymentLinkData,
-        coach_id: user.id,
-        player_id: finalPlayerId,
-        session_id: finalSessionId
-      },
-    });
-
-    // Update payment link with Stripe checkout ID
-    await supabaseClient
-      .from("payment_links")
-      .update({ stripe_checkout_id: session.id })
-      .eq("id", paymentLinkData);
-
-    // If email sending is requested and we have a player email
-    if (sendEmail && playerEmail) {
-      try {
-        await supabaseClient.functions.invoke('custom-email', {
-          body: { 
-            type: 'payment-link', 
-            email: playerEmail, 
-            data: {
-              payment_url: session.url,
-              coach_name: profile?.full_name || "Your tennis coach",
-              description: description || "Tennis coaching session",
-              amount: amount,
-              currency: currency.toUpperCase()
-            }
-          }
-        });
-        console.log("Payment link email sent to:", playerEmail);
-      } catch (emailError) {
-        console.error("Failed to send payment email:", emailError);
-        // We don't want to fail the whole request if just the email fails
-      }
+    if (error || !paymentLinkData?.stripe_checkout_id) {
+      console.error("Database error:", error);
+      return new Response(JSON.stringify({ error: "Payment link not found or invalid" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 404,
+      });
     }
 
-    return new Response(JSON.stringify({ id: paymentLinkData, url: session.url }), {
+    // Initialize Stripe
+    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+      apiVersion: "2023-10-16",
+      httpClient: Stripe.createFetchHttpClient(),
+    });
+
+    // Get the Stripe checkout session
+    const session = await stripe.checkout.sessions.retrieve(paymentLinkData.stripe_checkout_id);
+
+    if (!session || !session.url) {
+      return new Response(JSON.stringify({ error: "Stripe checkout session not found or expired" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 404,
+      });
+    }
+
+    return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
