@@ -4,27 +4,18 @@ import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format, addDays, parseISO, isAfter, isBefore, addMinutes, isSameDay } from 'date-fns';
+import { addDays, format } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
-import { Loader2, ChevronRight, Check } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import { generateTimeSlots, combineTimeSlots } from '@/utils/booking/timeUtils';
+import TimeSlotSelector from './TimeSlotSelector';
+import BookingSummary from './BookingSummary';
+import type { TimeSlot, Coach } from '@/types/booking';
 
 interface PublicBookingCalendarProps {
   coachId: string;
-}
-
-interface TimeSlot {
-  start: string;
-  end: string;
-  available: boolean;
-}
-
-interface Coach {
-  full_name: string;
-  hourly_rate: number;
-  location: string;
-  avatar_url?: string;
 }
 
 const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
@@ -38,14 +29,12 @@ const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
   const [sessions, setSessions] = useState<any[]>([]);
   const navigate = useNavigate();
 
-  // Fetch coach info and existing sessions when date changes
   useEffect(() => {
     const fetchCoachInfoAndSessions = async () => {
       if (!date || !coachId) return;
       
       setIsLoading(true);
       try {
-        // Fetch coach info
         const { data: coachData, error: coachError } = await supabase
           .from('profiles')
           .select('full_name, hourly_rate, location, avatar_url')
@@ -55,10 +44,8 @@ const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
         if (coachError) throw coachError;
         setCoachInfo(coachData);
 
-        // Format date for query
         const formattedDate = format(date, 'yyyy-MM-dd');
         
-        // Fetch all sessions for the selected date
         const { data: sessionsData, error: sessionsError } = await supabase
           .from('sessions')
           .select('*')
@@ -69,8 +56,8 @@ const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
         if (sessionsError) throw sessionsError;
         setSessions(sessionsData || []);
         
-        // Generate available time slots
-        generateTimeSlots(sessionsData || []);
+        const newTimeSlots = generateTimeSlots(date, sessionsData || []);
+        setTimeSlots(newTimeSlots);
       } catch (error) {
         console.error('Error fetching data:', error);
         toast({
@@ -87,97 +74,21 @@ const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
     fetchCoachInfoAndSessions();
   }, [date, coachId]);
 
-  // Helper function to generate time slots
-  const generateTimeSlots = (existingSessions: any[]) => {
-    const slots: TimeSlot[] = [];
-    const startHour = 8; // 8am
-    const endHour = 20; // 8pm
-    const now = new Date();
-    
-    for (let hour = startHour; hour < endHour; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
-        const slotStartTime = new Date(date!);
-        slotStartTime.setHours(hour, minute, 0, 0);
-        
-        // Don't show past time slots for today
-        if (format(date!, 'yyyy-MM-dd') === format(now, 'yyyy-MM-dd') && isBefore(slotStartTime, now)) {
-          continue;
-        }
-        
-        const slotEndTime = addMinutes(slotStartTime, 30);
-        
-        // Check if this slot overlaps with any existing session
-        const isAvailable = !existingSessions?.some(session => {
-          const sessionStart = parseISO(session.start_time);
-          const sessionEnd = parseISO(session.end_time);
-          
-          return (
-            (isAfter(slotStartTime, sessionStart) && isBefore(slotStartTime, sessionEnd)) ||
-            (isAfter(slotEndTime, sessionStart) && isBefore(slotEndTime, sessionEnd)) ||
-            (isBefore(slotStartTime, sessionStart) && isAfter(slotEndTime, sessionEnd))
-          );
-        });
-        
-        slots.push({
-          start: format(slotStartTime, 'HH:mm'),
-          end: format(slotEndTime, 'HH:mm'),
-          available: isAvailable
-        });
-      }
-    }
-    
-    setTimeSlots(slots);
-  };
-
-  // Combine adjacent time slots based on selected duration
-  const combineTimeSlots = () => {
-    const duration = parseInt(selectedDuration);
-    const slotsNeeded = duration / 30;
-    const combinedSlots: TimeSlot[] = [];
-    
-    for (let i = 0; i <= timeSlots.length - slotsNeeded; i++) {
-      let allAvailable = true;
-      
-      // Check if consecutive slots are available
-      for (let j = 0; j < slotsNeeded; j++) {
-        if (!timeSlots[i + j].available) {
-          allAvailable = false;
-          break;
-        }
-      }
-      
-      if (allAvailable) {
-        combinedSlots.push({
-          start: timeSlots[i].start,
-          end: timeSlots[i + slotsNeeded - 1].end,
-          available: true
-        });
-      }
-    }
-    
-    return combinedSlots;
-  };
-
   const handleBooking = async () => {
     if (!selectedTimeSlot || !date || !coachInfo) return;
     
     setLoadingSlot(selectedTimeSlot);
     
     try {
-      // Extract start and end time
       const [startTime, endTime] = selectedTimeSlot.split(' - ');
-      
-      // Create date objects for the session
       const sessionDate = format(date, 'yyyy-MM-dd');
       const startDateTime = `${sessionDate}T${startTime}:00`;
       const endDateTime = `${sessionDate}T${endTime}:00`;
       
-      // Calculate amount based on duration
       const durationMinutes = parseInt(selectedDuration);
       const hours = durationMinutes / 60;
       const amount = coachInfo.hourly_rate * hours;
       
-      // Create a session in the database
       const { data: sessionData, error: sessionError } = await supabase
         .from('sessions')
         .insert({
@@ -196,7 +107,6 @@ const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
       
       if (sessionError) throw sessionError;
       
-      // Create a checkout session for payment
       const response = await fetch('/api/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -230,7 +140,7 @@ const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
     }
   };
 
-  const availableTimeSlots = combineTimeSlots();
+  const availableTimeSlots = combineTimeSlots(timeSlots, selectedDuration);
 
   return (
     <Card className="w-full max-w-3xl mx-auto">
@@ -281,60 +191,23 @@ const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
                   <p className="text-muted-foreground">No available time slots for this date.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-2">
-                  {availableTimeSlots.map((slot) => (
-                    <Button
-                      key={`${slot.start}-${slot.end}`}
-                      variant={selectedTimeSlot === `${slot.start} - ${slot.end}` ? 'default' : 'outline'}
-                      className="justify-start"
-                      onClick={() => setSelectedTimeSlot(`${slot.start} - ${slot.end}`)}
-                      disabled={!slot.available || loadingSlot === `${slot.start} - ${slot.end}`}
-                    >
-                      {loadingSlot === `${slot.start} - ${slot.end}` ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : selectedTimeSlot === `${slot.start} - ${slot.end}` ? (
-                        <Check className="h-4 w-4 mr-2" />
-                      ) : null}
-                      {slot.start} - {slot.end}
-                    </Button>
-                  ))}
-                </div>
+                <TimeSlotSelector
+                  timeSlots={availableTimeSlots}
+                  selectedTimeSlot={selectedTimeSlot}
+                  setSelectedTimeSlot={setSelectedTimeSlot}
+                  loadingSlot={loadingSlot}
+                />
               )}
             </div>
           </div>
         </div>
 
-        {selectedTimeSlot && (
-          <div className="border rounded-lg p-4 bg-muted/30 mt-6">
-            <h3 className="font-medium mb-2">Booking Summary</h3>
-            <dl className="space-y-2">
-              <div className="flex justify-between">
-                <dt className="text-muted-foreground">Date:</dt>
-                <dd>{format(date!, 'EEEE, MMMM d, yyyy')}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-muted-foreground">Time:</dt>
-                <dd>{selectedTimeSlot}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-muted-foreground">Duration:</dt>
-                <dd>{selectedDuration} minutes</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-muted-foreground">Coach:</dt>
-                <dd>{coachInfo?.full_name}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-muted-foreground">Location:</dt>
-                <dd>{coachInfo?.location || 'Main Courts'}</dd>
-              </div>
-              <div className="flex justify-between font-medium border-t pt-2 mt-2">
-                <dt>Total:</dt>
-                <dd>${((parseInt(selectedDuration) / 60) * (coachInfo?.hourly_rate || 0)).toFixed(2)}</dd>
-              </div>
-            </dl>
-          </div>
-        )}
+        <BookingSummary
+          date={date!}
+          selectedTimeSlot={selectedTimeSlot!}
+          selectedDuration={selectedDuration}
+          coachInfo={coachInfo}
+        />
       </CardContent>
       <CardFooter className="flex justify-end">
         <Button 
