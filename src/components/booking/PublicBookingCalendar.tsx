@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
@@ -46,17 +45,33 @@ const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
 
         const formattedDate = format(date, 'yyyy-MM-dd');
         
-        const { data: sessionsData, error: sessionsError } = await supabase
+        const { data: regularSessions, error: regularSessionsError } = await supabase
           .from('sessions')
           .select('*')
           .eq('coach_id', coachId)
           .gte('start_time', `${formattedDate}T00:00:00`)
           .lt('start_time', `${format(addDays(date, 1), 'yyyy-MM-dd')}T00:00:00`);
 
-        if (sessionsError) throw sessionsError;
-        setSessions(sessionsData || []);
+        if (regularSessionsError) throw regularSessionsError;
+
+        const { data: recurringSessionsData, error: recurringSessionsError } = await supabase
+          .from('sessions')
+          .select('*')
+          .eq('coach_id', coachId)
+          .eq('is_recurring', true);
         
-        const newTimeSlots = generateTimeSlots(date, sessionsData || []);
+        if (recurringSessionsError) throw recurringSessionsError;
+        
+        const allSessions = [
+          ...(regularSessions || []),
+          ...(recurringSessionsData || [])
+        ];
+        
+        setSessions(allSessions);
+        
+        console.log('All sessions:', allSessions);
+        
+        const newTimeSlots = generateTimeSlots(date, allSessions);
         setTimeSlots(newTimeSlots);
       } catch (error) {
         console.error('Error fetching data:', error);

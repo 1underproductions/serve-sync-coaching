@@ -1,5 +1,5 @@
 
-import { addDays, addMinutes, format, isBefore, isAfter, parseISO } from 'date-fns';
+import { addDays, addMinutes, format, isBefore, isAfter, parseISO, isSameDay } from 'date-fns';
 import type { TimeSlot } from '@/types/booking';
 
 export const generateTimeSlots = (date: Date, existingSessions: any[]): TimeSlot[] => {
@@ -20,16 +20,41 @@ export const generateTimeSlots = (date: Date, existingSessions: any[]): TimeSlot
       
       const slotEndTime = addMinutes(slotStartTime, 30);
       
-      // Check if this slot overlaps with any existing session
+      // Check if this slot overlaps with any existing session or recurring session
       const isAvailable = !existingSessions?.some(session => {
         const sessionStart = parseISO(session.start_time);
         const sessionEnd = parseISO(session.end_time);
         
-        return (
+        // Check for one-time session conflicts
+        const regularSessionConflict = (
           (isAfter(slotStartTime, sessionStart) && isBefore(slotStartTime, sessionEnd)) ||
           (isAfter(slotEndTime, sessionStart) && isBefore(slotEndTime, sessionEnd)) ||
           (isBefore(slotStartTime, sessionStart) && isAfter(slotEndTime, sessionEnd))
         );
+        
+        // Check if this is a recurring session on the same day of week and time
+        const isRecurring = session.is_recurring === true;
+        let recurringSessionConflict = false;
+        
+        if (isRecurring) {
+          // Check if day of week matches
+          const sessionDayOfWeek = sessionStart.getDay();
+          const slotDayOfWeek = slotStartTime.getDay();
+          
+          if (sessionDayOfWeek === slotDayOfWeek) {
+            // Check if time matches (hour and minute)
+            const sessionHour = sessionStart.getHours();
+            const sessionMinute = sessionStart.getMinutes();
+            const slotHour = slotStartTime.getHours();
+            const slotMinute = slotStartTime.getMinutes();
+            
+            if (sessionHour === slotHour && sessionMinute === slotMinute) {
+              recurringSessionConflict = true;
+            }
+          }
+        }
+        
+        return regularSessionConflict || recurringSessionConflict;
       });
       
       slots.push({
