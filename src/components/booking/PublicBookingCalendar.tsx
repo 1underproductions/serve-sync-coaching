@@ -4,7 +4,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format, addDays, parseISO, isAfter, isBefore, addMinutes } from 'date-fns';
+import { format, addDays, parseISO, isAfter, isBefore, addMinutes, isSameDay } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
@@ -35,13 +35,17 @@ const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadingSlot, setLoadingSlot] = useState<string | null>(null);
   const [coachInfo, setCoachInfo] = useState<Coach | null>(null);
-  const [step, setStep] = useState<'date' | 'time' | 'details'>('date');
+  const [sessions, setSessions] = useState<any[]>([]);
   const navigate = useNavigate();
 
-  // Get coach info and availability
+  // Fetch coach info and existing sessions when date changes
   useEffect(() => {
-    const fetchCoachInfo = async () => {
+    const fetchCoachInfoAndSessions = async () => {
+      if (!date || !coachId) return;
+      
+      setIsLoading(true);
       try {
+        // Fetch coach info
         const { data: coachData, error: coachError } = await supabase
           .from('profiles')
           .select('full_name, hourly_rate, location, avatar_url')
@@ -50,62 +54,41 @@ const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
 
         if (coachError) throw coachError;
         setCoachInfo(coachData);
-      } catch (error) {
-        console.error('Error fetching coach info:', error);
-        toast({
-          title: 'Error',
-          description: 'Could not load coach information',
-          variant: 'destructive',
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
 
-    fetchCoachInfo();
-  }, [coachId]);
-
-  // Fetch sessions to check availability when date changes
-  useEffect(() => {
-    const fetchAvailability = async () => {
-      if (!date) return;
-      
-      setIsLoading(true);
-      
-      try {
-        // Format date to ISO string for the query
+        // Format date for query
         const formattedDate = format(date, 'yyyy-MM-dd');
         
-        // Fetch existing sessions for the selected date using direct query instead of RPC
-        const { data: sessions, error } = await supabase
+        // Fetch all sessions for the selected date
+        const { data: sessionsData, error: sessionsError } = await supabase
           .from('sessions')
-          .select('id, title, start_time, end_time, location')
+          .select('*')
           .eq('coach_id', coachId)
           .gte('start_time', `${formattedDate}T00:00:00`)
           .lt('start_time', `${format(addDays(date, 1), 'yyyy-MM-dd')}T00:00:00`);
-            
-        if (error) throw error;
-          
-        // Generate time slots
-        generateTimeSlots(sessions || []);
+
+        if (sessionsError) throw sessionsError;
+        setSessions(sessionsData || []);
+        
+        // Generate available time slots
+        generateTimeSlots(sessionsData || []);
       } catch (error) {
-        console.error('Error fetching availability:', error);
+        console.error('Error fetching data:', error);
         toast({
           title: 'Error',
           description: 'Could not load availability',
           variant: 'destructive',
         });
-        // Generate empty time slots on error
         setTimeSlots([]);
+      } finally {
         setIsLoading(false);
       }
     };
-    
-    fetchAvailability();
+
+    fetchCoachInfoAndSessions();
   }, [date, coachId]);
 
   // Helper function to generate time slots
-  const generateTimeSlots = (sessions: any[]) => {
+  const generateTimeSlots = (existingSessions: any[]) => {
     const slots: TimeSlot[] = [];
     const startHour = 8; // 8am
     const endHour = 20; // 8pm
@@ -124,7 +107,7 @@ const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
         const slotEndTime = addMinutes(slotStartTime, 30);
         
         // Check if this slot overlaps with any existing session
-        const isAvailable = !sessions?.some(session => {
+        const isAvailable = !existingSessions?.some(session => {
           const sessionStart = parseISO(session.start_time);
           const sessionEnd = parseISO(session.end_time);
           
@@ -144,7 +127,6 @@ const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
     }
     
     setTimeSlots(slots);
-    setIsLoading(false);
   };
 
   // Combine adjacent time slots based on selected duration
@@ -232,7 +214,6 @@ const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
       const { url } = await response.json();
       
       if (url) {
-        // Redirect to Stripe checkout
         window.location.href = url;
       } else {
         throw new Error('Failed to create payment session');
@@ -251,16 +232,6 @@ const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
 
   const availableTimeSlots = combineTimeSlots();
 
-  // Render loading state
-  if (isLoading && !coachInfo) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Loading coach information...</span>
-      </div>
-    );
-  }
-
   return (
     <Card className="w-full max-w-3xl mx-auto">
       <CardHeader>
@@ -269,19 +240,20 @@ const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
           Select a date, time, and duration for your tennis coaching session
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        {step === 'date' && (
+      <CardContent className="space-y-6">
+        <div className="grid md:grid-cols-2 gap-6">
+          <div>
+            <h3 className="text-lg font-medium mb-2">Select a Date</h3>
+            <Calendar
+              mode="single"
+              selected={date}
+              onSelect={setDate}
+              disabled={(date) => date < new Date() || date > addDays(new Date(), 60)}
+              className="rounded-md border"
+            />
+          </div>
+
           <div className="space-y-4">
-            <div>
-              <h3 className="text-lg font-medium mb-2">Select a Date</h3>
-              <Calendar
-                mode="single"
-                selected={date}
-                onSelect={setDate}
-                disabled={(date) => date < new Date() || date > addDays(new Date(), 60)}
-                className="rounded-md border mx-auto"
-              />
-            </div>
             <div>
               <h3 className="text-lg font-medium mb-2">Session Duration</h3>
               <Select value={selectedDuration} onValueChange={setSelectedDuration}>
@@ -296,137 +268,88 @@ const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
                 </SelectContent>
               </Select>
             </div>
-          </div>
-        )}
-        
-        {step === 'time' && (
-          <div>
-            <h3 className="text-lg font-medium mb-4">Available Time Slots for {format(date!, 'EEEE, MMMM d, yyyy')}</h3>
-            {isLoading ? (
-              <div className="flex justify-center items-center h-40">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                <span className="ml-2">Loading available times...</span>
-              </div>
-            ) : availableTimeSlots.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">No available time slots for this date.</p>
-                <Button 
-                  variant="outline" 
-                  className="mt-4"
-                  onClick={() => setStep('date')}
-                >
-                  Select a different date
-                </Button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {availableTimeSlots.map((slot) => (
-                  <Button
-                    key={`${slot.start}-${slot.end}`}
-                    variant={selectedTimeSlot === `${slot.start} - ${slot.end}` ? 'default' : 'outline'}
-                    className="justify-start"
-                    onClick={() => setSelectedTimeSlot(`${slot.start} - ${slot.end}`)}
-                    disabled={!slot.available || loadingSlot === `${slot.start} - ${slot.end}`}
-                  >
-                    {loadingSlot === `${slot.start} - ${slot.end}` ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : selectedTimeSlot === `${slot.start} - ${slot.end}` ? (
-                      <Check className="h-4 w-4 mr-2" />
-                    ) : null}
-                    {slot.start} - {slot.end}
-                  </Button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-        
-        {step === 'details' && (
-          <div className="space-y-6">
-            <div className="border rounded-lg p-4 bg-muted/30">
-              <h3 className="font-medium mb-2">Booking Summary</h3>
-              <dl className="space-y-2">
-                <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Date:</dt>
-                  <dd>{format(date!, 'EEEE, MMMM d, yyyy')}</dd>
+
+            <div>
+              <h3 className="text-lg font-medium mb-2">Available Time Slots</h3>
+              {isLoading ? (
+                <div className="flex justify-center items-center h-40">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  <span className="ml-2">Loading available times...</span>
                 </div>
-                <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Time:</dt>
-                  <dd>{selectedTimeSlot}</dd>
+              ) : availableTimeSlots.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No available time slots for this date.</p>
                 </div>
-                <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Duration:</dt>
-                  <dd>{selectedDuration} minutes</dd>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  {availableTimeSlots.map((slot) => (
+                    <Button
+                      key={`${slot.start}-${slot.end}`}
+                      variant={selectedTimeSlot === `${slot.start} - ${slot.end}` ? 'default' : 'outline'}
+                      className="justify-start"
+                      onClick={() => setSelectedTimeSlot(`${slot.start} - ${slot.end}`)}
+                      disabled={!slot.available || loadingSlot === `${slot.start} - ${slot.end}`}
+                    >
+                      {loadingSlot === `${slot.start} - ${slot.end}` ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : selectedTimeSlot === `${slot.start} - ${slot.end}` ? (
+                        <Check className="h-4 w-4 mr-2" />
+                      ) : null}
+                      {slot.start} - {slot.end}
+                    </Button>
+                  ))}
                 </div>
-                <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Coach:</dt>
-                  <dd>{coachInfo?.full_name}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Location:</dt>
-                  <dd>{coachInfo?.location || 'Main Courts'}</dd>
-                </div>
-                <div className="flex justify-between font-medium border-t pt-2 mt-2">
-                  <dt>Total:</dt>
-                  <dd>${((parseInt(selectedDuration) / 60) * (coachInfo?.hourly_rate || 0)).toFixed(2)}</dd>
-                </div>
-              </dl>
+              )}
             </div>
-            
-            <div className="border rounded-lg p-4 bg-amber-50 border-amber-200">
-              <h3 className="font-medium mb-2 text-amber-900">Cancellation Policy</h3>
-              <p className="text-sm text-amber-800">
-                You may cancel up to 24 hours before the session for a full refund. 
-                Cancellations within 24 hours of the session will not be refunded.
-              </p>
-            </div>
+          </div>
+        </div>
+
+        {selectedTimeSlot && (
+          <div className="border rounded-lg p-4 bg-muted/30 mt-6">
+            <h3 className="font-medium mb-2">Booking Summary</h3>
+            <dl className="space-y-2">
+              <div className="flex justify-between">
+                <dt className="text-muted-foreground">Date:</dt>
+                <dd>{format(date!, 'EEEE, MMMM d, yyyy')}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-muted-foreground">Time:</dt>
+                <dd>{selectedTimeSlot}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-muted-foreground">Duration:</dt>
+                <dd>{selectedDuration} minutes</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-muted-foreground">Coach:</dt>
+                <dd>{coachInfo?.full_name}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-muted-foreground">Location:</dt>
+                <dd>{coachInfo?.location || 'Main Courts'}</dd>
+              </div>
+              <div className="flex justify-between font-medium border-t pt-2 mt-2">
+                <dt>Total:</dt>
+                <dd>${((parseInt(selectedDuration) / 60) * (coachInfo?.hourly_rate || 0)).toFixed(2)}</dd>
+              </div>
+            </dl>
           </div>
         )}
       </CardContent>
-      <CardFooter className="flex justify-between">
-        {step !== 'date' && (
-          <Button variant="outline" onClick={() => setStep(step === 'time' ? 'date' : 'time')}>
-            Back
-          </Button>
-        )}
-        
-        <div className="ml-auto">
-          {step === 'date' && (
-            <Button 
-              onClick={() => setStep('time')}
-              disabled={!date}
-            >
-              Continue <ChevronRight className="ml-2 h-4 w-4" />
-            </Button>
+      <CardFooter className="flex justify-end">
+        <Button 
+          onClick={handleBooking}
+          disabled={!selectedTimeSlot || loadingSlot !== null}
+        >
+          {loadingSlot ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Processing...
+            </>
+          ) : (
+            'Book & Pay Now'
           )}
-          
-          {step === 'time' && (
-            <Button 
-              onClick={() => setStep('details')}
-              disabled={!selectedTimeSlot}
-            >
-              Continue <ChevronRight className="ml-2 h-4 w-4" />
-            </Button>
-          )}
-          
-          {step === 'details' && (
-            <Button 
-              onClick={handleBooking}
-              disabled={!selectedTimeSlot || loadingSlot !== null}
-            >
-              {loadingSlot ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  Book & Pay Now
-                </>
-              )}
-            </Button>
-          )}
-        </div>
+        </Button>
       </CardFooter>
     </Card>
   );
