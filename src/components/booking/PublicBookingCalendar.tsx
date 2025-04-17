@@ -18,6 +18,17 @@ interface PublicBookingCalendarProps {
   coachId: string;
 }
 
+// Session type for Supabase queries
+interface SessionData {
+  id: string;
+  coach_id: string;
+  start_time: string;
+  end_time: string;
+  is_recurring?: boolean;
+  title: string;
+  [key: string]: any; // Allow other fields
+}
+
 const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
@@ -26,7 +37,7 @@ const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadingSlot, setLoadingSlot] = useState<string | null>(null);
   const [coachInfo, setCoachInfo] = useState<Coach | null>(null);
-  const [sessions, setSessions] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<SessionData[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -51,7 +62,7 @@ const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
           .from('sessions')
           .select('*')
           .eq('coach_id', coachId)
-          .eq('is_recurring', false)
+          .is('is_recurring', false)  // Changed from eq to is which is safer for boolean filters
           .gte('start_time', `${formattedDate}T00:00:00`)
           .lt('start_time', `${format(addDays(date, 1), 'yyyy-MM-dd')}T00:00:00`);
 
@@ -62,7 +73,7 @@ const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
           .from('sessions')
           .select('*')
           .eq('coach_id', coachId)
-          .eq('is_recurring', true);
+          .is('is_recurring', true);  // Changed from eq to is for safer boolean filtering
         
         if (recurringSessionsError) throw recurringSessionsError;
         

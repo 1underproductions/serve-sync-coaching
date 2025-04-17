@@ -26,17 +26,16 @@ export const generateTimeSlots = (date: Date, existingSessions: any[]): TimeSlot
         const sessionEnd = parseISO(session.end_time);
         
         // Check for one-time session conflicts
-        const regularSessionConflict = (
-          (isAfter(slotStartTime, sessionStart) && isBefore(slotStartTime, sessionEnd)) ||
-          (isAfter(slotEndTime, sessionStart) && isBefore(slotEndTime, sessionEnd)) ||
-          (isBefore(slotStartTime, sessionStart) && isAfter(slotEndTime, sessionEnd))
-        );
+        if (!session.is_recurring) {
+          return (
+            (isAfter(slotStartTime, sessionStart) && isBefore(slotStartTime, sessionEnd)) ||
+            (isAfter(slotEndTime, sessionStart) && isBefore(slotEndTime, sessionEnd)) ||
+            (isBefore(slotStartTime, sessionStart) && isAfter(slotEndTime, sessionEnd))
+          );
+        }
         
         // Check if this is a recurring session on the same day of week and time
-        const isRecurring = session.is_recurring === true;
-        let recurringSessionConflict = false;
-        
-        if (isRecurring) {
+        if (session.is_recurring) {
           // Check if day of week matches
           const sessionDayOfWeek = sessionStart.getDay();
           const slotDayOfWeek = slotStartTime.getDay();
@@ -49,12 +48,12 @@ export const generateTimeSlots = (date: Date, existingSessions: any[]): TimeSlot
             const slotMinute = slotStartTime.getMinutes();
             
             if (sessionHour === slotHour && sessionMinute === slotMinute) {
-              recurringSessionConflict = true;
+              return true;
             }
           }
         }
         
-        return regularSessionConflict || recurringSessionConflict;
+        return false;
       });
       
       slots.push({
