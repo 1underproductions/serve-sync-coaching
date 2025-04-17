@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
@@ -45,15 +46,18 @@ const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
 
         const formattedDate = format(date, 'yyyy-MM-dd');
         
+        // Get regular (non-recurring) sessions for the selected date
         const { data: regularSessions, error: regularSessionsError } = await supabase
           .from('sessions')
           .select('*')
           .eq('coach_id', coachId)
+          .eq('is_recurring', false)
           .gte('start_time', `${formattedDate}T00:00:00`)
           .lt('start_time', `${format(addDays(date, 1), 'yyyy-MM-dd')}T00:00:00`);
 
         if (regularSessionsError) throw regularSessionsError;
 
+        // Get recurring sessions for this coach
         const { data: recurringSessionsData, error: recurringSessionsError } = await supabase
           .from('sessions')
           .select('*')
@@ -62,14 +66,13 @@ const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
         
         if (recurringSessionsError) throw recurringSessionsError;
         
+        // Combine both types of sessions
         const allSessions = [
           ...(regularSessions || []),
           ...(recurringSessionsData || [])
         ];
         
         setSessions(allSessions);
-        
-        console.log('All sessions:', allSessions);
         
         const newTimeSlots = generateTimeSlots(date, allSessions);
         setTimeSlots(newTimeSlots);
@@ -115,7 +118,8 @@ const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
           location: coachInfo.location || 'Main Courts',
           status: 'scheduled',
           payment_status: 'pending',
-          requires_prepayment: true
+          requires_prepayment: true,
+          is_recurring: false
         })
         .select()
         .single();
