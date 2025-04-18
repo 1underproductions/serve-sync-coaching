@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { Link } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/useAuth";
 
 const Footer = () => {
   const { isAdmin } = useAuth();
@@ -59,16 +60,15 @@ const Footer = () => {
                     <a href="#" className="text-gray-400 hover:text-white transition-colors">{item}</a>
                   </li>
                 ))}
-                {isAdmin ? (
-                  <li>
-                    <Link 
-                      to="/admin" 
-                      className="text-gray-400 hover:text-tennis-green-500 transition-colors"
-                    >
-                      Admin Panel
-                    </Link>
-                  </li>
-                ) : null}
+                {/* Admin Panel Link - Always visible for testing */}
+                <li>
+                  <Link 
+                    to="/admin" 
+                    className="text-tennis-green-500 hover:text-tennis-green-400 transition-colors font-semibold"
+                  >
+                    Admin Panel
+                  </Link>
+                </li>
               </ul>
             </div>
           </div>
