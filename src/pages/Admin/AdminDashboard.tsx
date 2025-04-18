@@ -1,47 +1,50 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import AdminLayout from "@/components/layout/AdminLayout";
-import { Users, DollarSign, CalendarClock, Shield, Ticket, BookOpen, Bell, BarChart } from "lucide-react";
+import { useAdminData } from "@/hooks/useAdminData";
+import { Users, DollarSign, Ticket, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const AdminDashboard = () => {
+  const { tickets, refunds } = useAdminData();
+
+  const pendingTickets = tickets.data?.filter(t => t.status === 'open').length || 0;
+  const pendingRefunds = refunds.data?.filter(r => r.status === 'pending').length || 0;
+
   return (
     <AdminLayout>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+            <CardTitle className="text-sm font-medium">Open Tickets</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">48</div>
-            <p className="text-xs text-tennis-green-600 mt-1">↑ 12% from last month</p>
+            <div className="text-2xl font-bold">{pendingTickets}</div>
+            <Link to="/admin/tickets" className="text-xs text-tennis-green-600 mt-1 hover:underline">
+              View all tickets
+            </Link>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">Pending Refunds</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$4,320</div>
-            <p className="text-xs text-tennis-green-600 mt-1">↑ 8% from last month</p>
+            <div className="text-2xl font-bold">{pendingRefunds}</div>
+            <Link to="/admin/refunds" className="text-xs text-tennis-green-600 mt-1 hover:underline">
+              Process refunds
+            </Link>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Active Sessions</CardTitle>
+            <CardTitle className="text-sm font-medium">Critical Issues</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">156</div>
-            <p className="text-xs text-tennis-green-600 mt-1">↑ 24% from last month</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Support Tickets</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">12</div>
-            <p className="text-xs text-red-600 mt-1">5 pending response</p>
+            <div className="text-2xl font-bold">
+              {pendingTickets + pendingRefunds}
+            </div>
+            <p className="text-xs text-red-600 mt-1">Requires attention</p>
           </CardContent>
         </Card>
       </div>
@@ -49,70 +52,58 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Admin Actions</CardTitle>
+            <CardTitle className="text-lg">Recent Support Tickets</CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 gap-4">
-            <Link 
-              to="/admin/users" 
-              className="flex items-center p-3 rounded-md border hover:bg-gray-50 transition-colors"
-            >
-              <Users className="h-5 w-5 mr-3 text-tennis-green-600" />
-              <div>
-                <h3 className="font-medium">Manage Users</h3>
-                <p className="text-sm text-muted-foreground">View, edit, or remove users</p>
-              </div>
-            </Link>
-            <Link 
-              to="/admin/programs" 
-              className="flex items-center p-3 rounded-md border hover:bg-gray-50 transition-colors"
-            >
-              <CalendarClock className="h-5 w-5 mr-3 text-tennis-green-600" />
-              <div>
-                <h3 className="font-medium">Program Management</h3>
-                <p className="text-sm text-muted-foreground">Manage training sessions and schedules</p>
-              </div>
-            </Link>
-            <Link 
-              to="/admin/transactions" 
-              className="flex items-center p-3 rounded-md border hover:bg-gray-50 transition-colors"
-            >
-              <DollarSign className="h-5 w-5 mr-3 text-tennis-green-600" />
-              <div>
-                <h3 className="font-medium">Payments & Billing</h3>
-                <p className="text-sm text-muted-foreground">Manage transactions and subscriptions</p>
-              </div>
-            </Link>
-            <Link 
-              to="/admin/tickets" 
-              className="flex items-center p-3 rounded-md border hover:bg-gray-50 transition-colors"
-            >
-              <Ticket className="h-5 w-5 mr-3 text-tennis-green-600" />
-              <div>
-                <h3 className="font-medium">Support Tickets</h3>
-                <p className="text-sm text-muted-foreground">View and respond to customer inquiries</p>
-              </div>
-            </Link>
+          <CardContent>
+            <div className="space-y-4">
+              {tickets.data?.slice(0, 5).map((ticket) => (
+                <div key={ticket.id} className="flex items-start pb-4 last:pb-0 last:border-0 border-b">
+                  <div className="w-full">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">{ticket.title}</p>
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        ticket.status === 'open' ? 'bg-yellow-100 text-yellow-800' :
+                        ticket.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {ticket.status}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground line-clamp-1">{ticket.description}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Created {new Date(ticket.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Recent Activity</CardTitle>
+            <CardTitle className="text-lg">Recent Refund Requests</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {[
-                { user: "John Doe", action: "created a new account", time: "10 minutes ago" },
-                { user: "Sarah Williams", action: "made a payment", time: "2 hours ago" },
-                { user: "Mark Smith", action: "scheduled a new session", time: "5 hours ago" },
-                { user: "Admin User", action: "updated system settings", time: "1 day ago" },
-                { user: "Emma Brown", action: "submitted a support ticket", time: "1 day ago" },
-              ].map((activity, index) => (
-                <div key={index} className="flex items-start pb-4 last:pb-0 last:border-0 border-b">
+              {refunds.data?.slice(0, 5).map((refund) => (
+                <div key={refund.id} className="flex items-start pb-4 last:pb-0 last:border-0 border-b">
                   <div className="w-full">
-                    <p className="text-sm font-medium">{activity.user}</p>
-                    <p className="text-sm text-muted-foreground">{activity.action}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{activity.time}</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">${refund.amount}</p>
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        refund.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                        refund.status === 'approved' ? 'bg-green-100 text-green-800' :
+                        refund.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                        'bg-blue-100 text-blue-800'
+                      }`}>
+                        {refund.status}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground line-clamp-1">{refund.reason}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Requested {new Date(refund.created_at).toLocaleDateString()}
+                    </p>
                   </div>
                 </div>
               ))}

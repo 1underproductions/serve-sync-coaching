@@ -1,0 +1,93 @@
+
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { SupportTicket, TicketReply, Refund } from "@/types/admin";
+import { useToast } from "./use-toast";
+
+export function useAdminData() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const tickets = useQuery({
+    queryKey: ['admin-tickets'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('support_tickets')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data as SupportTicket[];
+    }
+  });
+
+  const refunds = useQuery({
+    queryKey: ['admin-refunds'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('refunds')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data as Refund[];
+    }
+  });
+
+  const updateTicketStatus = useMutation({
+    mutationFn: async ({ ticketId, status }: { ticketId: string; status: SupportTicket['status'] }) => {
+      const { error } = await supabase
+        .from('support_tickets')
+        .update({ status })
+        .eq('id', ticketId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-tickets'] });
+      toast({
+        title: "Success",
+        description: "Ticket status updated successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update ticket status",
+      });
+    },
+  });
+
+  const processRefund = useMutation({
+    mutationFn: async ({ refundId, status, processed_by }: { refundId: string; status: Refund['status']; processed_by: string }) => {
+      const { error } = await supabase
+        .from('refunds')
+        .update({ status, processed_by })
+        .eq('id', refundId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-refunds'] });
+      toast({
+        title: "Success",
+        description: "Refund processed successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to process refund",
+      });
+    },
+  });
+
+  return {
+    tickets,
+    refunds,
+    updateTicketStatus,
+    processRefund,
+  };
+}
