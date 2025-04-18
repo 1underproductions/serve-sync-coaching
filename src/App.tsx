@@ -90,6 +90,7 @@ function App() {
               <Route path="/booking/:coachId" element={<CoachBooking />} />
               <Route path="/booking-success" element={<BookingSuccess />} />
               
+              {/* Admin Routes */}
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/users" element={<AdminUsers />} />
               <Route path="/admin/transactions" element={<AdminTransactions />} />

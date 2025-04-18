@@ -66,7 +66,10 @@ const AdminUsers = () => {
   };
 
   return (
-    <AdminLayout>
+    <AdminLayout 
+      title="User Management"
+      description="View and manage all users in your platform"
+    >
       <Card className="mb-8">
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">

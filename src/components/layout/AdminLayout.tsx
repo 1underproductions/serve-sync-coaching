@@ -8,11 +8,15 @@ import { useAuth } from "@/context/AuthContext";
 interface AdminLayoutProps {
   children: ReactNode;
   requiresAdmin?: boolean;
+  title?: string;
+  description?: string;
 }
 
 const AdminLayout = ({ 
   children, 
-  requiresAdmin = true 
+  requiresAdmin = true,
+  title = "Admin Dashboard",
+  description = "Manage your platform and users" 
 }: AdminLayoutProps) => {
   const navigate = useNavigate();
   const { isAdmin, isLoading } = useAuth();
@@ -42,8 +46,8 @@ const AdminLayout = ({
           <Shield className="h-5 w-5" />
           <span className="text-sm font-medium">Admin Panel</span>
         </div>
-        <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Manage your platform and users</p>
+        <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
+        <p className="text-muted-foreground mt-1">{description}</p>
       </div>
       {children}
     </Layout>

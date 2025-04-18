@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import AdminLayout from "@/components/layout/AdminLayout";
-import { Users, DollarSign, CalendarClock, Shield } from "lucide-react";
+import { Users, DollarSign, CalendarClock, Shield, Ticket, BookOpen, Bell, BarChart } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const AdminDashboard = () => {
@@ -37,11 +37,11 @@ const AdminDashboard = () => {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Admin Users</CardTitle>
+            <CardTitle className="text-sm font-medium">Support Tickets</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2</div>
-            <p className="text-xs text-muted-foreground mt-1">You and one other user</p>
+            <div className="text-2xl font-bold">12</div>
+            <p className="text-xs text-red-600 mt-1">5 pending response</p>
           </CardContent>
         </Card>
       </div>
@@ -49,7 +49,7 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Quick Actions</CardTitle>
+            <CardTitle className="text-lg">Admin Actions</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 gap-4">
             <Link 
@@ -63,23 +63,33 @@ const AdminDashboard = () => {
               </div>
             </Link>
             <Link 
+              to="/admin/programs" 
+              className="flex items-center p-3 rounded-md border hover:bg-gray-50 transition-colors"
+            >
+              <CalendarClock className="h-5 w-5 mr-3 text-tennis-green-600" />
+              <div>
+                <h3 className="font-medium">Program Management</h3>
+                <p className="text-sm text-muted-foreground">Manage training sessions and schedules</p>
+              </div>
+            </Link>
+            <Link 
               to="/admin/transactions" 
               className="flex items-center p-3 rounded-md border hover:bg-gray-50 transition-colors"
             >
               <DollarSign className="h-5 w-5 mr-3 text-tennis-green-600" />
               <div>
-                <h3 className="font-medium">Review Transactions</h3>
-                <p className="text-sm text-muted-foreground">Monitor payments and subscriptions</p>
+                <h3 className="font-medium">Payments & Billing</h3>
+                <p className="text-sm text-muted-foreground">Manage transactions and subscriptions</p>
               </div>
             </Link>
             <Link 
-              to="/admin/settings" 
+              to="/admin/tickets" 
               className="flex items-center p-3 rounded-md border hover:bg-gray-50 transition-colors"
             >
-              <Shield className="h-5 w-5 mr-3 text-tennis-green-600" />
+              <Ticket className="h-5 w-5 mr-3 text-tennis-green-600" />
               <div>
-                <h3 className="font-medium">Admin Settings</h3>
-                <p className="text-sm text-muted-foreground">Configure admin permissions</p>
+                <h3 className="font-medium">Support Tickets</h3>
+                <p className="text-sm text-muted-foreground">View and respond to customer inquiries</p>
               </div>
             </Link>
           </CardContent>
@@ -96,6 +106,7 @@ const AdminDashboard = () => {
                 { user: "Sarah Williams", action: "made a payment", time: "2 hours ago" },
                 { user: "Mark Smith", action: "scheduled a new session", time: "5 hours ago" },
                 { user: "Admin User", action: "updated system settings", time: "1 day ago" },
+                { user: "Emma Brown", action: "submitted a support ticket", time: "1 day ago" },
               ].map((activity, index) => (
                 <div key={index} className="flex items-start pb-4 last:pb-0 last:border-0 border-b">
                   <div className="w-full">
