@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -18,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { useAuth } from "@/context/useAuth";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { createSuperAdmin } from '@/utils/adminSetup';
 
 const loginSchema = z.object({
   email: z.string().email({
@@ -60,6 +60,22 @@ const Login = () => {
   const fillDemoCredentials = () => {
     form.setValue("email", "user@example.com");
     form.setValue("password", "password123");
+  };
+
+  const createAdminAccount = async () => {
+    try {
+      await createSuperAdmin('admin@tennexis.com', 'admin123');
+      toast({
+        title: "Super Admin Created",
+        description: "Admin account has been successfully set up.",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to create admin account",
+      });
+    }
   };
 
   return (
@@ -174,6 +190,14 @@ const Login = () => {
                 <p className="mt-2 text-xs text-gray-500">
                   For testing, use: user@example.com / password123
                 </p>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={createAdminAccount}
+                >
+                  Create Super Admin
+                </Button>
               </div>
             </form>
           </Form>

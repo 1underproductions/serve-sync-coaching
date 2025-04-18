@@ -14,4 +14,5 @@ export type AuthContextType = {
   resetPassword: (email: string) => Promise<void>;
   updateProfile: (data: Partial<Profile>) => Promise<Profile | null>;
   fetchUserProfile: (userId?: string) => Promise<Profile | null>;
+  setUserAsAdmin: (email: string) => Promise<SupabaseUser | null>; // New method
 };

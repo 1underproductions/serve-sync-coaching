@@ -278,6 +278,49 @@ export const useAuthProvider = () => {
     }
   };
 
+  const setUserAsAdmin = async (email: string) => {
+    try {
+      // First, sign up the user if they don't exist
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: email,
+        password: 'admin123',
+        options: {
+          data: {
+            role: 'tennexis_admin'
+          }
+        }
+      });
+
+      if (signUpError) {
+        console.error('Error signing up admin:', signUpError);
+        throw signUpError;
+      }
+
+      // Then, use the Supabase function to set the user as an admin
+      const { error: adminError } = await supabase
+        .rpc('set_user_as_admin', { email });
+
+      if (adminError) {
+        console.error('Error setting user as admin:', adminError);
+        throw adminError;
+      }
+
+      toast({
+        title: "Admin User Created",
+        description: "Super admin account has been created successfully.",
+      });
+
+      return data.user;
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to create admin user",
+      });
+      throw error;
+    }
+  };
+
   return {
     session,
     user,
@@ -290,5 +333,6 @@ export const useAuthProvider = () => {
     resetPassword,
     updateProfile,
     fetchUserProfile,
+    setUserAsAdmin,
   };
 };
