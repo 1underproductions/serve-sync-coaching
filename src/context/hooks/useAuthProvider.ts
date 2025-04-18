@@ -22,7 +22,6 @@ export const useAuthProvider = () => {
         return null;
       }
       
-      console.log('Fetching user profile for id:', currentUserId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -35,10 +34,10 @@ export const useAuthProvider = () => {
       }
       
       if (data) {
-        console.log('User profile fetched successfully:', data);
         const profileData: Profile = {
           ...data,
-          role: (data.role === 'admin' ? 'admin' : 'user') as 'user' | 'admin'
+          // Only set isAdmin to true if the user has a specific tennexis staff role
+          role: (data.role === 'tennexis_admin' ? 'admin' : 'user') as 'user' | 'admin'
         };
         
         setProfile(profileData);
