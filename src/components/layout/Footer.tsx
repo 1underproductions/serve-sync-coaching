@@ -24,7 +24,8 @@ const Footer = () => {
               <li><Link to="#" className="text-muted-foreground hover:text-tennis-green-600">FAQ</Link></li>
               <li><Link to="#" className="text-muted-foreground hover:text-tennis-green-600">Terms & Conditions</Link></li>
               <li><Link to="#" className="text-muted-foreground hover:text-tennis-green-600">Privacy Policy</Link></li>
-              <li><Link to="/admin" className="text-tennis-green-600 hover:text-tennis-green-500 font-semibold">Admin Portal</Link></li>
+              {/* Always link to admin login instead of dashboard */}
+              <li><Link to="/admin-login" className="text-tennis-green-600 hover:text-tennis-green-500 font-semibold">Admin Portal</Link></li>
             </ul>
           </div>
           <div>
