@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Mail, Lock, ShieldAlert } from "lucide-react";
 import { useAuth } from "@/context/useAuth";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { supabase } from "@/lib/supabase";
 
 const loginSchema = z.object({
   email: z.string().email({
@@ -33,34 +34,110 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 const AdminLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { signIn, isLoading, isAdmin } = useAuth();
   
+  // Pre-fill admin credentials for testing
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "",
-      password: "",
+      email: "admin@tennexis.com",
+      password: "admin123",
     },
   });
+
+  useEffect(() => {
+    // Create a demo admin user in the database if it doesn't exist
+    const createAdminUser = async () => {
+      try {
+        setIsCreatingAdmin(true);
+        
+        // First check if admin user exists by trying to sign in
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: "admin@tennexis.com",
+          password: "admin123"
+        });
+        
+        if (signInError && signInError.message.includes("Invalid login credentials")) {
+          // Admin doesn't exist, create it
+          const { data, error } = await supabase.auth.signUp({
+            email: "admin@tennexis.com",
+            password: "admin123",
+            options: {
+              data: {
+                full_name: "Tennexis Admin",
+                role: "tennexis_admin"
+              }
+            }
+          });
+          
+          if (error) {
+            console.error("Error creating admin user:", error);
+          } else {
+            console.log("Admin user created successfully");
+            
+            // Update the user's role in the profiles table
+            const { error: updateError } = await supabase
+              .from('profiles')
+              .update({ role: 'tennexis_admin' })
+              .eq('id', data.user?.id);
+              
+            if (updateError) {
+              console.error("Error updating admin role:", updateError);
+            }
+          }
+        } else if (!signInError) {
+          // User exists and credentials are valid, sign out
+          await supabase.auth.signOut();
+        }
+      } catch (error) {
+        console.error("Error in admin setup:", error);
+      } finally {
+        setIsCreatingAdmin(false);
+      }
+    };
+    
+    createAdminUser();
+  }, []);
 
   const onSubmit = async (data: LoginFormValues) => {
     setLoginError(null);
     
     try {
+      // Try to sign in
       await signIn(data.email, data.password);
-      // After login, check if the user is an admin
-      // Note: We need to add a delay because the auth state will update asynchronously
-      setTimeout(() => {
-        if (isAdmin) {
-          navigate('/admin');
-          toast({
-            title: "Welcome to Tennexis Admin Panel",
-            description: "You have successfully logged in as an administrator.",
-          });
-        } else {
-          setLoginError("You do not have admin privileges. Please contact the system administrator.");
+      
+      // Wait a moment for auth state to update
+      setTimeout(async () => {
+        // Get the current session to check user role
+        const { data: sessionData } = await supabase.auth.getSession();
+        
+        if (sessionData.session) {
+          // Check if the user has admin role using RPC
+          const { data: roleData, error: roleError } = await supabase
+            .rpc('get_user_role');
+            
+          if (roleError) {
+            console.error("Error checking user role:", roleError);
+            setLoginError("Error verifying admin privileges. Please try again.");
+            await supabase.auth.signOut();
+            return;
+          }
+          
+          if (roleData === 'tennexis_admin') {
+            // User is an admin, redirect to admin dashboard
+            navigate('/admin');
+            toast({
+              title: "Welcome to Tennexis Admin Panel",
+              description: "You have successfully logged in as an administrator.",
+            });
+          } else {
+            // User is not an admin, show error and sign out
+            setLoginError("You do not have admin privileges. This area is restricted to Tennexis administrators only.");
+            await supabase.auth.signOut();
+          }
         }
       }, 500);
     } catch (error: any) {
@@ -93,6 +170,16 @@ const AdminLogin = () => {
               <AlertDescription>{loginError}</AlertDescription>
             </Alert>
           )}
+          
+          <Alert className="mb-6 bg-blue-50 border-blue-200">
+            <AlertDescription>
+              <span className="font-semibold">Demo Admin Credentials:</span>
+              <br />
+              Email: admin@tennexis.com
+              <br />
+              Password: admin123
+            </AlertDescription>
+          </Alert>
           
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -155,9 +242,9 @@ const AdminLogin = () => {
                 <Button 
                   type="submit" 
                   className="w-full" 
-                  disabled={isLoading}
+                  disabled={isLoading || isCreatingAdmin}
                 >
-                  {isLoading ? "Signing in..." : "Sign in to Admin Portal"}
+                  {isLoading ? "Signing in..." : (isCreatingAdmin ? "Setting up admin..." : "Sign in to Admin Portal")}
                 </Button>
               </div>
             </form>

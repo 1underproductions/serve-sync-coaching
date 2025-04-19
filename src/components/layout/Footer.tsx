@@ -24,7 +24,7 @@ const Footer = () => {
               <li><Link to="#" className="text-muted-foreground hover:text-tennis-green-600">FAQ</Link></li>
               <li><Link to="#" className="text-muted-foreground hover:text-tennis-green-600">Terms & Conditions</Link></li>
               <li><Link to="#" className="text-muted-foreground hover:text-tennis-green-600">Privacy Policy</Link></li>
-              {/* Direct to admin login page rather than admin dashboard */}
+              {/* Admin portal link - ensure this goes to admin login page */}
               <li><Link to="/admin-login" className="text-tennis-green-600 hover:text-tennis-green-500 font-semibold">Admin Portal</Link></li>
             </ul>
           </div>
