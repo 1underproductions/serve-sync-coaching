@@ -60,13 +60,13 @@ const Footer = () => {
                     <a href="#" className="text-gray-400 hover:text-white transition-colors">{item}</a>
                   </li>
                 ))}
-                {/* Admin Panel Link - Always visible for testing */}
+                {/* Admin Panel Link - Now links to Admin Login Page */}
                 <li>
                   <Link 
-                    to="/admin" 
+                    to="/admin-login" 
                     className="text-tennis-green-500 hover:text-tennis-green-400 transition-colors font-semibold"
                   >
-                    Admin Panel
+                    Admin Portal
                   </Link>
                 </li>
               </ul>
