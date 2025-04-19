@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -50,7 +51,7 @@ const Login = () => {
     
     try {
       await signIn(data.email, data.password);
-      // Success handling is done in the Auth context
+      // Redirect is handled in the Auth context
     } catch (error: any) {
       console.error("Login error details:", error);
       setLoginError(error.message || "Login failed. Please check your credentials.");
@@ -62,12 +63,17 @@ const Login = () => {
     form.setValue("password", "password123");
   };
 
+  const fillAdminCredentials = () => {
+    form.setValue("email", "admin@tennexis.com");
+    form.setValue("password", "admin123");
+  };
+
   const createAdminAccount = async () => {
     try {
       await createSuperAdmin('admin@tennexis.com', 'admin123');
       toast({
         title: "Super Admin Created",
-        description: "Admin account has been successfully set up.",
+        description: "Admin account has been successfully set up with email: admin@tennexis.com and password: admin123",
       });
     } catch (error: any) {
       toast({
@@ -178,7 +184,7 @@ const Login = () => {
                 </Button>
               </div>
               
-              <div className="mt-4 text-center">
+              <div className="mt-4 text-center space-y-2">
                 <Button 
                   type="button" 
                   variant="outline" 
@@ -187,8 +193,16 @@ const Login = () => {
                 >
                   Try Demo Account
                 </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={fillAdminCredentials}
+                >
+                  Use Admin Credentials
+                </Button>
                 <p className="mt-2 text-xs text-gray-500">
-                  For testing, use: user@example.com / password123
+                  Admin: admin@tennexis.com / admin123
                 </p>
                 <Button 
                   type="button" 
