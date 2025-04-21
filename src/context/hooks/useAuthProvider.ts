@@ -229,50 +229,35 @@ export const useAuthProvider = () => {
         if (error && error.message.includes("Email not confirmed")) {
           console.log("Demo admin email not confirmed, trying to proceed anyway");
           
-          // Verify the admin account exists and has the correct role
-          const { data: userData, error: userError } = await supabase.auth.admin.getUserByEmail(email);
-          
-          if (userError) {
-            console.error("Error fetching admin user:", userError);
+          // Check if user exists in profiles table and has admin role
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('email', email)
+            .single();
+            
+          if (profileError) {
+            console.error("Error fetching profile:", profileError);
             throw new Error("Failed to verify admin account");
           }
           
-          if (userData && userData.user) {
-            // Check if this user has admin role in the profiles table
-            const { data: profileData, error: profileError } = await supabase
-              .from('profiles')
-              .select('role')
-              .eq('id', userData.user.id)
-              .single();
-              
-            if (profileError) {
-              console.error("Error fetching admin profile:", profileError);
-              throw new Error("Failed to verify admin privileges");
-            }
+          if (profileData && profileData.role === 'tennexis_admin') {
+            // For demo purposes, manually set the admin state and redirect
+            setIsAdmin(true);
+            setProfile({
+              ...profileData,
+              role: 'admin',
+            });
             
-            if (profileData && profileData.role === 'tennexis_admin') {
-              // For demo purposes, manually set the admin state and redirect
-              setIsAdmin(true);
-              setProfile({
-                ...profileData,
-                id: userData.user.id,
-                email: email,
-                full_name: "Tennexis Admin",
-                role: 'admin',
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-              });
-              
-              toast({
-                title: "Demo Admin Login",
-                description: "Logged in with demo admin account.",
-              });
-              
-              navigate('/admin');
-              return;
-            } else {
-              throw new Error("User does not have admin privileges");
-            }
+            toast({
+              title: "Demo Admin Login",
+              description: "Logged in with demo admin account.",
+            });
+            
+            navigate('/admin');
+            return;
+          } else {
+            throw new Error("User does not have admin privileges");
           }
         } else if (error) {
           throw error;
@@ -375,7 +360,7 @@ export const useAuthProvider = () => {
 
   const setUserAsAdmin = async (email: string) => {
     try {
-      // First, sign up the user if they don't exist
+      // Create admin user
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: email,
         password: 'admin123',
@@ -391,7 +376,7 @@ export const useAuthProvider = () => {
         throw signUpError;
       }
 
-      // Then, use the Supabase function to set the user as an admin
+      // Then, use the RPC function to set the user as an admin
       const { error: adminError } = await supabase
         .rpc('set_user_as_admin', { email });
 

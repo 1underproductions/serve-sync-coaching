@@ -124,66 +124,30 @@ const AdminLogin = () => {
       if (signInError && signInError.message.includes("Email not confirmed") && data.email === "admin@tennexis.com") {
         console.log("Demo admin email not confirmed, proceeding with manual authentication");
         
-        // Directly check if user exists and has admin role
-        const { data: userData, error: userError } = await supabase.auth.admin.getUserByEmail(data.email);
+        // For demo purposes, allow login without email confirmation for demo admin account
+        // First, check if a user with this email exists in the database
+        const { data: userData, error: userError } = await supabase
+          .from('profiles')
+          .select('id, role')
+          .eq('email', data.email)
+          .single();
         
         if (userError) {
-          console.error("Error fetching user:", userError);
+          console.error("Error fetching profile:", userError);
           throw new Error("Failed to authenticate admin user");
         }
         
-        if (userData && userData.user) {
-          // Check the user's role directly from profiles table
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', userData.user.id)
-            .single();
+        if (userData && userData.role === 'tennexis_admin') {
+          // For demo, proceed to admin page with demo admin
+          toast({
+            title: "Demo Mode",
+            description: "Logging in with demo admin account. In production, email confirmation would be required.",
+          });
           
-          if (profileError) {
-            console.error("Error fetching profile:", profileError);
-            throw new Error("Failed to verify admin privileges");
-          }
-          
-          if (profileData && profileData.role === 'tennexis_admin') {
-            // For demo, manually create a session for the admin
-            const { data: sessionData, error: sessionError } = await supabase.auth.signInWithPassword({
-              email: data.email,
-              password: data.password,
-              // Force login even with unconfirmed email
-              options: {
-                emailRedirectTo: window.location.origin
-              }
-            });
-            
-            if (sessionError) {
-              if (sessionError.message.includes("Email not confirmed")) {
-                // Expected error for demo, proceed anyway
-                toast({
-                  title: "Demo Mode",
-                  description: "Logging in with demo admin account. In production, email confirmation would be required.",
-                });
-                
-                navigate('/admin');
-                return;
-              } else {
-                throw sessionError;
-              }
-            }
-            
-            if (sessionData && sessionData.session) {
-              navigate('/admin');
-              toast({
-                title: "Admin Access Granted",
-                description: "Welcome to the Tennexis Admin Panel.",
-              });
-              return;
-            }
-          } else {
-            throw new Error("User does not have admin privileges");
-          }
+          navigate('/admin');
+          return;
         } else {
-          throw new Error("Admin user not found");
+          throw new Error("User does not have admin privileges");
         }
       } else if (signInError) {
         // For any other error or non-admin users
@@ -222,7 +186,7 @@ const AdminLogin = () => {
         
         // Try a direct bypass for the demo account
         try {
-          // Manually confirm the email through an API call or backend function if available
+          // Manually bypass email confirmation for demo purposes
           toast({
             title: "Demo Admin Login",
             description: "Proceeding with admin login despite unconfirmed email (demo mode only).",
