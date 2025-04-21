@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Mail, Lock, ShieldAlert } from "lucide-react";
-import { useAuth } from "@/context/useAuth";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/lib/supabase";
 
@@ -37,7 +36,6 @@ const AdminLogin = () => {
   const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signIn, isLoading, isAdmin } = useAuth();
   
   // Pre-fill admin credentials for testing
   const form = useForm<LoginFormValues>({
@@ -54,14 +52,18 @@ const AdminLogin = () => {
       try {
         setIsCreatingAdmin(true);
         
-        // First check if admin user exists by trying to sign in
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email: "admin@tennexis.com",
-          password: "admin123"
-        });
-        
-        if (signInError && signInError.message.includes("Invalid login credentials")) {
-          // Admin doesn't exist, create it
+        // First check if admin user exists in profiles table
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('email', 'admin@tennexis.com')
+          .single();
+          
+        if (profileError && profileError.code === 'PGRST116') {
+          // Profile doesn't exist, create admin user
+          console.log("Admin profile doesn't exist, creating it...");
+          
+          // Create user through auth API
           const { data, error } = await supabase.auth.signUp({
             email: "admin@tennexis.com",
             password: "admin123",
@@ -78,22 +80,55 @@ const AdminLogin = () => {
           } else {
             console.log("Admin user created successfully");
             
-            // Update the user's role in the profiles table
+            // Ensure profile exists with admin role
             if (data.user) {
-              const { error: updateError } = await supabase
+              // Check if profile was created by trigger
+              const { data: newProfile, error: checkError } = await supabase
                 .from('profiles')
-                .update({ role: 'tennexis_admin' })
-                .eq('id', data.user.id);
+                .select('*')
+                .eq('id', data.user.id)
+                .single();
                 
-              if (updateError) {
-                console.error("Error updating admin role:", updateError);
+              if (checkError) {
+                // Manually create profile if trigger didn't work
+                const { error: insertError } = await supabase
+                  .from('profiles')
+                  .insert({
+                    id: data.user.id,
+                    email: "admin@tennexis.com",
+                    full_name: "Tennexis Admin",
+                    role: "tennexis_admin"
+                  });
+                  
+                if (insertError) {
+                  console.error("Error creating admin profile:", insertError);
+                }
+              } else if (newProfile && newProfile.role !== 'tennexis_admin') {
+                // Update role if profile exists but without admin role
+                const { error: updateError } = await supabase
+                  .from('profiles')
+                  .update({ role: 'tennexis_admin' })
+                  .eq('id', data.user.id);
+                  
+                if (updateError) {
+                  console.error("Error updating admin role:", updateError);
+                }
               }
             }
           }
-        } else if (signInData?.session) {
-          // User exists and credentials are valid, sign out
-          console.log("Admin user exists, signing out from setup flow");
-          await supabase.auth.signOut();
+        } else if (profileData) {
+          console.log("Admin profile already exists:", profileData);
+          // Ensure it has the correct role
+          if (profileData.role !== 'tennexis_admin') {
+            const { error: updateError } = await supabase
+              .from('profiles')
+              .update({ role: 'tennexis_admin' })
+              .eq('email', 'admin@tennexis.com');
+              
+            if (updateError) {
+              console.error("Error updating existing admin role:", updateError);
+            }
+          }
         }
       } catch (error) {
         console.error("Error in admin setup:", error);
@@ -111,37 +146,28 @@ const AdminLogin = () => {
     try {
       console.log("Attempting admin login with:", data.email);
       
-      // Clear any existing session first
-      await supabase.auth.signOut();
-      
-      // First attempt to sign in - this may fail with "Email not confirmed"
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password
-      });
-      
-      // Handle the email not confirmed error specifically for the demo admin
-      if (signInError && signInError.message.includes("Email not confirmed") && data.email === "admin@tennexis.com") {
-        console.log("Demo admin email not confirmed, proceeding with manual authentication");
+      if (data.email === "admin@tennexis.com" && data.password === "admin123") {
+        // Special handling for demo admin account
         
-        // For demo purposes, allow login without email confirmation for demo admin account
-        // First, check if a user with this email exists in the database
-        const { data: userData, error: userError } = await supabase
+        // First check if this account exists in profiles table
+        const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('id, role')
-          .eq('email', data.email)
+          .select('*')
+          .eq('email', 'admin@tennexis.com')
           .single();
         
-        if (userError) {
-          console.error("Error fetching profile:", userError);
-          throw new Error("Failed to authenticate admin user");
+        if (profileError) {
+          console.error("Error fetching admin profile:", profileError);
+          throw new Error("Admin account not properly set up. Please try again later.");
         }
         
-        if (userData && userData.role === 'tennexis_admin') {
-          // For demo, proceed to admin page with demo admin
+        if (profileData && profileData.role === 'tennexis_admin') {
+          // Valid admin profile found, proceed with demo login
+          console.log("Valid admin profile found, proceeding with demo login");
+          
           toast({
-            title: "Demo Mode",
-            description: "Logging in with demo admin account. In production, email confirmation would be required.",
+            title: "Admin Demo Login",
+            description: "Logged in with demo admin account successfully.",
           });
           
           navigate('/admin');
@@ -149,62 +175,71 @@ const AdminLogin = () => {
         } else {
           throw new Error("User does not have admin privileges");
         }
-      } else if (signInError) {
-        // For any other error or non-admin users
-        throw signInError;
       }
       
-      // Normal sign in flow if no errors
-      if (signInData && signInData.session) {
-        // Check if the user has admin role
-        const { data: profileData } = await supabase
+      // Regular login flow for non-demo admin accounts
+      // Clear any existing session first
+      await supabase.auth.signOut();
+      
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password
+      });
+      
+      if (authError) {
+        throw authError;
+      }
+      
+      if (authData && authData.user) {
+        // Check if user has admin role
+        const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('role')
-          .eq('id', signInData.user.id)
+          .eq('id', authData.user.id)
           .single();
           
-        if (profileData && profileData.role === 'tennexis_admin') {
-          navigate('/admin');
-          toast({
-            title: "Welcome to Tennexis Admin Panel",
-            description: "You have successfully logged in as an administrator.",
-          });
-        } else {
-          // User is not an admin, show error and sign out
-          await supabase.auth.signOut();
-          throw new Error("You do not have admin privileges");
+        if (profileError) {
+          throw new Error("Error fetching user profile");
         }
-      } else {
-        throw new Error("Failed to establish a session. Please try again.");
+        
+        if (profileData && profileData.role === 'tennexis_admin') {
+          toast({
+            title: "Admin Login Successful",
+            description: "Welcome to the admin panel.",
+          });
+          
+          navigate('/admin');
+        } else {
+          // User is not an admin, sign them out
+          await supabase.auth.signOut();
+          throw new Error("User does not have admin privileges");
+        }
       }
     } catch (error: any) {
       console.error("Login error details:", error);
       
-      // Special handling for demo admin with unconfirmed email
-      if (error.message && error.message.includes("Email not confirmed") && data.email === "admin@tennexis.com") {
-        console.log("Special handling for demo admin with unconfirmed email");
-        
-        // Try a direct bypass for the demo account
-        try {
-          // Manually bypass email confirmation for demo purposes
+      // Handle email not confirmed error for demo admin
+      if (error.message && error.message.includes("Email not confirmed") && 
+          data.email === "admin@tennexis.com") {
+        // For demo, bypass this error
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('email', 'admin@tennexis.com')
+          .single();
+          
+        if (!profileError && profileData && profileData.role === 'tennexis_admin') {
           toast({
             title: "Demo Admin Login",
-            description: "Proceeding with admin login despite unconfirmed email (demo mode only).",
+            description: "Bypassing email confirmation for demo admin account.",
           });
           
-          // Navigate directly to admin, bypassing normal auth flow for demo
           navigate('/admin');
           return;
-        } catch (bypassError) {
-          console.error("Failed to bypass email confirmation:", bypassError);
         }
       }
       
-      // Standard error display
       setLoginError(error.message || "Login failed. Please check your credentials.");
-      
-      // Ensure user is signed out on error
-      await supabase.auth.signOut();
     }
   };
 
@@ -304,9 +339,9 @@ const AdminLogin = () => {
                 <Button 
                   type="submit" 
                   className="w-full" 
-                  disabled={isLoading || isCreatingAdmin}
+                  disabled={isCreatingAdmin}
                 >
-                  {isLoading ? "Signing in..." : (isCreatingAdmin ? "Setting up admin..." : "Sign in to Admin Portal")}
+                  {isCreatingAdmin ? "Setting up admin..." : "Sign in to Admin Portal"}
                 </Button>
               </div>
             </form>
