@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, sendCustomEmail, Profile } from '@/lib/supabase';
@@ -53,13 +54,18 @@ export const useAuthProvider = () => {
   }, [user?.id]);
 
   useEffect(() => {
+    // First set up auth listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, updatedSession) => {
         console.log("Auth state changed:", event);
+        
+        // Always set session and user first (synchronously)
         setSession(updatedSession);
         setUser(updatedSession?.user ?? null);
         
+        // Then fetch profile if needed (asynchronously)
         if (updatedSession?.user) {
+          // Important: Use setTimeout to avoid potential deadlock in auth state
           setTimeout(() => {
             fetchUserProfile(updatedSession.user.id);
           }, 0);
@@ -70,6 +76,7 @@ export const useAuthProvider = () => {
       }
     );
 
+    // Then check for existing session
     const initializeAuth = async () => {
       try {
         const { data, error } = await supabase.auth.getSession();
@@ -81,7 +88,10 @@ export const useAuthProvider = () => {
           setSession(data.session);
           setUser(data.session.user);
           
-          await fetchUserProfile(data.session.user.id);
+          // Important: Use setTimeout to avoid potential deadlock
+          setTimeout(async () => {
+            await fetchUserProfile(data.session.user.id);
+          }, 0);
         } else {
           console.log('No session found on initialization');
         }
@@ -201,6 +211,11 @@ export const useAuthProvider = () => {
     try {
       setIsLoading(true);
       console.log(`Attempting to sign in with: ${email}`);
+      
+      // Clear previous session to avoid conflicts
+      await supabase.auth.signOut();
+      
+      // Sign in with new credentials
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -209,6 +224,10 @@ export const useAuthProvider = () => {
       if (error) {
         console.error("Sign in error:", error);
         throw error;
+      }
+
+      if (!data.session) {
+        throw new Error("Failed to establish a session. Please try again.");
       }
 
       toast({
@@ -236,6 +255,12 @@ export const useAuthProvider = () => {
       const { error } = await supabase.auth.signOut();
       
       if (error) throw error;
+      
+      // Reset state
+      setSession(null);
+      setUser(null);
+      setProfile(null);
+      setIsAdmin(false);
       
       navigate('/login');
       
