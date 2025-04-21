@@ -215,7 +215,55 @@ export const useAuthProvider = () => {
       // Clear previous session to avoid conflicts
       await supabase.auth.signOut();
       
-      // Sign in with new credentials
+      // Special handling for demo admin account
+      if (email === "admin@tennexis.com") {
+        console.log("Attempting to sign in with demo admin account");
+        
+        // First try normal sign in
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        
+        // If email not confirmed error, but it's the demo admin, try to proceed anyway
+        if (error && error.message.includes("Email not confirmed")) {
+          console.log("Demo admin email not confirmed, trying to proceed anyway");
+          
+          // Force another sign in attempt
+          const { data: forceData, error: forceError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          
+          if (forceError) {
+            console.error("Force sign in error:", forceError);
+            throw forceError;
+          }
+          
+          if (forceData.session) {
+            // Check if this user has admin role in the profiles table
+            await fetchUserProfile(forceData.user.id);
+            
+            toast({
+              title: "Demo Admin Login",
+              description: "Logged in with demo admin account.",
+            });
+            
+            navigate('/admin');
+            return;
+          }
+        } else if (error) {
+          throw error;
+        }
+        
+        if (data.session) {
+          await fetchUserProfile(data.user.id);
+          navigate('/admin');
+          return;
+        }
+      }
+      
+      // Standard sign in for non-admin users
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,

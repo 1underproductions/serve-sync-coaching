@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -88,16 +87,6 @@ const AdminLogin = () => {
               if (updateError) {
                 console.error("Error updating admin role:", updateError);
               }
-              
-              // Force confirm the email in development mode
-              try {
-                // This would be handled in production via email confirmation
-                // For development we manually update auth.users (requires admin privileges)
-                console.log("Admin created, force confirming email for development");
-                await supabase.auth.signOut();
-              } catch (confirmError) {
-                console.error("Unable to force confirm email in development:", confirmError);
-              }
             }
           }
         } else if (signInData?.session) {
@@ -121,50 +110,40 @@ const AdminLogin = () => {
     try {
       console.log("Attempting admin login with:", data.email);
       
-      // First, handle email not confirmed error for demo account
-      if (data.email === "admin@tennexis.com") {
-        // For demo purposes, we want to allow login despite email not being confirmed
-        const { data: userData, error: userError } = await supabase.auth
-          .admin
-          .listUsers();
-          
-        if (!userError && userData) {
-          console.log("Successfully retrieved users list for admin confirmation");
-        }
-      }
-      
-      // Sign in with provided credentials
+      // Try to sign in despite email confirmation status
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password
       });
       
-      if (signInError) {
-        // Special handling for demo admin with email not confirmed
-        if (signInError.message.includes("Email not confirmed") && data.email === "admin@tennexis.com") {
+      // Special handling for the "Email not confirmed" error
+      if (signInError && signInError.message.includes("Email not confirmed") && data.email === "admin@tennexis.com") {
+        console.log("Demo admin email not confirmed, proceeding anyway...");
+        
+        // Attempt another sign in - in a real app you would confirm the email first
+        const { data: forceSignInData, error: forceSignInError } = await supabase.auth.signInWithPassword({
+          email: data.email,
+          password: data.password
+        });
+        
+        if (forceSignInError) {
+          throw forceSignInError;
+        }
+        
+        if (forceSignInData.session) {
           toast({
             title: "Demo Mode",
-            description: "For demo purposes, we'll proceed despite the email not being confirmed.",
+            description: "Logging in with demo admin account despite email not being confirmed.",
           });
           
-          // Attempt to sign in anyway for the demo
-          const { data: forceSignInData, error: forceSignInError } = await supabase.auth.signInWithPassword({
-            email: data.email,
-            password: data.password,
-          });
-          
-          if (forceSignInError) {
-            throw forceSignInError;
-          }
-          
-          if (!forceSignInData.session) {
-            throw new Error("Failed to establish a session for demo admin");
-          }
-          
-          // Successfully forced signin, now check if admin
-          const { data: roleData } = await supabase.rpc('get_user_role');
-          
-          if (roleData === 'tennexis_admin') {
+          // Check if the user has admin role
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', forceSignInData.user.id)
+            .single();
+            
+          if (profileData && profileData.role === 'tennexis_admin') {
             navigate('/admin');
             toast({
               title: "Admin Access Granted",
@@ -175,36 +154,35 @@ const AdminLogin = () => {
             throw new Error("User does not have admin privileges");
           }
         } else {
-          // Handle other sign in errors
-          throw signInError;
+          throw new Error("Failed to establish a session for demo admin");
         }
+      } else if (signInError) {
+        // Handle other sign in errors
+        throw signInError;
       }
       
-      // If we got here, sign in was successful
-      if (!signInData.session) {
-        throw new Error("Failed to establish a session. Please try again.");
-      }
-      
-      // Check if the user has admin role
-      const { data: roleData, error: roleError } = await supabase.rpc('get_user_role');
-      
-      if (roleError) {
-        console.error("Error checking user role:", roleError);
-        await supabase.auth.signOut();
-        throw new Error("Error verifying admin privileges");
-      }
-      
-      if (roleData === 'tennexis_admin') {
-        // User is an admin, redirect to admin dashboard
-        navigate('/admin');
-        toast({
-          title: "Welcome to Tennexis Admin Panel",
-          description: "You have successfully logged in as an administrator.",
-        });
+      // Normal sign in flow if no errors
+      if (signInData && signInData.session) {
+        // Check if the user has admin role
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', signInData.user.id)
+          .single();
+          
+        if (profileData && profileData.role === 'tennexis_admin') {
+          navigate('/admin');
+          toast({
+            title: "Welcome to Tennexis Admin Panel",
+            description: "You have successfully logged in as an administrator.",
+          });
+        } else {
+          // User is not an admin, show error and sign out
+          await supabase.auth.signOut();
+          throw new Error("You do not have admin privileges");
+        }
       } else {
-        // User is not an admin, show error and sign out
-        await supabase.auth.signOut();
-        throw new Error("You do not have admin privileges");
+        throw new Error("Failed to establish a session. Please try again.");
       }
     } catch (error: any) {
       console.error("Login error details:", error);
