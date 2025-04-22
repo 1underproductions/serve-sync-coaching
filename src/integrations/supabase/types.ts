@@ -41,6 +41,57 @@ export type Database = {
           },
         ]
       }
+      coach_verifications: {
+        Row: {
+          coach_id: string | null
+          created_at: string | null
+          documents_submitted: boolean | null
+          id: string
+          is_verified: boolean | null
+          notes: string | null
+          updated_at: string | null
+          verification_date: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          coach_id?: string | null
+          created_at?: string | null
+          documents_submitted?: boolean | null
+          id?: string
+          is_verified?: boolean | null
+          notes?: string | null
+          updated_at?: string | null
+          verification_date?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          coach_id?: string | null
+          created_at?: string | null
+          documents_submitted?: boolean | null
+          id?: string
+          is_verified?: boolean | null
+          notes?: string | null
+          updated_at?: string | null
+          verification_date?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_verifications_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_verifications_verified_by_fkey"
+            columns: ["verified_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       packages: {
         Row: {
           created_at: string

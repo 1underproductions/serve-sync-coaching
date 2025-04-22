@@ -28,6 +28,7 @@ export const navItems = [
 export const adminNavItems = [
   { name: "Admin Dashboard", path: "/admin", icon: Shield },
   { name: "Coaches", path: "/admin/coaches", icon: GraduationCap },
+  { name: "Coach Verifications", path: "/admin/coach-verifications", icon: Shield },
   { name: "Programs", path: "/admin/programs", icon: CalendarClock },
   { name: "Transactions", path: "/admin/transactions", icon: DollarSign },
   { name: "Support Tickets", path: "/admin/tickets", icon: Ticket },

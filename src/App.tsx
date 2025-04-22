@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -42,6 +41,7 @@ import AdminSettings from "@/pages/Admin/AdminSettings";
 import CoachBooking from "@/pages/CoachBooking";
 import BookingSuccess from "@/pages/BookingSuccess";
 import ComingSoon from "@/pages/ComingSoon";
+import AdminCoachVerifications from "@/pages/Admin/AdminCoachVerifications";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -96,7 +96,8 @@ function App() {
               
               {/* Admin Routes */}
               <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/admin/coaches" element={<AdminUsers />} /> {/* Updated path */}
+              <Route path="/admin/coaches" element={<AdminUsers />} />
+              <Route path="/admin/coach-verifications" element={<AdminCoachVerifications />} />
               <Route path="/admin/transactions" element={<AdminTransactions />} />
               <Route path="/admin/settings" element={<AdminSettings />} />
               
