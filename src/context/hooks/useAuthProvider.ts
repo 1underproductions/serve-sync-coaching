@@ -254,7 +254,7 @@ export const useAuthProvider = () => {
               description: "Logged in with demo admin account.",
             });
             
-            // Redirect to admin dashboard
+            // Redirect to admin dashboard - FIX: Use the correct path
             navigate('/admin');
             return;
           } else {
