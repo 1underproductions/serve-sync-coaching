@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -47,8 +48,8 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   }
 });
 
-// Export the URL for debugging purposes
-export const SUPABASE_URL = supabaseUrl;
+// Export the types for re-use in other parts of the application
+export type { Profile, Session, Player, Payment, Subscription, Package, PackageData } from './supabase';
 
 // Custom email function to handle our enhanced email templates
 export const sendCustomEmail = async (type: string, email: string, data: any) => {

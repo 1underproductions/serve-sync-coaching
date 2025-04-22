@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Table,
@@ -18,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { MoreHorizontal, Mail, Check, X, Eye } from "lucide-react";
-import { supabase, SUPABASE_URL } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { format } from "date-fns";
 import {
   Dialog,
@@ -61,7 +60,6 @@ export default function WaitlistTable({ signups, onStatusChange }: {
       setUpdateError(null);
       setDebugInfo(null);
       console.log("Updating status for signup:", id, "to", newStatus);
-      console.log("Using Supabase URL:", SUPABASE_URL);
       
       const { data, error } = await supabase
         .from('waitlist_signups')

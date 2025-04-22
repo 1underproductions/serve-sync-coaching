@@ -1,9 +1,8 @@
-
 import { useEffect, useState } from "react";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import WaitlistTable from "@/components/admin/WaitlistTable";
-import { supabase, SUPABASE_URL } from "@/lib/supabase"; 
+import { supabase } from "@/lib/supabase"; 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info, Users, Shield, Calendar, CheckCircle, RefreshCw } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -41,23 +40,7 @@ const AdminDashboard = () => {
       setError(null);
       setDebugInfo(null);
       
-      console.log("Supabase URL:", SUPABASE_URL);
-      console.log("Attempting to fetch from waitlist_signups table...");
-      
-      // Check if the table exists
-      const { data: tableData, error: tableError } = await supabase
-        .from('waitlist_signups')
-        .select('count(*)', { count: 'exact', head: true });
-      
-      if (tableError) {
-        console.error("Error checking waitlist_signups table:", tableError);
-        setDebugInfo({ type: 'table_check_error', error: tableError });
-        throw new Error(`Error checking table: ${tableError.message}`);
-      }
-      
-      console.log("Table check results:", tableData);
-      
-      // Now fetch the actual data
+      // Fetch the actual data directly without checking the table first
       const { data, error } = await supabase
         .from('waitlist_signups')
         .select('*')
