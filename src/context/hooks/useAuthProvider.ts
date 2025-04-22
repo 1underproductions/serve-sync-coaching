@@ -376,9 +376,9 @@ export const useAuthProvider = () => {
         throw signUpError;
       }
 
-      // Then, use the RPC function to set the user as an admin
+      // Then, use the RPC function to set the user as an admin with the correct parameter name
       const { error: adminError } = await supabase
-        .rpc('set_user_as_admin', { email });
+        .rpc('set_user_as_admin', { input_email: email });
 
       if (adminError) {
         console.error('Error setting user as admin:', adminError);

@@ -36,7 +36,6 @@ const AdminLogin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  // Pre-fill admin credentials for testing
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -50,7 +49,6 @@ const AdminLogin = () => {
       try {
         setIsCreatingAdmin(true);
         
-        // Check if admin user exists
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
@@ -60,7 +58,6 @@ const AdminLogin = () => {
         if (profileError && profileError.code === 'PGRST116') {
           console.log("Admin profile doesn't exist, creating it...");
           
-          // Create user through auth and profiles
           const { data, error } = await supabase.auth.signUp({
             email: "admin@tennexis.com",
             password: "admin123",
@@ -76,7 +73,6 @@ const AdminLogin = () => {
             throw error;
           }
           
-          // Explicitly set admin role using the function
           if (data.user) {
             const { error: roleError } = await supabase
               .rpc('set_user_as_admin', { input_email: 'admin@tennexis.com' });
@@ -87,7 +83,6 @@ const AdminLogin = () => {
             }
           }
         } else if (profileData) {
-          // Ensure admin role is set for existing profile
           const { error: roleError } = await supabase
             .rpc('set_user_as_admin', { input_email: 'admin@tennexis.com' });
             
@@ -115,11 +110,9 @@ const AdminLogin = () => {
     setLoginError(null);
     
     try {
-      // Special handling for demo admin account
       if (data.email === "admin@tennexis.com" && data.password === "admin123") {
         console.log("Attempting demo admin login");
         
-        // Clear any existing session
         await supabase.auth.signOut();
         
         const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
@@ -132,7 +125,6 @@ const AdminLogin = () => {
           throw authError;
         }
         
-        // Explicitly verify and set admin role
         const { error: roleError } = await supabase
           .rpc('set_user_as_admin', { input_email: data.email });
           
@@ -141,7 +133,6 @@ const AdminLogin = () => {
           throw new Error("Failed to set admin privileges");
         }
         
-        // Verify profile role after setting
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('role')
@@ -163,7 +154,6 @@ const AdminLogin = () => {
         return;
       }
       
-      // Regular login flow for other potential admin users
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password

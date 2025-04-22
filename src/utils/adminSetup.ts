@@ -1,5 +1,5 @@
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 
 export const createSuperAdmin = async (email: string, password: string) => {
   try {
@@ -19,9 +19,9 @@ export const createSuperAdmin = async (email: string, password: string) => {
       throw signUpError;
     }
 
-    // Set user as admin using the Supabase function
+    // Set user as admin using the Supabase function with updated parameter name
     const { error: adminError } = await supabase
-      .rpc('set_user_as_admin', { email });
+      .rpc('set_user_as_admin', { input_email: email });
 
     if (adminError) {
       console.error('Error setting user as admin:', adminError);
