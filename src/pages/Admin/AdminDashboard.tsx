@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import WaitlistTable from "@/components/admin/WaitlistTable";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client"; // Using the correct path
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info, Users, Shield, Calendar, CheckCircle, RefreshCw } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -29,6 +29,7 @@ const AdminDashboard = () => {
       setIsLoading(true);
       setError(null);
       
+      // Using the correct Supabase client import
       const { data, error } = await supabase
         .from('waitlist_signups')
         .select('*')
@@ -62,7 +63,7 @@ const AdminDashboard = () => {
           rejectedCount
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error in fetchWaitlist:", error);
       setError(`Failed to fetch waitlist data: ${error.message}`);
       toast({
@@ -77,12 +78,24 @@ const AdminDashboard = () => {
   };
 
   const handleRefresh = () => {
+    console.log("Manual refresh triggered");
     setRefreshing(true);
     fetchWaitlist();
   };
 
   useEffect(() => {
+    console.log("AdminDashboard mounted, fetching waitlist...");
     fetchWaitlist();
+    
+    // Set up auto-refresh interval
+    const refreshInterval = setInterval(() => {
+      console.log("Auto-refresh triggered");
+      fetchWaitlist();
+    }, 30000); // Refresh every 30 seconds
+    
+    return () => {
+      clearInterval(refreshInterval);
+    };
   }, []);
 
   return (

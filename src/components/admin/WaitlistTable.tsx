@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { MoreHorizontal, Mail, Check, X, Eye, ExternalLink } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client"; // Using the correct import
 import { format } from "date-fns";
 import {
   Dialog,
@@ -44,7 +44,7 @@ export default function WaitlistTable({ signups, onStatusChange }: {
   onStatusChange?: () => void;
 }) {
   const { toast } = useToast();
-  const [localSignups, setLocalSignups] = useState<WaitlistSignup[]>(signups || []);
+  const [localSignups, setLocalSignups] = useState<WaitlistSignup[]>([]);
   const [detailView, setDetailView] = useState<WaitlistSignup | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
@@ -71,6 +71,8 @@ export default function WaitlistTable({ signups, onStatusChange }: {
         throw error;
       }
 
+      console.log("Status updated successfully");
+
       // Update local state to reflect the change
       setLocalSignups(prev => 
         prev.map(signup => 
@@ -93,7 +95,7 @@ export default function WaitlistTable({ signups, onStatusChange }: {
         onStatusChange();
       }
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("Full error:", error);
       toast({
         title: "Error updating status",

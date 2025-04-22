@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Mail, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client"; // Corrected import path
 
 // Form validation schema
 const formSchema = z.object({
@@ -74,8 +74,8 @@ const CoachSignupForm = () => {
       // Convert yearsExperience to integer
       const yearsExp = parseInt(formData.yearsExperience);
       
-      // Insert into Supabase - using the correct insert format
-      const { error } = await supabase
+      // Insert into Supabase with the correct client import
+      const { data, error } = await supabase
         .from('waitlist_signups')
         .insert({
           email: formData.email,
@@ -83,14 +83,15 @@ const CoachSignupForm = () => {
           years_experience: yearsExp,
           message: formData.message || null,
           status: 'pending'
-        });
+        })
+        .select(); // Add select to get the inserted row
 
       if (error) {
         console.error("Supabase error on waitlist signup:", error);
         throw error;
       }
       
-      console.log("Signup successful");
+      console.log("Signup successful, inserted data:", data);
       
       toast({
         title: "Thank you for joining the waitlist!",
