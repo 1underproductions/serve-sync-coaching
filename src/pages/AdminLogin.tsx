@@ -17,7 +17,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Mail, Lock, ShieldAlert } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 
 const loginSchema = z.object({
   email: z.string().email({
@@ -78,6 +78,7 @@ const AdminLogin = () => {
           
           // Set the admin role
           if (data.user) {
+            // Updated: Use 'input_email' parameter name to match the updated function signature
             const { error: roleError } = await supabase
               .rpc('set_user_as_admin', { input_email: 'admin@tennexis.com' });
               
@@ -88,6 +89,7 @@ const AdminLogin = () => {
           }
         } else if (profileData) {
           // Ensure the user has admin role
+          // Updated: Use 'input_email' parameter name to match the updated function signature
           const { error: roleError } = await supabase
             .rpc('set_user_as_admin', { input_email: 'admin@tennexis.com' });
             
@@ -146,6 +148,7 @@ const AdminLogin = () => {
             
             if (profileData.role === 'tennexis_admin') {
               // Set admin role again to ensure it's properly set
+              // Updated: Use 'input_email' parameter name to match the updated function signature
               await supabase.rpc('set_user_as_admin', { input_email: data.email });
               
               toast({
@@ -163,6 +166,7 @@ const AdminLogin = () => {
           // If we got here without an email confirmation error, proceed normally
           if (authData && authData.user) {
             // Set admin role
+            // Updated: Use 'input_email' parameter name to match the updated function signature
             const { error: roleError } = await supabase
               .rpc('set_user_as_admin', { input_email: data.email });
               
