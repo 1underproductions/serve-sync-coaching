@@ -6,19 +6,66 @@ import { Input } from "@/components/ui/input";
 import { ArrowLeft, Mail, CalendarClock, Users, Clock } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
+import { z } from "zod";
 
 const ComingSoon = () => {
   const [email, setEmail] = useState('');
+  const [honeypot, setHoneypot] = useState(''); // Honeypot field
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Email validation schema
+  const emailSchema = z.string().email("Please enter a valid email address");
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // For now, just show a success message
-    toast({
-      title: "Thank you for joining the waitlist!",
-      description: "We'll notify you when Tennexis launches.",
-    });
-    setEmail('');
+
+    // If honeypot is filled, silently reject (bot detected)
+    if (honeypot) {
+      console.log("Spam submission detected and blocked");
+      toast({
+        title: "Thank you for your interest!",
+        description: "We'll notify you when Tennexis launches.",
+      });
+      setEmail('');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      
+      // Validate email
+      emailSchema.parse(email);
+
+      // Here you would typically send the email to your backend
+      // For testing, we'll just simulate a delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast({
+        title: "Thank you for joining the waitlist!",
+        description: "We'll notify you when Tennexis launches.",
+      });
+      
+      // Clear form
+      setEmail('');
+
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: "Invalid email",
+          description: "Please enter a valid email address.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Something went wrong",
+          description: "Please try again later.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -64,6 +111,18 @@ const ComingSoon = () => {
                   <p className="text-gray-600 mb-6">
                     Be the first to know when we launch and receive exclusive early-bird offers.
                   </p>
+                  
+                  {/* Honeypot field - hidden from users but visible to bots */}
+                  <input
+                    type="text"
+                    name="website"
+                    value={honeypot}
+                    onChange={(e) => setHoneypot(e.target.value)}
+                    style={{ display: 'none' }}
+                    tabIndex={-1}
+                    aria-hidden="true"
+                  />
+
                   <div className="flex space-x-2">
                     <div className="relative flex-1">
                       <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
@@ -74,9 +133,12 @@ const ComingSoon = () => {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
+                        disabled={isSubmitting}
                       />
                     </div>
-                    <Button type="submit">Join Waitlist</Button>
+                    <Button type="submit" disabled={isSubmitting}>
+                      {isSubmitting ? "Joining..." : "Join Waitlist"}
+                    </Button>
                   </div>
                 </form>
               </div>
