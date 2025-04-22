@@ -22,9 +22,14 @@ const AdminLayout = ({
   const { isAdmin, isLoading } = useAuth();
   
   useEffect(() => {
-    // If admin access is required but user is not an admin, redirect to dashboard
-    if (!isLoading && requiresAdmin && !isAdmin) {
-      navigate("/dashboard");
+    // If auth check is complete and admin access is required but user is not an admin, redirect to dashboard
+    if (!isLoading && requiresAdmin) {
+      if (!isAdmin) {
+        console.log("User is not an admin, redirecting to dashboard");
+        navigate("/dashboard");
+      } else {
+        console.log("User is admin, staying on admin page");
+      }
     }
   }, [navigate, requiresAdmin, isAdmin, isLoading]);
 
@@ -37,6 +42,11 @@ const AdminLayout = ({
         </div>
       </Layout>
     );
+  }
+
+  // If admin access is required and user is not an admin, don't render content
+  if (requiresAdmin && !isAdmin) {
+    return null; // This will prevent content flash before redirect happens
   }
 
   return (

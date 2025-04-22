@@ -254,6 +254,7 @@ export const useAuthProvider = () => {
               description: "Logged in with demo admin account.",
             });
             
+            // Redirect to admin dashboard
             navigate('/admin');
             return;
           } else {
@@ -265,6 +266,8 @@ export const useAuthProvider = () => {
         
         if (data.session) {
           await fetchUserProfile(data.user.id);
+          
+          // Redirect to admin dashboard
           navigate('/admin');
           return;
         }
@@ -285,12 +288,20 @@ export const useAuthProvider = () => {
         throw new Error("Failed to establish a session. Please try again.");
       }
 
+      // Fetch user profile to determine role
+      const profile = await fetchUserProfile(data.user.id);
+      
       toast({
         title: "Welcome back!",
         description: "You've successfully signed in.",
       });
       
-      navigate('/dashboard');
+      // Redirect based on role
+      if (profile && profile.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (error: any) {
       console.error("Sign in caught error:", error);
       toast({

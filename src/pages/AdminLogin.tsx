@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -18,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Mail, Lock, ShieldAlert } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 
 const loginSchema = z.object({
   email: z.string().email({
@@ -36,6 +36,13 @@ const AdminLogin = () => {
   const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAdmin, isLoading } = useAuth();
+  
+  useEffect(() => {
+    if (!isLoading && isAdmin) {
+      navigate('/admin');
+    }
+  }, [isAdmin, isLoading, navigate]);
   
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -50,7 +57,6 @@ const AdminLogin = () => {
       try {
         setIsCreatingAdmin(true);
         
-        // First check if the admin profile exists already
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
@@ -60,7 +66,6 @@ const AdminLogin = () => {
         if (profileError && profileError.code === 'PGRST116') {
           console.log("Admin profile doesn't exist, creating it...");
           
-          // Create the admin user
           const { data, error } = await supabase.auth.signUp({
             email: "admin@tennexis.com",
             password: "admin123",
@@ -76,9 +81,7 @@ const AdminLogin = () => {
             throw error;
           }
           
-          // Set the admin role
           if (data.user) {
-            // Updated: Use 'input_email' parameter name to match the updated function signature
             const { error: roleError } = await supabase
               .rpc('set_user_as_admin', { input_email: 'admin@tennexis.com' });
               
@@ -88,8 +91,6 @@ const AdminLogin = () => {
             }
           }
         } else if (profileData) {
-          // Ensure the user has admin role
-          // Updated: Use 'input_email' parameter name to match the updated function signature
           const { error: roleError } = await supabase
             .rpc('set_user_as_admin', { input_email: 'admin@tennexis.com' });
             
@@ -111,31 +112,26 @@ const AdminLogin = () => {
     };
     
     createAdminUser();
-  }, []);
+  }, [toast]);
 
   const onSubmit = async (data: LoginFormValues) => {
     setLoginError(null);
     
     try {
-      // For demo admin login, implement a more robust flow
       if (data.email === "admin@tennexis.com" && data.password === "admin123") {
         console.log("Attempting demo admin login");
         
-        // Sign out first to clear any existing session
         await supabase.auth.signOut();
         
         try {
-          // Attempt to sign in
           const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
             email: data.email,
             password: data.password
           });
           
-          // Special handling for unconfirmed email error
           if (authError && authError.message.includes("Email not confirmed")) {
             console.log("Email not confirmed for admin, proceeding anyway for demo");
             
-            // For demo accounts, check if the profile exists and has admin role
             const { data: profileData, error: profileError } = await supabase
               .from('profiles')
               .select('role')
@@ -147,8 +143,6 @@ const AdminLogin = () => {
             }
             
             if (profileData.role === 'tennexis_admin') {
-              // Set admin role again to ensure it's properly set
-              // Updated: Use 'input_email' parameter name to match the updated function signature
               await supabase.rpc('set_user_as_admin', { input_email: data.email });
               
               toast({
@@ -163,10 +157,7 @@ const AdminLogin = () => {
             throw authError;
           }
           
-          // If we got here without an email confirmation error, proceed normally
           if (authData && authData.user) {
-            // Set admin role
-            // Updated: Use 'input_email' parameter name to match the updated function signature
             const { error: roleError } = await supabase
               .rpc('set_user_as_admin', { input_email: data.email });
               
@@ -175,7 +166,6 @@ const AdminLogin = () => {
               throw new Error("Failed to set admin privileges");
             }
             
-            // Verify the role
             const { data: profileData, error: profileError } = await supabase
               .from('profiles')
               .select('role')
@@ -197,18 +187,16 @@ const AdminLogin = () => {
             return;
           }
         } catch (error: any) {
-          // If this is specifically the email confirmation error, we'll try to work around it
           if (error.message && error.message.includes("Email not confirmed")) {
             console.log("Handling email not confirmed error");
             
-            // For demo accounts, force create the profile
             const { error: forceProfileError } = await supabase
               .from('profiles')
               .upsert({ 
                 email: data.email, 
                 role: 'tennexis_admin',
                 full_name: 'Demo Admin',
-                id: 'demo-admin-id', // This will be replaced once properly authenticated
+                id: 'demo-admin-id',
               });
               
             if (!forceProfileError) {
@@ -226,7 +214,6 @@ const AdminLogin = () => {
         }
       }
       
-      // Normal login flow for non-demo accounts
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password
