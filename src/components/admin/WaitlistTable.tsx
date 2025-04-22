@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { MoreHorizontal, Mail, Check, X, Eye, ExternalLink } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client"; // Using the correct import
+import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import {
   Dialog,
