@@ -1,3 +1,4 @@
+
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
   CalendarClock, 
@@ -46,8 +47,6 @@ const Sidebar = () => {
   const { toast } = useToast();
   const { signOut, isAdmin, profile } = useAuth();
   const currentPath = location.pathname;
-  
-  console.log("Sidebar auth state:", { isAdmin, profile });
   
   const handleLogout = async () => {
     try {
