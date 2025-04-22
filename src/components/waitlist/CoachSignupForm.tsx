@@ -77,13 +77,13 @@ const CoachSignupForm = () => {
       // Insert into Supabase with the correct client import
       const { data, error } = await supabase
         .from('waitlist_signups')
-        .insert({
+        .insert([{  // Wrap the object in an array for consistent API usage
           email: formData.email,
           full_name: formData.fullName,
           years_experience: yearsExp,
           message: formData.message || null,
           status: 'pending'
-        })
+        }])
         .select(); // Add select to get the inserted row
 
       if (error) {
