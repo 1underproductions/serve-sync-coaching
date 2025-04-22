@@ -1,73 +1,11 @@
-
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ArrowLeft, Mail, CalendarClock, Users, Clock } from "lucide-react";
+import { CalendarClock, Users, Clock, Mail } from "lucide-react";
 import { motion } from "framer-motion";
-import { useToast } from "@/components/ui/use-toast";
-import { z } from "zod";
+import CoachSignupForm from '@/components/waitlist/CoachSignupForm';
 
 const ComingSoon = () => {
-  const [email, setEmail] = useState('');
-  const [honeypot, setHoneypot] = useState(''); // Honeypot field
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
-
-  // Email validation schema
-  const emailSchema = z.string().email("Please enter a valid email address");
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // If honeypot is filled, silently reject (bot detected)
-    if (honeypot) {
-      console.log("Spam submission detected and blocked");
-      toast({
-        title: "Thank you for your interest!",
-        description: "We'll notify you when Tennexis launches.",
-      });
-      setEmail('');
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      
-      // Validate email
-      emailSchema.parse(email);
-
-      // Here you would typically send the email to your backend
-      // For testing, we'll just simulate a delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast({
-        title: "Thank you for joining the waitlist!",
-        description: "We'll notify you when Tennexis launches.",
-      });
-      
-      // Clear form
-      setEmail('');
-
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        toast({
-          title: "Invalid email",
-          description: "Please enter a valid email address.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Something went wrong",
-          description: "Please try again later.",
-          variant: "destructive",
-        });
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
     <div className="min-h-screen flex flex-col">
       <header className="bg-white border-b py-4">
@@ -106,41 +44,7 @@ const ComingSoon = () => {
               className="space-y-8"
             >
               <div className="bg-white p-6 rounded-lg shadow-sm">
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <h2 className="text-2xl font-bold mb-4">Get Early Access</h2>
-                  <p className="text-gray-600 mb-6">
-                    Be the first to know when we launch and receive exclusive early-bird offers.
-                  </p>
-                  
-                  {/* Honeypot field - hidden from users but visible to bots */}
-                  <input
-                    type="text"
-                    name="website"
-                    value={honeypot}
-                    onChange={(e) => setHoneypot(e.target.value)}
-                    style={{ display: 'none' }}
-                    tabIndex={-1}
-                    aria-hidden="true"
-                  />
-
-                  <div className="flex space-x-2">
-                    <div className="relative flex-1">
-                      <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                      <Input 
-                        type="email" 
-                        placeholder="Enter your email" 
-                        className="pl-10"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                    <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting ? "Joining..." : "Join Waitlist"}
-                    </Button>
-                  </div>
-                </form>
+                <CoachSignupForm />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
