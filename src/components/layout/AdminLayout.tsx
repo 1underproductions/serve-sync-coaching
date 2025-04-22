@@ -1,9 +1,8 @@
-
 import { ReactNode, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "./Layout";
 import { Shield } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/useAuth";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -22,7 +21,6 @@ const AdminLayout = ({
   const { isAdmin, isLoading } = useAuth();
   
   useEffect(() => {
-    // If auth check is complete and admin access is required but user is not an admin, redirect to dashboard
     if (!isLoading && requiresAdmin) {
       if (!isAdmin) {
         console.log("User is not an admin, redirecting to dashboard");
@@ -33,7 +31,6 @@ const AdminLayout = ({
     }
   }, [navigate, requiresAdmin, isAdmin, isLoading]);
 
-  // Show loading state while checking auth
   if (isLoading) {
     return (
       <Layout>
@@ -44,9 +41,8 @@ const AdminLayout = ({
     );
   }
 
-  // If admin access is required and user is not an admin, don't render content
   if (requiresAdmin && !isAdmin) {
-    return null; // This will prevent content flash before redirect happens
+    return null;
   }
 
   return (
