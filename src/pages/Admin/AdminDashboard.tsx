@@ -14,6 +14,7 @@ const AdminDashboard = () => {
   const [waitlistSignups, setWaitlistSignups] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState({
     waitlistCount: 0,
     pendingCount: 0,
@@ -26,6 +27,7 @@ const AdminDashboard = () => {
     try {
       console.log("Fetching waitlist data...");
       setIsLoading(true);
+      setError(null);
       
       const { data, error } = await supabase
         .from('waitlist_signups')
@@ -34,6 +36,7 @@ const AdminDashboard = () => {
 
       if (error) {
         console.error("Error fetching waitlist data:", error);
+        setError(`Error fetching waitlist data: ${error.message}`);
         toast({
           title: "Error fetching waitlist data",
           description: error.message,
@@ -61,6 +64,7 @@ const AdminDashboard = () => {
       }
     } catch (error) {
       console.error("Error in fetchWaitlist:", error);
+      setError(`Failed to fetch waitlist data: ${error.message}`);
       toast({
         title: "Something went wrong",
         description: "Could not fetch waitlist data. Please try again.",
@@ -176,6 +180,21 @@ const AdminDashboard = () => {
                 <div className="text-center py-4">
                   <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-tennis-green-600 mb-2"></div>
                   <div>Loading waitlist data...</div>
+                </div>
+              ) : error ? (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertTitle>Error</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              ) : waitlistSignups.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No waitlist signups found yet. Coaches will appear here when they sign up.
+                  <div className="mt-4">
+                    <Button variant="outline" onClick={handleRefresh} size="sm">
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Check Again
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <WaitlistTable 

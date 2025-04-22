@@ -27,6 +27,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 type WaitlistSignup = {
   id: string;
@@ -46,6 +47,7 @@ export default function WaitlistTable({ signups, onStatusChange }: {
   const [localSignups, setLocalSignups] = useState<WaitlistSignup[]>(signups || []);
   const [detailView, setDetailView] = useState<WaitlistSignup | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
 
   // Update local signups when props change
   useEffect(() => {
@@ -55,6 +57,7 @@ export default function WaitlistTable({ signups, onStatusChange }: {
 
   const updateStatus = async (id: string, newStatus: WaitlistSignup['status']) => {
     try {
+      setUpdateError(null);
       console.log("Updating status for signup:", id, "to", newStatus);
       
       const { error } = await supabase
@@ -64,9 +67,11 @@ export default function WaitlistTable({ signups, onStatusChange }: {
 
       if (error) {
         console.error("Error updating status:", error);
+        setUpdateError(`Failed to update status: ${error.message}`);
         throw error;
       }
 
+      // Update local state to reflect the change
       setLocalSignups(prev => 
         prev.map(signup => 
           signup.id === id ? { ...signup, status: newStatus } : signup
@@ -77,6 +82,11 @@ export default function WaitlistTable({ signups, onStatusChange }: {
         title: "Status updated",
         description: `Signup status changed to ${newStatus}`,
       });
+      
+      // Close the dialog if it's open
+      if (openDialog) {
+        setOpenDialog(false);
+      }
       
       // Call the callback if provided
       if (onStatusChange) {
@@ -125,6 +135,12 @@ export default function WaitlistTable({ signups, onStatusChange }: {
 
   return (
     <>
+      {updateError && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{updateError}</AlertDescription>
+        </Alert>
+      )}
+      
       <Table>
         <TableHeader>
           <TableRow>

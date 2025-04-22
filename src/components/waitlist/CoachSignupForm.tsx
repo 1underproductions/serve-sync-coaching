@@ -71,23 +71,26 @@ const CoachSignupForm = () => {
 
       console.log("Submitting waitlist signup with data:", formData);
 
-      // Insert into Supabase
-      const { error, data } = await supabase
+      // Convert yearsExperience to integer
+      const yearsExp = parseInt(formData.yearsExperience);
+      
+      // Insert into Supabase - using the correct insert format
+      const { error } = await supabase
         .from('waitlist_signups')
-        .insert([{
+        .insert({
           email: formData.email,
           full_name: formData.fullName,
-          years_experience: parseInt(formData.yearsExperience),
+          years_experience: yearsExp,
           message: formData.message || null,
           status: 'pending'
-        }]);
+        });
 
       if (error) {
         console.error("Supabase error on waitlist signup:", error);
         throw error;
       }
       
-      console.log("Signup successful, response:", data);
+      console.log("Signup successful");
       
       toast({
         title: "Thank you for joining the waitlist!",
