@@ -41,6 +41,7 @@ import AdminTransactions from "@/pages/Admin/AdminTransactions";
 import AdminSettings from "@/pages/Admin/AdminSettings";
 import CoachBooking from "@/pages/CoachBooking";
 import BookingSuccess from "@/pages/BookingSuccess";
+import ComingSoon from "@/pages/ComingSoon";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -91,6 +92,7 @@ function App() {
               <Route path="/payment-success" element={<PaymentSuccess />} />
               <Route path="/booking/:coachId" element={<CoachBooking />} />
               <Route path="/booking-success" element={<BookingSuccess />} />
+              <Route path="/coming-soon" element={<ComingSoon />} />
               
               {/* Admin Routes */}
               <Route path="/admin" element={<AdminDashboard />} />
