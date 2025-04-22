@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Table,
@@ -17,7 +18,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { MoreHorizontal, Mail, Check, X, Eye } from "lucide-react";
-import { supabase, WaitlistSignup } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client"; // Use client from integrations
+import { WaitlistSignup } from "@/lib/supabase"; // Import the type
 import { format } from "date-fns";
 import {
   Dialog,
@@ -40,8 +42,8 @@ export default function WaitlistTable({ signups, onStatusChange }: {
   const [debugInfo, setDebugInfo] = useState<any>(null);
 
   useEffect(() => {
-    console.log("WaitlistTable received signups:", signups);
-    console.log("Signups type:", typeof signups, Array.isArray(signups) ? "is array" : "not array");
+    console.log("[WaitlistTable] Received signups:", signups);
+    console.log("[WaitlistTable] Signups type:", typeof signups, Array.isArray(signups) ? "is array" : "not array");
     setLocalSignups(Array.isArray(signups) ? signups : []);
   }, [signups]);
 
@@ -49,7 +51,7 @@ export default function WaitlistTable({ signups, onStatusChange }: {
     try {
       setUpdateError(null);
       setDebugInfo(null);
-      console.log("Updating status for signup:", id, "to", newStatus);
+      console.log("[WaitlistTable] Updating status for signup:", id, "to", newStatus);
       
       const { data, error } = await supabase
         .from('waitlist_signups')
@@ -58,13 +60,13 @@ export default function WaitlistTable({ signups, onStatusChange }: {
         .select();
 
       if (error) {
-        console.error("Error updating status:", error);
+        console.error("[WaitlistTable] Error updating status:", error);
         setDebugInfo({ error, type: 'update_error' });
         setUpdateError(`Failed to update status: ${error.message}`);
         throw error;
       }
 
-      console.log("Status updated successfully, returned data:", data);
+      console.log("[WaitlistTable] Status updated successfully, returned data:", data);
       setDebugInfo({ data, type: 'update_success' });
 
       setLocalSignups(prev => 
@@ -87,7 +89,7 @@ export default function WaitlistTable({ signups, onStatusChange }: {
       }
       
     } catch (error: any) {
-      console.error("Full error:", error);
+      console.error("[WaitlistTable] Full error:", error);
       toast({
         title: "Error updating status",
         description: "Please try again",

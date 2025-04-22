@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Mail, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client"; // Use the client from integrations directory
 
 // Form validation schema
 const formSchema = z.object({
@@ -71,7 +71,7 @@ const CoachSignupForm = () => {
       // Validate form data
       formSchema.parse(formData);
 
-      console.log("Submitting waitlist signup with data:", formData);
+      console.log("[CoachSignupForm] Submitting waitlist signup with data:", formData);
       
       // Convert yearsExperience to integer
       const yearsExp = parseInt(formData.yearsExperience);
@@ -84,7 +84,7 @@ const CoachSignupForm = () => {
         status: 'pending'
       };
       
-      console.log("Prepared data for insertion:", signupData);
+      console.log("[CoachSignupForm] Prepared data for insertion:", signupData);
       
       // First, check if this email already exists in the waitlist
       const { data: existingSignups, error: checkError } = await supabase
@@ -94,10 +94,11 @@ const CoachSignupForm = () => {
         .maybeSingle();
       
       if (checkError) {
-        console.log("Error checking for existing email:", checkError);
+        console.log("[CoachSignupForm] Error checking for existing email:", checkError);
+        setDebugInfo({ checkError, type: 'check_error' });
         // Continue with insert anyway as this might be due to RLS permissions
       } else if (existingSignups) {
-        console.log("Email already exists in waitlist:", existingSignups);
+        console.log("[CoachSignupForm] Email already exists in waitlist:", existingSignups);
         toast({
           title: "You're already on our waitlist!",
           description: "We'll notify you when Tennexis launches.",
@@ -112,13 +113,14 @@ const CoachSignupForm = () => {
         return;
       }
       
-      // Insert new signup
+      // Insert new signup - using supabase from integrations
       const { data, error } = await supabase
         .from('waitlist_signups')
-        .insert([signupData]);
+        .insert([signupData])
+        .select();
       
       if (error) {
-        console.error("Supabase error on waitlist signup:", error);
+        console.error("[CoachSignupForm] Supabase error on waitlist signup:", error);
         setDebugInfo({ error, type: 'submission_error' });
         
         // Try to provide a more user-friendly error message
@@ -137,7 +139,7 @@ const CoachSignupForm = () => {
           throw error;
         }
       } else {
-        console.log("Signup successful, returned data:", data);
+        console.log("[CoachSignupForm] Signup successful, returned data:", data);
         setDebugInfo({ data, type: 'success' });
         
         toast({
@@ -156,7 +158,7 @@ const CoachSignupForm = () => {
 
     } catch (error) {
       if (error instanceof z.ZodError) {
-        console.error("Validation error:", error.errors);
+        console.error("[CoachSignupForm] Validation error:", error.errors);
         setDebugInfo({ error: error.errors, type: 'validation_error' });
         toast({
           title: "Invalid form data",
@@ -164,7 +166,7 @@ const CoachSignupForm = () => {
           variant: "destructive",
         });
       } else {
-        console.error("Submission error:", error);
+        console.error("[CoachSignupForm] Submission error:", error);
         setDebugInfo({ error, type: 'submission_error' });
         toast({
           title: "Something went wrong",

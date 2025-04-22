@@ -153,14 +153,13 @@ export type PackageData = {
 };
 
 // Define WaitlistSignup type to ensure consistency
-// Modified to accept any string for status to match what Supabase returns
 export type WaitlistSignup = {
   id: string;
   email: string;
   full_name: string;
   years_experience: number | null;
   message: string | null;
-  status: string; // Changed from 'pending' | 'contacted' | 'rejected' to string
+  status: string; // Using string type for status to handle any value from DB
   created_at: string;
 };
 
@@ -184,6 +183,38 @@ export const checkTableExists = async (tableName: string): Promise<boolean> => {
   } catch (error) {
     console.error(`Exception checking if table ${tableName} exists:`, error);
     return false;
+  }
+};
+
+// Utility function to create a test waitlist entry for development
+export const createTestWaitlistEntry = async (): Promise<{ success: boolean, data?: any, error?: any }> => {
+  try {
+    console.log("Creating test waitlist entry...");
+    
+    const testEntry = {
+      full_name: "Test Coach",
+      email: `test.coach.${Date.now()}@example.com`, // Add timestamp to avoid duplicates
+      years_experience: 5,
+      message: "This is a test coach entry for development purposes.",
+      status: "pending"
+    };
+    
+    const { data, error } = await supabase
+      .from('waitlist_signups')
+      .insert(testEntry)
+      .select();
+    
+    if (error) {
+      console.error("Error creating test waitlist entry:", error);
+      return { success: false, error };
+    }
+    
+    console.log("Successfully created test waitlist entry:", data);
+    return { success: true, data };
+    
+  } catch (error) {
+    console.error("Exception creating test waitlist entry:", error);
+    return { success: false, error };
   }
 };
 
