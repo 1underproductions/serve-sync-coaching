@@ -136,7 +136,7 @@ const AdminCoachVerifications = () => {
                             <FileText className="h-4 w-4 mr-1" />
                             <span>{v.notes || <span className="italic text-gray-400">No notes</span>}</span>
                             <Button
-                              size="xs"
+                              size="sm"
                               variant="ghost"
                               className="ml-2"
                               onClick={() => {
@@ -156,7 +156,7 @@ const AdminCoachVerifications = () => {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <Button
-                          variant={v.is_verified ? "secondary" : "success"}
+                          variant={v.is_verified ? "secondary" : "tennis"}
                           size="sm"
                           className="mr-2"
                           onClick={() =>
