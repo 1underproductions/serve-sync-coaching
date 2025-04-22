@@ -77,7 +77,7 @@ const CoachSignupForm = () => {
       // Insert into Supabase
       const { data, error } = await supabase
         .from('waitlist_signups')
-        .insert([{  // Always use array format for consistency
+        .insert([{  
           email: formData.email,
           full_name: formData.fullName,
           years_experience: yearsExp,

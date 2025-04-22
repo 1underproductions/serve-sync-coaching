@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -28,6 +29,7 @@ const AdminDashboard = () => {
       setIsLoading(true);
       setError(null);
       
+      // Make sure we use the correct role for fetching data
       const { data, error } = await supabase
         .from('waitlist_signups')
         .select('*')

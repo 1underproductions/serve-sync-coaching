@@ -197,6 +197,7 @@ export default function WaitlistTable({ signups, onStatusChange }: {
         </TableBody>
       </Table>
 
+      {/* Dialog for detailed view */}
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
