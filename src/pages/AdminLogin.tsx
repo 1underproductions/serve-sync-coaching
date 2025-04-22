@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -47,12 +46,11 @@ const AdminLogin = () => {
   });
 
   useEffect(() => {
-    // Create a demo admin user in the database if it doesn't exist
     const createAdminUser = async () => {
       try {
         setIsCreatingAdmin(true);
         
-        // First check if admin user exists in profiles table
+        // Check if admin user exists
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
@@ -60,77 +58,51 @@ const AdminLogin = () => {
           .single();
           
         if (profileError && profileError.code === 'PGRST116') {
-          // Profile doesn't exist, create admin user
           console.log("Admin profile doesn't exist, creating it...");
           
-          // Create user through auth API
+          // Create user through auth and profiles
           const { data, error } = await supabase.auth.signUp({
             email: "admin@tennexis.com",
             password: "admin123",
             options: {
               data: {
                 full_name: "Tennexis Admin",
-                role: "tennexis_admin"
               }
             }
           });
           
           if (error) {
             console.error("Error creating admin user:", error);
-          } else {
-            console.log("Admin user created successfully");
-            
-            // Ensure profile exists with admin role
-            if (data.user) {
-              // Manual DB insert for the profile with tennexis_admin role
-              const { error: insertError } = await supabase
-                .from('profiles')
-                .insert({
-                  id: data.user.id,
-                  email: "admin@tennexis.com",
-                  full_name: "Tennexis Admin",
-                  role: "tennexis_admin"
-                });
-                
-              if (insertError) {
-                console.error("Error creating admin profile:", insertError);
-              } else {
-                console.log("Admin profile created successfully with tennexis_admin role");
-              }
+            throw error;
+          }
+          
+          // Explicitly set admin role using the function
+          if (data.user) {
+            const { error: roleError } = await supabase
+              .rpc('set_user_as_admin', { input_email: 'admin@tennexis.com' });
+              
+            if (roleError) {
+              console.error("Error setting admin role:", roleError);
+              throw roleError;
             }
           }
         } else if (profileData) {
-          console.log("Admin profile already exists:", profileData);
-          
-          // Force update the role using the set_user_as_admin function directly
-          // This is more reliable than just updating the profiles table
-          const { error: fnError } = await supabase
-            .rpc('set_user_as_admin', { email: 'admin@tennexis.com' });
+          // Ensure admin role is set for existing profile
+          const { error: roleError } = await supabase
+            .rpc('set_user_as_admin', { input_email: 'admin@tennexis.com' });
             
-          if (fnError) {
-            console.error("Error using set_user_as_admin function:", fnError);
-          } else {
-            console.log("Successfully called set_user_as_admin function");
-            
-            // Double-verify the update worked 
-            const { data: updatedProfile, error: verifyError } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('email', 'admin@tennexis.com')
-              .single();
-              
-            if (verifyError) {
-              console.error("Error verifying admin role update:", verifyError);
-            } else {
-              console.log("Verified admin profile after update:", updatedProfile);
-              if (updatedProfile.role !== 'tennexis_admin') {
-                console.error(`Role is still not tennexis_admin, found: ${updatedProfile.role}`);
-              }
-            }
+          if (roleError) {
+            console.error("Error setting admin role:", roleError);
+            throw roleError;
           }
         }
-      } catch (error) {
-        console.error("Error in admin setup:", error);
+      } catch (error: any) {
+        console.error("Admin setup error:", error);
+        toast({
+          variant: "destructive",
+          title: "Admin Setup Failed",
+          description: error.message || "Could not prepare admin account",
+        });
       } finally {
         setIsCreatingAdmin(false);
       }
@@ -143,73 +115,70 @@ const AdminLogin = () => {
     setLoginError(null);
     
     try {
-      console.log("Attempting admin login with:", data.email);
-      
       // Special handling for demo admin account
       if (data.email === "admin@tennexis.com" && data.password === "admin123") {
-        console.log("Using demo admin flow");
+        console.log("Attempting demo admin login");
         
-        // First force update using the database function
-        const { error: fnError } = await supabase
-          .rpc('set_user_as_admin', { email: 'admin@tennexis.com' });
-          
-        if (fnError) {
-          console.error("Error using set_user_as_admin function in login:", fnError);
-          throw new Error("Failed to prepare admin account. Please try again.");
-        } else {
-          console.log("Successfully called set_user_as_admin function during login");
+        // Clear any existing session
+        await supabase.auth.signOut();
+        
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+          email: data.email,
+          password: data.password
+        });
+        
+        if (authError) {
+          console.error("Demo admin login error:", authError);
+          throw authError;
         }
         
-        // Now verify that the profile has the correct role
+        // Explicitly verify and set admin role
+        const { error: roleError } = await supabase
+          .rpc('set_user_as_admin', { input_email: data.email });
+          
+        if (roleError) {
+          console.error("Role setting error:", roleError);
+          throw new Error("Failed to set admin privileges");
+        }
+        
+        // Verify profile role after setting
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('*')
-          .eq('email', 'admin@tennexis.com')
+          .select('role')
+          .eq('email', data.email)
           .single();
-        
-        if (profileError) {
-          console.error("Error fetching admin profile:", profileError);
-          throw new Error("Admin account verification failed. Please try again later.");
+          
+        if (profileError || !profileData) {
+          throw new Error("Could not verify admin profile");
         }
         
-        console.log("Verified profile after update:", profileData);
+        console.log("Admin profile role:", profileData.role);
         
-        // Instead of checking the role, always allow the demo admin login
-        // This is a workaround for cases where the role isn't being set properly
-        console.log("Bypassing role check for demo admin, proceeding to dashboard");
         toast({
-          title: "Admin Demo Login",
-          description: "Logged in with demo admin account successfully.",
+          title: "Admin Login",
+          description: "Successfully logged in with admin account",
         });
         
         navigate('/admin');
         return;
       }
       
-      // Regular login flow for non-demo admin accounts
-      // Clear any existing session first
-      await supabase.auth.signOut();
-      
+      // Regular login flow for other potential admin users
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password
       });
       
-      if (authError) {
-        throw authError;
-      }
+      if (authError) throw authError;
       
-      if (authData && authData.user) {
-        // Check if user has admin role
+      if (authData.user) {
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', authData.user.id)
           .single();
           
-        if (profileError) {
-          throw new Error("Error fetching user profile");
-        }
+        if (profileError) throw profileError;
         
         if (profileData && profileData.role === 'tennexis_admin') {
           toast({
@@ -219,7 +188,6 @@ const AdminLogin = () => {
           
           navigate('/admin');
         } else {
-          // User is not an admin, sign them out
           await supabase.auth.signOut();
           throw new Error("User does not have admin privileges");
         }
@@ -227,33 +195,13 @@ const AdminLogin = () => {
     } catch (error: any) {
       console.error("Login error details:", error);
       
-      // Handle email not confirmed error for demo admin
-      if (error.message && error.message.includes("Email not confirmed") && 
-          data.email === "admin@tennexis.com") {
-        console.log("Email not confirmed for demo admin, attempting bypass");
-        
-        // Force update the role using the function
-        const { error: fnError } = await supabase
-          .rpc('set_user_as_admin', { email: 'admin@tennexis.com' });
-          
-        if (fnError) {
-          console.error("Error using set_user_as_admin function in error handler:", fnError);
-          throw new Error("Failed to set admin privileges");
-        }
-        
-        console.log("Successfully called set_user_as_admin function in error handler");
-        
-        // Always bypass for demo admin - don't check the role again
-        toast({
-          title: "Demo Admin Login",
-          description: "Bypassing email confirmation for demo admin account.",
-        });
-        
-        navigate('/admin');
-        return;
-      }
-      
       setLoginError(error.message || "Login failed. Please check your credentials.");
+      
+      toast({
+        variant: "destructive",
+        title: "Login Error",
+        description: error.message || "Could not log in",
+      });
     }
   };
 

@@ -470,8 +470,8 @@ export type Database = {
         Returns: string
       }
       set_user_as_admin: {
-        Args: { email: string }
-        Returns: undefined
+        Args: { input_email: string }
+        Returns: boolean
       }
       update_hourly_rate: {
         Args: { hourly_rate: number }
