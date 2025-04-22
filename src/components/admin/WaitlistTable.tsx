@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { MoreHorizontal, Mail, Check, X, Eye } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { supabase, WaitlistSignup } from "@/lib/supabase";
 import { format } from "date-fns";
 import {
   Dialog,
@@ -27,16 +27,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
-type WaitlistSignup = {
-  id: string;
-  email: string;
-  full_name: string;
-  years_experience: number;
-  message: string | null;
-  status: 'pending' | 'contacted' | 'rejected';
-  created_at: string;
-};
 
 export default function WaitlistTable({ signups, onStatusChange }: { 
   signups: WaitlistSignup[]; 
@@ -55,7 +45,7 @@ export default function WaitlistTable({ signups, onStatusChange }: {
     setLocalSignups(Array.isArray(signups) ? signups : []);
   }, [signups]);
 
-  const updateStatus = async (id: string, newStatus: WaitlistSignup['status']) => {
+  const updateStatus = async (id: string, newStatus: string) => {
     try {
       setUpdateError(null);
       setDebugInfo(null);
@@ -106,7 +96,7 @@ export default function WaitlistTable({ signups, onStatusChange }: {
     }
   };
 
-  const getStatusBadge = (status: WaitlistSignup['status']) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
         return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Pending</Badge>;

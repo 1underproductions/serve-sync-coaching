@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -198,6 +197,35 @@ export const fetchWaitlistSignups = async (): Promise<{ data: WaitlistSignup[] |
       .order('created_at', { ascending: false });
     
     console.log("Direct waitlist fetch result:", { data, error });
+    
+    // If no data exists and this is a development environment, let's add a test entry
+    if (Array.isArray(data) && data.length === 0 && getCurrentEnvironment() === 'development') {
+      console.log("No waitlist entries found, adding a test entry for development...");
+      try {
+        const testEntry = {
+          full_name: "Test Coach",
+          email: "test.coach@example.com",
+          years_experience: 5,
+          message: "This is a test coach entry for development purposes.",
+          status: "pending"
+        };
+        
+        const { data: insertData, error: insertError } = await supabase
+          .from('waitlist_signups')
+          .insert(testEntry)
+          .select();
+        
+        if (insertError) {
+          console.error("Error inserting test waitlist entry:", insertError);
+        } else {
+          console.log("Successfully added test waitlist entry:", insertData);
+          return { data: insertData as WaitlistSignup[], error: null };
+        }
+      } catch (insertExc) {
+        console.error("Exception adding test waitlist entry:", insertExc);
+      }
+    }
+    
     return { data, error };
   } catch (error) {
     console.error("Exception in direct waitlist fetch:", error);

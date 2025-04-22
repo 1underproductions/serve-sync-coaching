@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -52,7 +51,31 @@ const AdminDashboard = () => {
         return;
       }
       
-      // Proceed with the regular fetch
+      // If we have data from the direct fetch, use it
+      if (directFetchResult.data && Array.isArray(directFetchResult.data)) {
+        console.log("Using data from direct fetch:", directFetchResult.data);
+        const data = directFetchResult.data;
+        setDebugInfo({ type: 'fetch_success', data });
+        
+        setWaitlistSignups(data);
+        
+        const pendingCount = data.filter(item => item.status === 'pending').length;
+        const contactedCount = data.filter(item => item.status === 'contacted').length;
+        const rejectedCount = data.filter(item => item.status === 'rejected').length;
+        
+        setStats({
+          waitlistCount: data.length,
+          pendingCount,
+          contactedCount,
+          rejectedCount
+        });
+        
+        setIsLoading(false);
+        setRefreshing(false);
+        return;
+      }
+      
+      // Fallback to standard fetch if direct fetch didn't return data
       const { data, error } = await supabase
         .from('waitlist_signups')
         .select('*')
@@ -75,7 +98,7 @@ const AdminDashboard = () => {
       setDebugInfo({ type: 'fetch_success', data });
       
       if (data && Array.isArray(data)) {
-        setWaitlistSignups(data as WaitlistSignup[]);
+        setWaitlistSignups(data);
         
         const pendingCount = data.filter(item => item.status === 'pending').length;
         const contactedCount = data.filter(item => item.status === 'contacted').length;
