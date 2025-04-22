@@ -69,21 +69,21 @@ const CoachSignupForm = () => {
       // Validate form data
       formSchema.parse(formData);
 
-      console.log("Submitting waitlist signup:", formData);
+      console.log("Submitting waitlist signup with data:", formData);
 
       // Insert into Supabase
       const { error, data } = await supabase
         .from('waitlist_signups')
-        .insert({
+        .insert([{
           email: formData.email,
           full_name: formData.fullName,
           years_experience: parseInt(formData.yearsExperience),
           message: formData.message || null,
           status: 'pending'
-        });
+        }]);
 
       if (error) {
-        console.error("Supabase error:", error);
+        console.error("Supabase error on waitlist signup:", error);
         throw error;
       }
       
@@ -104,6 +104,7 @@ const CoachSignupForm = () => {
 
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error("Validation error:", error.errors);
         toast({
           title: "Invalid form data",
           description: error.errors[0].message,

@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -43,9 +43,15 @@ export default function WaitlistTable({ signups, onStatusChange }: {
   onStatusChange?: () => void;
 }) {
   const { toast } = useToast();
-  const [localSignups, setLocalSignups] = useState<WaitlistSignup[]>(signups);
+  const [localSignups, setLocalSignups] = useState<WaitlistSignup[]>(signups || []);
   const [detailView, setDetailView] = useState<WaitlistSignup | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
+
+  // Update local signups when props change
+  useEffect(() => {
+    console.log("WaitlistTable received signups:", signups);
+    setLocalSignups(signups || []);
+  }, [signups]);
 
   const updateStatus = async (id: string, newStatus: WaitlistSignup['status']) => {
     try {
@@ -109,7 +115,7 @@ export default function WaitlistTable({ signups, onStatusChange }: {
     window.location.href = `mailto:${email}?subject=Tennexis Coaching Platform - Application Update`;
   };
 
-  if (localSignups.length === 0) {
+  if (!localSignups || localSignups.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
         No waitlist signups found. Coaches will appear here when they sign up.

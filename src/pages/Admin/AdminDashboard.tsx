@@ -5,18 +5,22 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import WaitlistTable from "@/components/admin/WaitlistTable";
 import { supabase } from "@/lib/supabase";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Info, Users, Shield, Calendar, CheckCircle } from "lucide-react";
+import { Info, Users, Shield, Calendar, CheckCircle, RefreshCw } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 const AdminDashboard = () => {
   const [waitlistSignups, setWaitlistSignups] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState({
     waitlistCount: 0,
     pendingCount: 0,
     contactedCount: 0,
     rejectedCount: 0
   });
+  const { toast } = useToast();
 
   const fetchWaitlist = async () => {
     try {
@@ -30,7 +34,12 @@ const AdminDashboard = () => {
 
       if (error) {
         console.error("Error fetching waitlist data:", error);
-        throw error;
+        toast({
+          title: "Error fetching waitlist data",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
       }
         
       console.log("Waitlist data fetched:", data);
@@ -51,10 +60,21 @@ const AdminDashboard = () => {
         });
       }
     } catch (error) {
-      console.error("Error fetching waitlist data:", error);
+      console.error("Error in fetchWaitlist:", error);
+      toast({
+        title: "Something went wrong",
+        description: "Could not fetch waitlist data. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchWaitlist();
   };
 
   useEffect(() => {
@@ -125,10 +145,23 @@ const AdminDashboard = () => {
       </div>
       
       <Tabs defaultValue="waitlist" className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="waitlist">Coach Waitlist</TabsTrigger>
-          <TabsTrigger value="platform">Platform Overview</TabsTrigger>
-        </TabsList>
+        <div className="flex justify-between items-center mb-4">
+          <TabsList>
+            <TabsTrigger value="waitlist">Coach Waitlist</TabsTrigger>
+            <TabsTrigger value="platform">Platform Overview</TabsTrigger>
+          </TabsList>
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
         
         <TabsContent value="waitlist">
           <Card>
