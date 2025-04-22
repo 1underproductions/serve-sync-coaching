@@ -82,37 +82,18 @@ const AdminLogin = () => {
             
             // Ensure profile exists with admin role
             if (data.user) {
-              // Check if profile was created by trigger
-              const { data: newProfile, error: checkError } = await supabase
+              // Manual DB insert for the profile with tennexis_admin role
+              const { error: insertError } = await supabase
                 .from('profiles')
-                .select('*')
-                .eq('id', data.user.id)
-                .single();
+                .insert({
+                  id: data.user.id,
+                  email: "admin@tennexis.com",
+                  full_name: "Tennexis Admin",
+                  role: "tennexis_admin"
+                });
                 
-              if (checkError) {
-                // Manually create profile if trigger didn't work
-                const { error: insertError } = await supabase
-                  .from('profiles')
-                  .insert({
-                    id: data.user.id,
-                    email: "admin@tennexis.com",
-                    full_name: "Tennexis Admin",
-                    role: "tennexis_admin"
-                  });
-                  
-                if (insertError) {
-                  console.error("Error creating admin profile:", insertError);
-                }
-              } else if (newProfile && newProfile.role !== 'tennexis_admin') {
-                // Update role if profile exists but without admin role
-                const { error: updateError } = await supabase
-                  .from('profiles')
-                  .update({ role: 'tennexis_admin' })
-                  .eq('id', data.user.id);
-                  
-                if (updateError) {
-                  console.error("Error updating admin role:", updateError);
-                }
+              if (insertError) {
+                console.error("Error creating admin profile:", insertError);
               }
             }
           }
@@ -120,6 +101,7 @@ const AdminLogin = () => {
           console.log("Admin profile already exists:", profileData);
           // Ensure it has the correct role
           if (profileData.role !== 'tennexis_admin') {
+            console.log("Updating admin role for existing profile");
             const { error: updateError } = await supabase
               .from('profiles')
               .update({ role: 'tennexis_admin' })
@@ -127,6 +109,8 @@ const AdminLogin = () => {
               
             if (updateError) {
               console.error("Error updating existing admin role:", updateError);
+            } else {
+              console.log("Successfully updated admin role");
             }
           }
         }
@@ -146,10 +130,11 @@ const AdminLogin = () => {
     try {
       console.log("Attempting admin login with:", data.email);
       
+      // Special handling for demo admin account
       if (data.email === "admin@tennexis.com" && data.password === "admin123") {
-        // Special handling for demo admin account
+        console.log("Using demo admin flow");
         
-        // First check if this account exists in profiles table
+        // First verify the admin role in the profiles table
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
@@ -158,23 +143,41 @@ const AdminLogin = () => {
         
         if (profileError) {
           console.error("Error fetching admin profile:", profileError);
-          throw new Error("Admin account not properly set up. Please try again later.");
+          throw new Error("Admin account verification failed. Please try again later.");
         }
         
-        if (profileData && profileData.role === 'tennexis_admin') {
-          // Valid admin profile found, proceed with demo login
-          console.log("Valid admin profile found, proceeding with demo login");
+        // Ensure profile has tennexis_admin role before allowing login
+        if (!profileData || profileData.role !== 'tennexis_admin') {
+          console.log("Profile found but role is not tennexis_admin:", profileData?.role);
           
-          toast({
-            title: "Admin Demo Login",
-            description: "Logged in with demo admin account successfully.",
-          });
-          
-          navigate('/admin');
-          return;
-        } else {
-          throw new Error("User does not have admin privileges");
+          // Update the role if needed
+          if (profileData) {
+            console.log("Attempting to update admin role...");
+            const { error: updateError } = await supabase
+              .from('profiles')
+              .update({ role: 'tennexis_admin' })
+              .eq('id', profileData.id);
+              
+            if (updateError) {
+              console.error("Error updating admin role:", updateError);
+              throw new Error("Failed to set admin privileges. Please contact support.");
+            } else {
+              console.log("Successfully updated admin role");
+            }
+          } else {
+            throw new Error("Admin profile not found");
+          }
         }
+        
+        // After verifying/fixing role, proceed to admin dashboard
+        console.log("Admin role verified, proceeding to dashboard");
+        toast({
+          title: "Admin Demo Login",
+          description: "Logged in with demo admin account successfully.",
+        });
+        
+        navigate('/admin');
+        return;
       }
       
       // Regular login flow for non-demo admin accounts
@@ -221,14 +224,29 @@ const AdminLogin = () => {
       // Handle email not confirmed error for demo admin
       if (error.message && error.message.includes("Email not confirmed") && 
           data.email === "admin@tennexis.com") {
-        // For demo, bypass this error
+        // For demo, we'll allow this bypass after verifying in the database
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
           .eq('email', 'admin@tennexis.com')
           .single();
           
-        if (!profileError && profileData && profileData.role === 'tennexis_admin') {
+        if (!profileError && profileData) {
+          // Update role if needed
+          if (profileData.role !== 'tennexis_admin') {
+            console.log("Email not confirmed but updating role for bypass");
+            const { error: updateError } = await supabase
+              .from('profiles')
+              .update({ role: 'tennexis_admin' })
+              .eq('id', profileData.id);
+              
+            if (updateError) {
+              console.error("Error updating role for bypass:", updateError);
+              throw new Error("Failed to set admin privileges");
+            }
+          }
+          
+          // After ensuring admin role, allow bypass
           toast({
             title: "Demo Admin Login",
             description: "Bypassing email confirmation for demo admin account.",
