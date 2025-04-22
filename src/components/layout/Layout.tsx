@@ -3,20 +3,26 @@ import { ReactNode } from "react";
 import Navbar from "./Navbar";
 import Sidebar from "./Sidebar";
 import Footer from "./Footer";
+import useAuth from "@/context/useAuth";
 
 interface LayoutProps {
   children: ReactNode;
   fullWidth?: boolean;
   maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "7xl" | "full";
   className?: string;
+  publicLayout?: boolean;
 }
 
 const Layout = ({ 
   children, 
   fullWidth = false, 
   maxWidth = "7xl", 
-  className = "" 
+  className = "",
+  publicLayout = false
 }: LayoutProps) => {
+  const { isAuthenticated } = useAuth();
+  const isPublic = publicLayout || !isAuthenticated;
+
   const getMaxWidthClass = () => {
     if (fullWidth) return "px-4 py-6";
     
@@ -32,6 +38,16 @@ const Layout = ({
     }
   };
   
+  // Use a simpler layout for public pages
+  if (isPublic) {
+    return (
+      <div className="min-h-screen flex flex-col bg-gray-50">
+        {children}
+      </div>
+    );
+  }
+  
+  // Use the full app layout for authenticated users
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />

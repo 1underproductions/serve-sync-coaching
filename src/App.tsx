@@ -1,9 +1,11 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthProvider";
+import RouteGuard from "./components/shared/RouteGuard";
 import Index from "./pages/Index";
 import SignUp from "./pages/SignUp";
 import Login from "./pages/Login";
@@ -61,45 +63,166 @@ function App() {
             <Toaster />
             <Sonner />
             <Routes>
-              <Route path="/" element={<Index />} />
+              {/* Public routes - accessible without authentication */}
+              <Route path="/coming-soon" element={<ComingSoon />} />
               <Route path="/sign-up" element={<SignUp />} />
               <Route path="/login" element={<Login />} />
               <Route path="/admin-login" element={<AdminLogin />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/schedule" element={<Schedule />} />
-              <Route path="/schedule/new" element={<NewSession />} />
-              <Route path="/session/:sessionId" element={<SessionDetail />} />
-              <Route path="/session/:sessionId/edit" element={<SessionEdit />} />
-              <Route path="/players" element={<Players />} />
-              <Route path="/players/new" element={<NewPlayer />} />
-              <Route path="/players/:playerId" element={<PlayerDetail />} />
-              <Route path="/messages" element={<Messages />} />
-              <Route path="/messages/new" element={<NewMessage />} />
-              <Route path="/message/:messageId" element={<MessageDetail />} />
-              <Route path="/payments" element={<Payments />} />
-              <Route path="/payment/:paymentId" element={<PaymentDetail />} />
-              <Route path="/account/billing" element={<AccountBilling />} />
-              <Route path="/analytics" element={<Analytics />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/profile" element={<Profile />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/faq" element={<FAQ />} />
-              <Route path="/blog" element={<Blog />} />
-              <Route path="/blog/:postId" element={<BlogPost />} />
-              <Route path="/payments/new" element={<NewPayment />} />
-              <Route path="/payment-success" element={<PaymentSuccess />} />
-              <Route path="/booking/:coachId" element={<CoachBooking />} />
-              <Route path="/booking-success" element={<BookingSuccess />} />
-              <Route path="/coming-soon" element={<ComingSoon />} />
+              
+              {/* Root path - redirects to ComingSoon for unauthenticated users */}
+              <Route path="/" element={
+                <RouteGuard>
+                  <Index />
+                </RouteGuard>
+              } />
+
+              {/* Protected routes - require authentication */}
+              <Route path="/dashboard" element={
+                <RouteGuard>
+                  <Dashboard />
+                </RouteGuard>
+              } />
+              <Route path="/schedule" element={
+                <RouteGuard>
+                  <Schedule />
+                </RouteGuard>
+              } />
+              <Route path="/schedule/new" element={
+                <RouteGuard>
+                  <NewSession />
+                </RouteGuard>
+              } />
+              <Route path="/session/:sessionId" element={
+                <RouteGuard>
+                  <SessionDetail />
+                </RouteGuard>
+              } />
+              <Route path="/session/:sessionId/edit" element={
+                <RouteGuard>
+                  <SessionEdit />
+                </RouteGuard>
+              } />
+              <Route path="/players" element={
+                <RouteGuard>
+                  <Players />
+                </RouteGuard>
+              } />
+              <Route path="/players/new" element={
+                <RouteGuard>
+                  <NewPlayer />
+                </RouteGuard>
+              } />
+              <Route path="/players/:playerId" element={
+                <RouteGuard>
+                  <PlayerDetail />
+                </RouteGuard>
+              } />
+              <Route path="/messages" element={
+                <RouteGuard>
+                  <Messages />
+                </RouteGuard>
+              } />
+              <Route path="/messages/new" element={
+                <RouteGuard>
+                  <NewMessage />
+                </RouteGuard>
+              } />
+              <Route path="/message/:messageId" element={
+                <RouteGuard>
+                  <MessageDetail />
+                </RouteGuard>
+              } />
+              <Route path="/payments" element={
+                <RouteGuard>
+                  <Payments />
+                </RouteGuard>
+              } />
+              <Route path="/payment/:paymentId" element={
+                <RouteGuard>
+                  <PaymentDetail />
+                </RouteGuard>
+              } />
+              <Route path="/account/billing" element={
+                <RouteGuard>
+                  <AccountBilling />
+                </RouteGuard>
+              } />
+              <Route path="/analytics" element={
+                <RouteGuard>
+                  <Analytics />
+                </RouteGuard>
+              } />
+              <Route path="/settings" element={
+                <RouteGuard>
+                  <Settings />
+                </RouteGuard>
+              } />
+              <Route path="/profile" element={
+                <RouteGuard>
+                  <Profile />
+                </RouteGuard>
+              } />
+              <Route path="/blog" element={
+                <RouteGuard>
+                  <Blog />
+                </RouteGuard>
+              } />
+              <Route path="/blog/:postId" element={
+                <RouteGuard>
+                  <BlogPost />
+                </RouteGuard>
+              } />
+              <Route path="/payments/new" element={
+                <RouteGuard>
+                  <NewPayment />
+                </RouteGuard>
+              } />
+              <Route path="/payment-success" element={
+                <RouteGuard>
+                  <PaymentSuccess />
+                </RouteGuard>
+              } />
+              <Route path="/booking/:coachId" element={
+                <RouteGuard>
+                  <CoachBooking />
+                </RouteGuard>
+              } />
+              <Route path="/booking-success" element={
+                <RouteGuard>
+                  <BookingSuccess />
+                </RouteGuard>
+              } />
               
               {/* Admin Routes */}
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/admin/coaches" element={<AdminUsers />} />
-              <Route path="/admin/coach-verifications" element={<AdminCoachVerifications />} />
-              <Route path="/admin/transactions" element={<AdminTransactions />} />
-              <Route path="/admin/settings" element={<AdminSettings />} />
+              <Route path="/admin" element={
+                <RouteGuard adminOnly={true}>
+                  <AdminDashboard />
+                </RouteGuard>
+              } />
+              <Route path="/admin/coaches" element={
+                <RouteGuard adminOnly={true}>
+                  <AdminUsers />
+                </RouteGuard>
+              } />
+              <Route path="/admin/coach-verifications" element={
+                <RouteGuard adminOnly={true}>
+                  <AdminCoachVerifications />
+                </RouteGuard>
+              } />
+              <Route path="/admin/transactions" element={
+                <RouteGuard adminOnly={true}>
+                  <AdminTransactions />
+                </RouteGuard>
+              } />
+              <Route path="/admin/settings" element={
+                <RouteGuard adminOnly={true}>
+                  <AdminSettings />
+                </RouteGuard>
+              } />
               
               <Route path="*" element={<NotFound />} />
             </Routes>
