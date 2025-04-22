@@ -3,15 +3,25 @@ import { useEffect, useState } from "react";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import WaitlistTable from "@/components/admin/WaitlistTable";
-import { supabase } from "@/lib/supabase"; // Changed to use the correct import
+import { supabase } from "@/lib/supabase"; 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info, Users, Shield, Calendar, CheckCircle, RefreshCw } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
+type WaitlistSignup = {
+  id: string;
+  email: string;
+  full_name: string;
+  years_experience: number;
+  message: string | null;
+  status: 'pending' | 'contacted' | 'rejected';
+  created_at: string;
+};
+
 const AdminDashboard = () => {
-  const [waitlistSignups, setWaitlistSignups] = useState([]);
+  const [waitlistSignups, setWaitlistSignups] = useState<WaitlistSignup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +61,7 @@ const AdminDashboard = () => {
       console.log("Waitlist data fetched:", data);
       
       if (data) {
-        setWaitlistSignups(data);
+        setWaitlistSignups(data as WaitlistSignup[]);
         
         const pendingCount = data.filter(item => item.status === 'pending').length;
         const contactedCount = data.filter(item => item.status === 'contacted').length;
