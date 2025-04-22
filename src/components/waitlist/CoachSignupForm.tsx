@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Mail, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase"; // Changed to use the correct import
 
 // Form validation schema
 const formSchema = z.object({
@@ -74,7 +74,7 @@ const CoachSignupForm = () => {
       // Convert yearsExperience to integer
       const yearsExp = parseInt(formData.yearsExperience);
       
-      // Insert into Supabase
+      // Insert into Supabase - use the correct client and table name
       const { data, error } = await supabase
         .from('waitlist_signups')
         .insert([{  

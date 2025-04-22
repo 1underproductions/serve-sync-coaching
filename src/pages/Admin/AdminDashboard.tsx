@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import WaitlistTable from "@/components/admin/WaitlistTable";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase"; // Changed to use the correct import
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info, Users, Shield, Calendar, CheckCircle, RefreshCw } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -29,7 +29,9 @@ const AdminDashboard = () => {
       setIsLoading(true);
       setError(null);
       
-      // Make sure we use the correct role for fetching data
+      // Explicitly log the fetch attempt
+      console.log("Attempting to fetch from waitlist_signups table...");
+      
       const { data, error } = await supabase
         .from('waitlist_signups')
         .select('*')
