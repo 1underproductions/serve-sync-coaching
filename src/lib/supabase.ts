@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -43,7 +42,8 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     storage: localStorage,
-    debug: true // Keep debug mode enabled to help diagnose issues
+    debug: true, // Keep debug mode enabled to help diagnose issues
+    detectSessionInUrl: true // Enable session detection in URL
   }
 });
 
@@ -78,7 +78,7 @@ export type Profile = {
   website?: string;
   years_experience?: number;
   hourly_rate?: number;
-  role: 'user' | 'admin';
+  role: 'user' | 'admin' | 'tennexis_admin';
   created_at: string;
   updated_at: string;
 };
