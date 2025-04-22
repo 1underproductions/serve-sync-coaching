@@ -27,18 +27,6 @@ function ProtectedAdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function PublicRoutes() {
-  const location = useLocation();
-  // Only allow /coming-soon as public; redirect all other attempts
-  if (
-    location.pathname !== "/coming-soon" &&
-    !location.pathname.startsWith("/admin")
-  ) {
-    return <Navigate to="/coming-soon" replace />;
-  }
-  return null;
-}
-
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -67,7 +55,7 @@ function App() {
                 <ProtectedAdminRoute><AdminCoachVerifications /></ProtectedAdminRoute>
               } />
               {/* All other routes go to ComingSoon */}
-              <Route path="*" element={<PublicRoutes />} />
+              <Route path="*" element={<Navigate to="/coming-soon" replace />} />
             </Routes>
           </TooltipProvider>
         </AuthProvider>
@@ -77,4 +65,3 @@ function App() {
 }
 
 export default App;
-
