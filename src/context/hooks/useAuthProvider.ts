@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, sendCustomEmail, Profile } from '@/lib/supabase';
@@ -35,6 +34,7 @@ export const useAuthProvider = () => {
       }
       
       if (data) {
+        console.log('Profile data retrieved:', data);
         const profileData: Profile = {
           ...data,
           // Only set isAdmin to true if the user has a specific tennexis staff role
@@ -42,7 +42,12 @@ export const useAuthProvider = () => {
         };
         
         setProfile(profileData);
-        setIsAdmin(profileData.role === 'admin');
+        
+        // Explicitly set isAdmin based on role
+        const adminStatus = profileData.role === 'admin';
+        console.log('Setting admin status:', adminStatus);
+        setIsAdmin(adminStatus);
+        
         return profileData;
       }
       
@@ -254,7 +259,7 @@ export const useAuthProvider = () => {
               description: "Logged in with demo admin account.",
             });
             
-            // Redirect to admin dashboard - FIX: Use the correct path
+            // Redirect to admin dashboard
             navigate('/admin');
             return;
           } else {

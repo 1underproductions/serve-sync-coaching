@@ -1,4 +1,3 @@
-
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
   CalendarClock, 
@@ -17,7 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/useAuth";
 
 const navItems = [
   { name: "Dashboard", path: "/dashboard", icon: Home },
@@ -45,8 +44,10 @@ const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signOut, isAdmin } = useAuth();
+  const { signOut, isAdmin, profile } = useAuth();
   const currentPath = location.pathname;
+  
+  console.log("Sidebar auth state:", { isAdmin, profile });
   
   const handleLogout = async () => {
     try {

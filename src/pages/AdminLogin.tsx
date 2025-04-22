@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -17,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Mail, Lock, ShieldAlert } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/useAuth";
 
 const loginSchema = z.object({
   email: z.string().email({
@@ -39,6 +40,9 @@ const AdminLogin = () => {
   const { isAdmin, isLoading, signIn } = useAuth();
   
   useEffect(() => {
+    // Debug output to help trace auth issues
+    console.log("AdminLogin auth state:", { isAdmin, isLoading });
+    
     if (!isLoading && isAdmin) {
       console.log("User is already an admin, redirecting to admin panel");
       navigate('/admin');
@@ -119,7 +123,9 @@ const AdminLogin = () => {
     setLoginError(null);
     
     try {
+      console.log("Attempting admin login with:", data.email);
       await signIn(data.email, data.password);
+      // The redirection is handled in the signIn function
     } catch (error: any) {
       console.error("Login error details:", error);
       setLoginError(error.message || "Login failed. Please check your credentials.");

@@ -1,3 +1,4 @@
+
 import { ReactNode, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "./Layout";
@@ -18,9 +19,17 @@ const AdminLayout = ({
   description = "Manage your platform and users" 
 }: AdminLayoutProps) => {
   const navigate = useNavigate();
-  const { isAdmin, isLoading } = useAuth();
+  const { isAdmin, isLoading, profile } = useAuth();
   
   useEffect(() => {
+    // Add debugging to trace the issue
+    console.log("AdminLayout auth check:", { 
+      isLoading, 
+      isAdmin, 
+      requiresAdmin,
+      profile
+    });
+    
     if (!isLoading && requiresAdmin) {
       if (!isAdmin) {
         console.log("User is not an admin, redirecting to dashboard");
@@ -29,7 +38,7 @@ const AdminLayout = ({
         console.log("User is admin, staying on admin page");
       }
     }
-  }, [navigate, requiresAdmin, isAdmin, isLoading]);
+  }, [navigate, requiresAdmin, isAdmin, isLoading, profile]);
 
   if (isLoading) {
     return (
