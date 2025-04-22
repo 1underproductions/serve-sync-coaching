@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { MoreHorizontal, Mail, Check, X, Eye, ExternalLink } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { format } from "date-fns";
 import {
   Dialog,
@@ -38,20 +38,28 @@ type WaitlistSignup = {
   created_at: string;
 };
 
-export default function WaitlistTable({ signups }: { signups: WaitlistSignup[] }) {
+export default function WaitlistTable({ signups, onStatusChange }: { 
+  signups: WaitlistSignup[]; 
+  onStatusChange?: () => void;
+}) {
   const { toast } = useToast();
-  const [localSignups, setLocalSignups] = useState(signups);
+  const [localSignups, setLocalSignups] = useState<WaitlistSignup[]>(signups);
   const [detailView, setDetailView] = useState<WaitlistSignup | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
 
   const updateStatus = async (id: string, newStatus: WaitlistSignup['status']) => {
     try {
+      console.log("Updating status for signup:", id, "to", newStatus);
+      
       const { error } = await supabase
         .from('waitlist_signups')
         .update({ status: newStatus })
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error updating status:", error);
+        throw error;
+      }
 
       setLocalSignups(prev => 
         prev.map(signup => 
@@ -63,7 +71,14 @@ export default function WaitlistTable({ signups }: { signups: WaitlistSignup[] }
         title: "Status updated",
         description: `Signup status changed to ${newStatus}`,
       });
+      
+      // Call the callback if provided
+      if (onStatusChange) {
+        onStatusChange();
+      }
+      
     } catch (error) {
+      console.error("Full error:", error);
       toast({
         title: "Error updating status",
         description: "Please try again",
@@ -93,6 +108,14 @@ export default function WaitlistTable({ signups }: { signups: WaitlistSignup[] }
   const sendEmail = (email: string) => {
     window.location.href = `mailto:${email}?subject=Tennexis Coaching Platform - Application Update`;
   };
+
+  if (localSignups.length === 0) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        No waitlist signups found. Coaches will appear here when they sign up.
+      </div>
+    );
+  }
 
   return (
     <>

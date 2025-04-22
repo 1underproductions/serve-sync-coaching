@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -5,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Mail, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 
 // Form validation schema
 const formSchema = z.object({
@@ -68,17 +69,25 @@ const CoachSignupForm = () => {
       // Validate form data
       formSchema.parse(formData);
 
+      console.log("Submitting waitlist signup:", formData);
+
       // Insert into Supabase
-      const { error } = await supabase
+      const { error, data } = await supabase
         .from('waitlist_signups')
         .insert({
           email: formData.email,
           full_name: formData.fullName,
           years_experience: parseInt(formData.yearsExperience),
-          message: formData.message || null
+          message: formData.message || null,
+          status: 'pending'
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase error:", error);
+        throw error;
+      }
+      
+      console.log("Signup successful, response:", data);
       
       toast({
         title: "Thank you for joining the waitlist!",
@@ -101,6 +110,7 @@ const CoachSignupForm = () => {
           variant: "destructive",
         });
       } else {
+        console.error("Submission error:", error);
         toast({
           title: "Something went wrong",
           description: "Please try again later.",

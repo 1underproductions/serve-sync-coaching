@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import WaitlistTable from "@/components/admin/WaitlistTable";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info, Users, Shield, Calendar, CheckCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,38 +18,46 @@ const AdminDashboard = () => {
     rejectedCount: 0
   });
 
-  useEffect(() => {
-    const fetchWaitlist = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('waitlist_signups')
-          .select('*')
-          .order('created_at', { ascending: false });
+  const fetchWaitlist = async () => {
+    try {
+      console.log("Fetching waitlist data...");
+      setIsLoading(true);
+      
+      const { data, error } = await supabase
+        .from('waitlist_signups')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-        if (error) throw error;
-          
-        if (data) {
-          setWaitlistSignups(data);
-          
-          // Calculate stats
-          const pendingCount = data.filter(item => item.status === 'pending').length;
-          const contactedCount = data.filter(item => item.status === 'contacted').length;
-          const rejectedCount = data.filter(item => item.status === 'rejected').length;
-          
-          setStats({
-            waitlistCount: data.length,
-            pendingCount,
-            contactedCount,
-            rejectedCount
-          });
-        }
-      } catch (error) {
+      if (error) {
         console.error("Error fetching waitlist data:", error);
-      } finally {
-        setIsLoading(false);
+        throw error;
       }
-    };
+        
+      console.log("Waitlist data fetched:", data);
+      
+      if (data) {
+        setWaitlistSignups(data);
+        
+        // Calculate stats
+        const pendingCount = data.filter(item => item.status === 'pending').length;
+        const contactedCount = data.filter(item => item.status === 'contacted').length;
+        const rejectedCount = data.filter(item => item.status === 'rejected').length;
+        
+        setStats({
+          waitlistCount: data.length,
+          pendingCount,
+          contactedCount,
+          rejectedCount
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching waitlist data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchWaitlist();
   }, []);
 
@@ -136,12 +144,11 @@ const AdminDashboard = () => {
                   <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-tennis-green-600 mb-2"></div>
                   <div>Loading waitlist data...</div>
                 </div>
-              ) : waitlistSignups.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No waitlist signups found. Coaches will appear here when they sign up.
-                </div>
               ) : (
-                <WaitlistTable signups={waitlistSignups} />
+                <WaitlistTable 
+                  signups={waitlistSignups} 
+                  onStatusChange={fetchWaitlist}
+                />
               )}
             </CardContent>
           </Card>
