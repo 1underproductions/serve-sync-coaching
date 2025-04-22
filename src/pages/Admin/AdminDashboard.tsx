@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -5,7 +6,7 @@ import WaitlistTable from "@/components/admin/WaitlistTable";
 import { supabase } from "@/integrations/supabase/client";
 import { WaitlistSignup } from "@/lib/supabase";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Info, Users, Shield, Calendar, CheckCircle, RefreshCw } from "lucide-react";
+import { Info, Users, RefreshCw } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -16,32 +17,20 @@ const AdminDashboard = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<any>(null);
-  const [stats, setStats] = useState({
-    waitlistCount: 0,
-    pendingCount: 0,
-    contactedCount: 0,
-    rejectedCount: 0
-  });
   const { toast } = useToast();
 
   const fetchWaitlist = async () => {
     try {
-      console.log("[AdminDashboard] Fetching waitlist data...");
       setIsLoading(true);
       setError(null);
       setDebugInfo(null);
-      
       const { data, error } = await supabase
         .from('waitlist_signups')
         .select('*')
         .order('created_at', { ascending: false });
-      
-      console.log("[AdminDashboard] Direct fetch result:", { data, error });
-      
       if (error) {
-        console.error("[AdminDashboard] Error fetching waitlist data:", error);
-        setDebugInfo({ type: 'fetch_error', error });
         setError(`Failed to fetch waitlist data: ${error.message}`);
+        setDebugInfo({ type: 'fetch_error', error });
         toast({
           title: "Error fetching waitlist data",
           description: error.message,
@@ -51,50 +40,20 @@ const AdminDashboard = () => {
         setRefreshing(false);
         return;
       }
-      
       if (!data) {
         setError("No data returned from the database");
         setDebugInfo({ type: 'no_data_error' });
         setWaitlistSignups([]);
-        setStats({
-          waitlistCount: 0,
-          pendingCount: 0,
-          contactedCount: 0,
-          rejectedCount: 0
-        });
         setIsLoading(false);
         setRefreshing(false);
         return;
       }
-      
-      console.log("[AdminDashboard] Waitlist data fetched:", data);
-      setDebugInfo({ type: 'fetch_success', data });
-      
       if (Array.isArray(data)) {
         setWaitlistSignups(data);
-        
-        const pendingCount = data.filter(item => item.status === 'pending').length;
-        const contactedCount = data.filter(item => item.status === 'contacted').length;
-        const rejectedCount = data.filter(item => item.status === 'rejected').length;
-        
-        setStats({
-          waitlistCount: data.length,
-          pendingCount,
-          contactedCount,
-          rejectedCount
-        });
       } else {
-        console.log("[AdminDashboard] Data is not an array:", data);
         setWaitlistSignups([]);
-        setStats({
-          waitlistCount: 0,
-          pendingCount: 0,
-          contactedCount: 0,
-          rejectedCount: 0
-        });
       }
     } catch (error: any) {
-      console.error("[AdminDashboard] Exception in fetchWaitlist:", error);
       setError(`Failed to fetch waitlist data: ${error.message}`);
       setDebugInfo({ type: 'exception_error', error });
       toast({
@@ -109,20 +68,15 @@ const AdminDashboard = () => {
   };
 
   const handleRefresh = () => {
-    console.log("Manual refresh triggered");
     setRefreshing(true);
     fetchWaitlist();
   };
 
   useEffect(() => {
-    console.log("AdminDashboard mounted, fetching waitlist...");
     fetchWaitlist();
-    
     const refreshInterval = setInterval(() => {
-      console.log("Auto-refresh triggered");
       fetchWaitlist();
     }, 30000);
-    
     return () => {
       clearInterval(refreshInterval);
     };
@@ -137,7 +91,7 @@ const AdminDashboard = () => {
         <Info className="h-4 w-4 text-blue-600" />
         <AlertTitle>Admin Control Panel</AlertTitle>
         <AlertDescription>
-          Welcome to the Tennexis admin panel. Here you can manage waitlist signups, users, and platform settings.
+          Waitlist signups collected below. You can export coach signups as CSV for import into another tool (e.g., Mailgun or Mailchimp) to send emails in bulk.
         </AlertDescription>
       </Alert>
       
@@ -149,43 +103,9 @@ const AdminDashboard = () => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Total Signups</p>
-              <p className="text-2xl font-bold">{stats.waitlistCount}</p>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="bg-yellow-100 p-3 rounded-full">
-              <Calendar className="h-6 w-6 text-yellow-600" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Pending</p>
-              <p className="text-2xl font-bold">{stats.pendingCount}</p>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="bg-green-100 p-3 rounded-full">
-              <CheckCircle className="h-6 w-6 text-green-600" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Contacted</p>
-              <p className="text-2xl font-bold">{stats.contactedCount}</p>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="bg-red-100 p-3 rounded-full">
-              <Shield className="h-6 w-6 text-red-600" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Rejected</p>
-              <p className="text-2xl font-bold">{stats.rejectedCount}</p>
+              <p className="text-2xl font-bold">
+                {waitlistSignups.length}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -197,7 +117,6 @@ const AdminDashboard = () => {
             <TabsTrigger value="waitlist">Coach Waitlist</TabsTrigger>
             <TabsTrigger value="platform">Platform Overview</TabsTrigger>
           </TabsList>
-          
           <Button 
             variant="outline" 
             size="sm" 
@@ -209,13 +128,12 @@ const AdminDashboard = () => {
             Refresh
           </Button>
         </div>
-        
         <TabsContent value="waitlist">
           <Card>
             <CardHeader>
               <CardTitle>Coach Waitlist Signups</CardTitle>
               <CardDescription>
-                Manage coach applications who signed up through the waitlist form
+                List of all coach signups. Use Export CSV above to import into Mailgun/Mailchimp or send emails.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -240,12 +158,8 @@ const AdminDashboard = () => {
                   </div>
                 </div>
               ) : (
-                <WaitlistTable 
-                  signups={waitlistSignups} 
-                  onStatusChange={fetchWaitlist}
-                />
+                <WaitlistTable signups={waitlistSignups} />
               )}
-              
               {debugInfo && (
                 <div className="mt-6 p-4 bg-gray-100 rounded-md text-xs overflow-auto max-h-40">
                   <p className="font-bold mb-1">Debug Info:</p>
@@ -255,7 +169,6 @@ const AdminDashboard = () => {
             </CardContent>
           </Card>
         </TabsContent>
-        
         <TabsContent value="platform">
           <Card>
             <CardHeader>
