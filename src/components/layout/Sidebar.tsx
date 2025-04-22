@@ -61,12 +61,12 @@ const Sidebar = () => {
   return (
     <div className="hidden md:flex flex-col h-screen border-r bg-white w-[240px] shrink-0">
       <div className="p-4 border-b">
-        <Link to="/dashboard" className="flex items-center space-x-2">
+        <Link to={isAdmin ? "/admin" : "/dashboard"} className="flex items-center space-x-2">
           <span className="text-xl font-bold text-tennis-green-600">Tennexis</span>
         </Link>
       </div>
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-        {navItems.map((item) => {
+        {!isAdmin && navItems.map((item) => {
           const isActive = currentPath === item.path || 
             (item.path !== "/dashboard" && currentPath.startsWith(item.path));
             
@@ -89,31 +89,26 @@ const Sidebar = () => {
         
         {isAdmin && (
           <>
-            <div className="mt-6 pt-6 border-t">
-              <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Admin
-              </div>
-              {adminNavItems.map((item) => {
-                const isActive = currentPath === item.path || 
-                  (item.path !== "/admin" && currentPath.startsWith(item.path));
-                  
-                return (
-                  <Link
-                    key={item.name}
-                    to={item.path}
-                    className={cn(
-                      "flex items-center space-x-3 px-3 py-2 rounded-md transition-colors",
-                      isActive 
-                        ? "bg-tennis-green-50 text-tennis-green-700 font-medium" 
-                        : "text-gray-700 hover:bg-gray-100"
-                    )}
-                  >
-                    <item.icon className="h-5 w-5" />
-                    <span>{item.name}</span>
-                  </Link>
-                );
-              })}
-            </div>
+            {adminNavItems.map((item) => {
+              const isActive = currentPath === item.path || 
+                (item.path !== "/admin" && currentPath.startsWith(item.path));
+                
+              return (
+                <Link
+                  key={item.name}
+                  to={item.path}
+                  className={cn(
+                    "flex items-center space-x-3 px-3 py-2 rounded-md transition-colors",
+                    isActive 
+                      ? "bg-tennis-green-50 text-tennis-green-700 font-medium" 
+                      : "text-gray-700 hover:bg-gray-100"
+                  )}
+                >
+                  <item.icon className="h-5 w-5" />
+                  <span>{item.name}</span>
+                </Link>
+              );
+            })}
           </>
         )}
 
