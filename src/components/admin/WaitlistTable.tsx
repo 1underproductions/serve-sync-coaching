@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Table,
@@ -17,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { MoreHorizontal, Mail, Check, X, Eye } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { supabase, SUPABASE_URL } from "@/lib/supabase";
 import { format } from "date-fns";
 import {
   Dialog,
@@ -47,29 +48,36 @@ export default function WaitlistTable({ signups, onStatusChange }: {
   const [detailView, setDetailView] = useState<WaitlistSignup | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
 
   useEffect(() => {
     console.log("WaitlistTable received signups:", signups);
-    setLocalSignups(signups || []);
+    console.log("Signups type:", typeof signups, Array.isArray(signups) ? "is array" : "not array");
+    setLocalSignups(Array.isArray(signups) ? signups : []);
   }, [signups]);
 
   const updateStatus = async (id: string, newStatus: WaitlistSignup['status']) => {
     try {
       setUpdateError(null);
+      setDebugInfo(null);
       console.log("Updating status for signup:", id, "to", newStatus);
+      console.log("Using Supabase URL:", SUPABASE_URL);
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('waitlist_signups')
         .update({ status: newStatus })
-        .eq('id', id);
+        .eq('id', id)
+        .select();
 
       if (error) {
         console.error("Error updating status:", error);
+        setDebugInfo({ error, type: 'update_error' });
         setUpdateError(`Failed to update status: ${error.message}`);
         throw error;
       }
 
-      console.log("Status updated successfully");
+      console.log("Status updated successfully, returned data:", data);
+      setDebugInfo({ data, type: 'update_success' });
 
       setLocalSignups(prev => 
         prev.map(signup => 
@@ -252,6 +260,13 @@ export default function WaitlistTable({ signups, onStatusChange }: {
                   Approve & Contact
                 </Button>
               </div>
+            </div>
+          )}
+          
+          {debugInfo && (
+            <div className="mt-4 p-4 bg-gray-100 rounded-md text-xs overflow-auto max-h-40">
+              <p className="font-bold mb-1">Debug Info:</p>
+              <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
             </div>
           )}
         </DialogContent>

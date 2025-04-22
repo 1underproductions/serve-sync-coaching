@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -5,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Mail, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { supabase } from "@/lib/supabase";
+import { supabase, SUPABASE_URL } from "@/lib/supabase";
 
 // Form validation schema
 const formSchema = z.object({
@@ -31,6 +32,7 @@ const CoachSignupForm = () => {
   });
   const [honeypot, setHoneypot] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
   const { toast } = useToast();
 
   const handleInputChange = (
@@ -64,40 +66,40 @@ const CoachSignupForm = () => {
 
     try {
       setIsSubmitting(true);
+      setDebugInfo(null);
       
       // Validate form data
       formSchema.parse(formData);
 
       console.log("Submitting waitlist signup with data:", formData);
+      console.log("Supabase URL being used:", SUPABASE_URL);
 
       // Convert yearsExperience to integer
       const yearsExp = parseInt(formData.yearsExperience);
       
-      // Insert into Supabase - explicitly log the insert attempt
-      console.log("Inserting into waitlist_signups table:", {
+      const signupData = {  
         email: formData.email,
         full_name: formData.fullName,
         years_experience: yearsExp,
         message: formData.message || null,
         status: 'pending'
-      });
+      };
+      
+      console.log("Inserting into waitlist_signups table:", signupData);
       
       const { data, error } = await supabase
         .from('waitlist_signups')
-        .insert([{  
-          email: formData.email,
-          full_name: formData.fullName,
-          years_experience: yearsExp,
-          message: formData.message || null,
-          status: 'pending'
-        }]);
+        .insert([signupData])
+        .select();
 
       if (error) {
         console.error("Supabase error on waitlist signup:", error);
+        setDebugInfo({ error, type: 'insert_error' });
         throw error;
       }
       
       console.log("Signup successful, returned data:", data);
+      setDebugInfo({ data, type: 'success' });
       
       toast({
         title: "Thank you for joining the waitlist!",
@@ -115,6 +117,7 @@ const CoachSignupForm = () => {
     } catch (error) {
       if (error instanceof z.ZodError) {
         console.error("Validation error:", error.errors);
+        setDebugInfo({ error: error.errors, type: 'validation_error' });
         toast({
           title: "Invalid form data",
           description: error.errors[0].message,
@@ -122,6 +125,7 @@ const CoachSignupForm = () => {
         });
       } else {
         console.error("Submission error:", error);
+        setDebugInfo({ error, type: 'submission_error' });
         toast({
           title: "Something went wrong",
           description: "Please try again later.",
@@ -207,6 +211,13 @@ const CoachSignupForm = () => {
           {isSubmitting ? "Joining..." : "Join Waitlist"}
         </Button>
       </div>
+      
+      {debugInfo && (
+        <div className="mt-4 p-4 bg-gray-100 rounded-md text-xs overflow-auto max-h-40">
+          <p className="font-bold mb-1">Debug Info:</p>
+          <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
+        </div>
+      )}
     </form>
   );
 };

@@ -1,8 +1,9 @@
+
 import { useEffect, useState } from "react";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import WaitlistTable from "@/components/admin/WaitlistTable";
-import { supabase } from "@/lib/supabase"; 
+import { supabase, SUPABASE_URL } from "@/lib/supabase"; 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info, Users, Shield, Calendar, CheckCircle, RefreshCw } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,6 +25,7 @@ const AdminDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
   const [stats, setStats] = useState({
     waitlistCount: 0,
     pendingCount: 0,
@@ -37,10 +39,25 @@ const AdminDashboard = () => {
       console.log("Fetching waitlist data...");
       setIsLoading(true);
       setError(null);
+      setDebugInfo(null);
       
-      console.log("Supabase URL:", (supabase as any).supabaseUrl);
+      console.log("Supabase URL:", SUPABASE_URL);
       console.log("Attempting to fetch from waitlist_signups table...");
       
+      // Check if the table exists
+      const { data: tableData, error: tableError } = await supabase
+        .from('waitlist_signups')
+        .select('count(*)', { count: 'exact', head: true });
+      
+      if (tableError) {
+        console.error("Error checking waitlist_signups table:", tableError);
+        setDebugInfo({ type: 'table_check_error', error: tableError });
+        throw new Error(`Error checking table: ${tableError.message}`);
+      }
+      
+      console.log("Table check results:", tableData);
+      
+      // Now fetch the actual data
       const { data, error } = await supabase
         .from('waitlist_signups')
         .select('*')
@@ -48,6 +65,7 @@ const AdminDashboard = () => {
 
       if (error) {
         console.error("Error fetching waitlist data:", error);
+        setDebugInfo({ type: 'fetch_error', error });
         setError(`Error fetching waitlist data: ${error.message}`);
         toast({
           title: "Error fetching waitlist data",
@@ -59,8 +77,9 @@ const AdminDashboard = () => {
         
       console.log("Waitlist data fetched:", data);
       console.log("Data type:", typeof data, Array.isArray(data) ? "is array" : "not array");
+      setDebugInfo({ type: 'fetch_success', data });
       
-      if (data) {
+      if (data && Array.isArray(data)) {
         setWaitlistSignups(data as WaitlistSignup[]);
         
         const pendingCount = data.filter(item => item.status === 'pending').length;
@@ -74,7 +93,7 @@ const AdminDashboard = () => {
           rejectedCount
         });
       } else {
-        console.log("No data returned from waitlist_signups query");
+        console.log("No data returned from waitlist_signups query or not an array");
         setWaitlistSignups([]);
         setStats({
           waitlistCount: 0,
@@ -233,6 +252,13 @@ const AdminDashboard = () => {
                   signups={waitlistSignups} 
                   onStatusChange={fetchWaitlist}
                 />
+              )}
+              
+              {debugInfo && (
+                <div className="mt-6 p-4 bg-gray-100 rounded-md text-xs overflow-auto max-h-40">
+                  <p className="font-bold mb-1">Debug Info:</p>
+                  <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
+                </div>
               )}
             </CardContent>
           </Card>

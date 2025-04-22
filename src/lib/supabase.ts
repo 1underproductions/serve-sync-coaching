@@ -47,6 +47,9 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   }
 });
 
+// Export the URL for debugging purposes
+export const SUPABASE_URL = supabaseUrl;
+
 // Custom email function to handle our enhanced email templates
 export const sendCustomEmail = async (type: string, email: string, data: any) => {
   try {
