@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Mail, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { supabase, SUPABASE_URL } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 
 // Form validation schema
 const formSchema = z.object({
@@ -72,8 +72,7 @@ const CoachSignupForm = () => {
       formSchema.parse(formData);
 
       console.log("Submitting waitlist signup with data:", formData);
-      console.log("Supabase URL being used:", SUPABASE_URL);
-
+      
       // Convert yearsExperience to integer
       const yearsExp = parseInt(formData.yearsExperience);
       
@@ -85,34 +84,75 @@ const CoachSignupForm = () => {
         status: 'pending'
       };
       
-      console.log("Inserting into waitlist_signups table:", signupData);
+      console.log("Prepared data for insertion:", signupData);
       
-      const { data, error } = await supabase
+      // First, check if this email already exists in the waitlist
+      const { data: existingSignups, error: checkError } = await supabase
         .from('waitlist_signups')
-        .insert([signupData])
-        .select();
-
-      if (error) {
-        console.error("Supabase error on waitlist signup:", error);
-        setDebugInfo({ error, type: 'insert_error' });
-        throw error;
+        .select('id, email')
+        .eq('email', formData.email)
+        .maybeSingle();
+      
+      if (checkError) {
+        console.log("Error checking for existing email:", checkError);
+        // Continue with insert anyway as this might be due to RLS permissions
+      } else if (existingSignups) {
+        console.log("Email already exists in waitlist:", existingSignups);
+        toast({
+          title: "You're already on our waitlist!",
+          description: "We'll notify you when Tennexis launches.",
+        });
+        setFormData({
+          email: '',
+          fullName: '',
+          yearsExperience: '',
+          message: '',
+        });
+        setIsSubmitting(false);
+        return;
       }
       
-      console.log("Signup successful, returned data:", data);
-      setDebugInfo({ data, type: 'success' });
+      // Insert new signup
+      const { data, error } = await supabase
+        .from('waitlist_signups')
+        .insert([signupData]);
       
-      toast({
-        title: "Thank you for joining the waitlist!",
-        description: "We'll notify you when Tennexis launches.",
-      });
-      
-      // Clear form
-      setFormData({
-        email: '',
-        fullName: '',
-        yearsExperience: '',
-        message: '',
-      });
+      if (error) {
+        console.error("Supabase error on waitlist signup:", error);
+        setDebugInfo({ error, type: 'submission_error' });
+        
+        // Try to provide a more user-friendly error message
+        if (error.code === '23505') { // Unique violation
+          toast({
+            title: "You're already on our waitlist!",
+            description: "We'll notify you when Tennexis launches.",
+          });
+          setFormData({
+            email: '',
+            fullName: '',
+            yearsExperience: '',
+            message: '',
+          });
+        } else {
+          throw error;
+        }
+      } else {
+        console.log("Signup successful, returned data:", data);
+        setDebugInfo({ data, type: 'success' });
+        
+        toast({
+          title: "Thank you for joining the waitlist!",
+          description: "We'll notify you when Tennexis launches.",
+        });
+        
+        // Clear form
+        setFormData({
+          email: '',
+          fullName: '',
+          yearsExperience: '',
+          message: '',
+        });
+      }
 
     } catch (error) {
       if (error instanceof z.ZodError) {

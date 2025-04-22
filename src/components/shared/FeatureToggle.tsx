@@ -7,6 +7,7 @@ export const FEATURE_FLAGS = {
   ANALYTICS: false,
   PAYMENTS: true,
   MESSAGES: true,
+  WAITLIST: true, // Enable waitlist functionality
   // Add more features as needed
 };
 
