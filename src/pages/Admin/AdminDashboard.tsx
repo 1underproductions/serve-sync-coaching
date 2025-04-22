@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -39,7 +38,7 @@ const AdminDashboard = () => {
       setIsLoading(true);
       setError(null);
       
-      // Explicitly log the fetch attempt
+      console.log("Supabase URL:", (supabase as any).supabaseUrl);
       console.log("Attempting to fetch from waitlist_signups table...");
       
       const { data, error } = await supabase
@@ -59,6 +58,7 @@ const AdminDashboard = () => {
       }
         
       console.log("Waitlist data fetched:", data);
+      console.log("Data type:", typeof data, Array.isArray(data) ? "is array" : "not array");
       
       if (data) {
         setWaitlistSignups(data as WaitlistSignup[]);
@@ -72,6 +72,15 @@ const AdminDashboard = () => {
           pendingCount,
           contactedCount,
           rejectedCount
+        });
+      } else {
+        console.log("No data returned from waitlist_signups query");
+        setWaitlistSignups([]);
+        setStats({
+          waitlistCount: 0,
+          pendingCount: 0,
+          contactedCount: 0,
+          rejectedCount: 0
         });
       }
     } catch (error: any) {

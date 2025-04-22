@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -42,7 +43,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     storage: localStorage,
-    debug: true, // Enable debug mode to help diagnose issues
+    debug: true // Keep debug mode enabled to help diagnose issues
   }
 });
 

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,7 +73,15 @@ const CoachSignupForm = () => {
       // Convert yearsExperience to integer
       const yearsExp = parseInt(formData.yearsExperience);
       
-      // Insert into Supabase with correct table name
+      // Insert into Supabase - explicitly log the insert attempt
+      console.log("Inserting into waitlist_signups table:", {
+        email: formData.email,
+        full_name: formData.fullName,
+        years_experience: yearsExp,
+        message: formData.message || null,
+        status: 'pending'
+      });
+      
       const { data, error } = await supabase
         .from('waitlist_signups')
         .insert([{  
@@ -90,7 +97,7 @@ const CoachSignupForm = () => {
         throw error;
       }
       
-      console.log("Signup successful");
+      console.log("Signup successful, returned data:", data);
       
       toast({
         title: "Thank you for joining the waitlist!",

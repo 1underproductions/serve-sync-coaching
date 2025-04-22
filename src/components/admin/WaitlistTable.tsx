@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Table,
@@ -49,7 +48,6 @@ export default function WaitlistTable({ signups, onStatusChange }: {
   const [openDialog, setOpenDialog] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
 
-  // Update local signups when props change
   useEffect(() => {
     console.log("WaitlistTable received signups:", signups);
     setLocalSignups(signups || []);
@@ -73,7 +71,6 @@ export default function WaitlistTable({ signups, onStatusChange }: {
 
       console.log("Status updated successfully");
 
-      // Update local state to reflect the change
       setLocalSignups(prev => 
         prev.map(signup => 
           signup.id === id ? { ...signup, status: newStatus } : signup
@@ -85,12 +82,10 @@ export default function WaitlistTable({ signups, onStatusChange }: {
         description: `Signup status changed to ${newStatus}`,
       });
       
-      // Close the dialog if it's open
       if (openDialog) {
         setOpenDialog(false);
       }
       
-      // Call the callback if provided
       if (onStatusChange) {
         onStatusChange();
       }
@@ -197,7 +192,6 @@ export default function WaitlistTable({ signups, onStatusChange }: {
         </TableBody>
       </Table>
 
-      {/* Dialog for detailed view */}
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
