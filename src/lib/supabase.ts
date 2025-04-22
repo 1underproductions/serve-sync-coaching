@@ -152,3 +152,53 @@ export type PackageData = {
   description: string;
   discount: number;
 };
+
+// Define WaitlistSignup type to ensure consistency
+export type WaitlistSignup = {
+  id: string;
+  email: string;
+  full_name: string;
+  years_experience: number | null;
+  message: string | null;
+  status: 'pending' | 'contacted' | 'rejected';
+  created_at: string;
+};
+
+// Utility function to check if a table exists in Supabase
+export const checkTableExists = async (tableName: string): Promise<boolean> => {
+  try {
+    console.log(`Checking if table ${tableName} exists...`);
+    const { data, error } = await supabase
+      .from(tableName)
+      .select('id')
+      .limit(1);
+    
+    if (error) {
+      console.error(`Error checking if table ${tableName} exists:`, error);
+      return false;
+    }
+    
+    console.log(`Table ${tableName} exists and returned:`, data);
+    return true;
+  } catch (error) {
+    console.error(`Exception checking if table ${tableName} exists:`, error);
+    return false;
+  }
+};
+
+// Utility function to directly test fetching from waitlist_signups
+export const fetchWaitlistSignups = async (): Promise<{ data: WaitlistSignup[] | null, error: any }> => {
+  try {
+    console.log("Directly testing waitlist_signups fetch...");
+    const { data, error } = await supabase
+      .from('waitlist_signups')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    console.log("Direct waitlist fetch result:", { data, error });
+    return { data, error };
+  } catch (error) {
+    console.error("Exception in direct waitlist fetch:", error);
+    return { data: null, error };
+  }
+};

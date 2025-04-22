@@ -7,7 +7,7 @@ export const FEATURE_FLAGS = {
   ANALYTICS: false,
   PAYMENTS: true,
   MESSAGES: true,
-  WAITLIST: true, // Enable waitlist functionality
+  WAITLIST: true, // Ensure waitlist functionality is enabled
   // Add more features as needed
 };
 
@@ -22,6 +22,7 @@ type FeatureToggleProps = {
  */
 const FeatureToggle = ({ featureName, children }: FeatureToggleProps) => {
   const isEnabled = FEATURE_FLAGS[featureName];
+  console.log(`Feature ${featureName} is ${isEnabled ? 'enabled' : 'disabled'}`);
 
   if (!isEnabled) {
     return <Navigate to="/coming-soon" />;

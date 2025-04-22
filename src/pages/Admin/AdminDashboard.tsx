@@ -1,23 +1,14 @@
+
 import { useEffect, useState } from "react";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import WaitlistTable from "@/components/admin/WaitlistTable";
-import { supabase } from "@/lib/supabase"; 
+import { supabase, checkTableExists, fetchWaitlistSignups, WaitlistSignup } from "@/lib/supabase"; 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info, Users, Shield, Calendar, CheckCircle, RefreshCw } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-
-type WaitlistSignup = {
-  id: string;
-  email: string;
-  full_name: string;
-  years_experience: number;
-  message: string | null;
-  status: 'pending' | 'contacted' | 'rejected';
-  created_at: string;
-};
 
 const AdminDashboard = () => {
   const [waitlistSignups, setWaitlistSignups] = useState<WaitlistSignup[]>([]);
@@ -40,7 +31,28 @@ const AdminDashboard = () => {
       setError(null);
       setDebugInfo(null);
       
-      // Fetch the actual data directly without checking the table first
+      // First, check if the table exists
+      const tableExists = await checkTableExists('waitlist_signups');
+      
+      if (!tableExists) {
+        console.log("Waitlist table doesn't exist or cannot be accessed");
+        setDebugInfo({ type: 'table_check_error', error: { message: "Waitlist table doesn't exist or cannot be accessed" } });
+        setError("Waitlist table doesn't exist or cannot be accessed. Please check your database setup.");
+        setIsLoading(false);
+        return;
+      }
+      
+      // Directly try to fetch waitlist data as a test
+      const directFetchResult = await fetchWaitlistSignups();
+      if (directFetchResult.error) {
+        console.error("Direct fetch error:", directFetchResult.error);
+        setDebugInfo({ type: 'direct_fetch_error', error: directFetchResult.error });
+        setError(`Direct fetch error: ${directFetchResult.error.message}`);
+        setIsLoading(false);
+        return;
+      }
+      
+      // Proceed with the regular fetch
       const { data, error } = await supabase
         .from('waitlist_signups')
         .select('*')
@@ -49,7 +61,7 @@ const AdminDashboard = () => {
       if (error) {
         console.error("Error fetching waitlist data:", error);
         setDebugInfo({ type: 'fetch_error', error });
-        setError(`Error fetching waitlist data: ${error.message}`);
+        setError(`Failed to fetch waitlist data: ${error.message}`);
         toast({
           title: "Error fetching waitlist data",
           description: error.message,
@@ -88,6 +100,7 @@ const AdminDashboard = () => {
     } catch (error: any) {
       console.error("Error in fetchWaitlist:", error);
       setError(`Failed to fetch waitlist data: ${error.message}`);
+      setDebugInfo({ type: 'exception_error', error });
       toast({
         title: "Something went wrong",
         description: "Could not fetch waitlist data. Please try again.",
