@@ -550,6 +550,23 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      insert_waitlist_entry: {
+        Args: {
+          p_email: string
+          p_full_name: string
+          p_years_experience: number
+          p_message?: string
+        }
+        Returns: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          message: string | null
+          status: string | null
+          years_experience: number | null
+        }[]
+      }
       set_user_as_admin: {
         Args: { input_email: string }
         Returns: boolean

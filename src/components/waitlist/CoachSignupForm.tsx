@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Mail, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { supabase } from "@/lib/supabase"; // Try using the alternative supabase client
+import { supabase } from "@/lib/supabase"; // Using alternative supabase client
 
 // Form validation schema
 const formSchema = z.object({
@@ -76,12 +76,33 @@ const CoachSignupForm = () => {
       // Convert yearsExperience to integer
       const yearsExp = parseInt(formData.yearsExperience);
       
-      // Use the createTestWaitlistEntry function for testing
-      // This is a temporary solution to debug the RLS issue
-      const { success, data, error } = await supabase.createTestWaitlistEntry();
+      // Using our new insert_waitlist_entry function that bypasses RLS
+      const { data, error } = await supabase
+        .rpc('insert_waitlist_entry', {
+          p_email: formData.email,
+          p_full_name: formData.fullName,
+          p_years_experience: yearsExp,
+          p_message: formData.message || null
+        });
       
-      if (success && data) {
-        console.log("[CoachSignupForm] Test entry created successfully:", data);
+      if (error) {
+        console.error("[CoachSignupForm] Error inserting waitlist entry:", error);
+        setDebugInfo({ 
+          error, 
+          type: 'rpc_error', 
+          message: 'Failed to insert waitlist entry using RPC function',
+          details: error.details
+        });
+        
+        toast({
+          title: "Error submitting waitlist entry",
+          description: "Please try again later. Our team has been notified.",
+          variant: "destructive",
+        });
+      } else {
+        console.log("[CoachSignupForm] Signup successful, returned data:", data);
+        setDebugInfo({ data, type: 'success' });
+        
         toast({
           title: "Thank you for joining the waitlist!",
           description: "We'll notify you when Tennexis launches.",
@@ -93,19 +114,6 @@ const CoachSignupForm = () => {
           fullName: '',
           yearsExperience: '',
           message: '',
-        });
-      } else {
-        console.error("[CoachSignupForm] Error creating test entry:", error);
-        setDebugInfo({ 
-          error, 
-          type: 'test_entry_error', 
-          message: 'Failed to create test entry. This is likely due to Supabase RLS policies.' 
-        });
-        
-        toast({
-          title: "Error submitting waitlist entry",
-          description: "Please try again later. Our team has been notified.",
-          variant: "destructive",
         });
       }
     } catch (error) {
