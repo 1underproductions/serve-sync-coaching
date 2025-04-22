@@ -154,13 +154,14 @@ export type PackageData = {
 };
 
 // Define WaitlistSignup type to ensure consistency
+// Modified to accept any string for status to match what Supabase returns
 export type WaitlistSignup = {
   id: string;
   email: string;
   full_name: string;
   years_experience: number | null;
   message: string | null;
-  status: 'pending' | 'contacted' | 'rejected';
+  status: string; // Changed from 'pending' | 'contacted' | 'rejected' to string
   created_at: string;
 };
 
@@ -168,8 +169,9 @@ export type WaitlistSignup = {
 export const checkTableExists = async (tableName: string): Promise<boolean> => {
   try {
     console.log(`Checking if table ${tableName} exists...`);
+    // Use type assertion to tell TypeScript this is a valid table
     const { data, error } = await supabase
-      .from(tableName)
+      .from(tableName as any)
       .select('id')
       .limit(1);
     
