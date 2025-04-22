@@ -11,7 +11,8 @@ import {
   Ticket,
   FileText,
   Bell,
-  BookOpen
+  BookOpen,
+  GraduationCap
 } from "lucide-react";
 
 export const navItems = [
@@ -26,7 +27,7 @@ export const navItems = [
 
 export const adminNavItems = [
   { name: "Admin Dashboard", path: "/admin", icon: Shield },
-  { name: "Manage Users", path: "/admin/users", icon: Users },
+  { name: "Coaches", path: "/admin/coaches", icon: GraduationCap },
   { name: "Programs", path: "/admin/programs", icon: CalendarClock },
   { name: "Transactions", path: "/admin/transactions", icon: DollarSign },
   { name: "Support Tickets", path: "/admin/tickets", icon: Ticket },
@@ -35,3 +36,4 @@ export const adminNavItems = [
   { name: "Reports", path: "/admin/reports", icon: FileText },
   { name: "Admin Settings", path: "/admin/settings", icon: Settings },
 ];
+

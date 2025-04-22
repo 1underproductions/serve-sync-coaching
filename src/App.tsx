@@ -96,7 +96,7 @@ function App() {
               
               {/* Admin Routes */}
               <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/admin/users" element={<AdminUsers />} />
+              <Route path="/admin/coaches" element={<AdminUsers />} /> {/* Updated path */}
               <Route path="/admin/transactions" element={<AdminTransactions />} />
               <Route path="/admin/settings" element={<AdminSettings />} />
               
