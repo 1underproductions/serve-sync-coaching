@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Mail, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { supabase } from "@/integrations/supabase/client"; // Use the client from integrations directory
+import { supabase } from "@/integrations/supabase/client";
 
 // Form validation schema
 const formSchema = z.object({
@@ -94,10 +93,12 @@ const CoachSignupForm = () => {
         .maybeSingle();
       
       if (checkError) {
-        console.log("[CoachSignupForm] Error checking for existing email:", checkError);
+        console.error("[CoachSignupForm] Error checking for existing email:", checkError);
         setDebugInfo({ checkError, type: 'check_error' });
-        // Continue with insert anyway as this might be due to RLS permissions
-      } else if (existingSignups) {
+        throw checkError;
+      }
+      
+      if (existingSignups) {
         console.log("[CoachSignupForm] Email already exists in waitlist:", existingSignups);
         toast({
           title: "You're already on our waitlist!",
@@ -121,23 +122,22 @@ const CoachSignupForm = () => {
       
       if (error) {
         console.error("[CoachSignupForm] Supabase error on waitlist signup:", error);
-        setDebugInfo({ error, type: 'submission_error' });
+        setDebugInfo({ error, type: 'submission_error', rawError: JSON.stringify(error) });
         
-        // Try to provide a more user-friendly error message
+        // Check for specific Supabase error codes
         if (error.code === '23505') { // Unique violation
           toast({
             title: "You're already on our waitlist!",
             description: "We'll notify you when Tennexis launches.",
           });
-          setFormData({
-            email: '',
-            fullName: '',
-            yearsExperience: '',
-            message: '',
-          });
         } else {
-          throw error;
+          toast({
+            title: "Error submitting waitlist entry",
+            description: error.message || "Please try again later.",
+            variant: "destructive",
+          });
         }
+        throw error;
       } else {
         console.log("[CoachSignupForm] Signup successful, returned data:", data);
         setDebugInfo({ data, type: 'success' });
@@ -157,6 +157,8 @@ const CoachSignupForm = () => {
       }
 
     } catch (error) {
+      console.error("[CoachSignupForm] Full submission error:", error);
+      
       if (error instanceof z.ZodError) {
         console.error("[CoachSignupForm] Validation error:", error.errors);
         setDebugInfo({ error: error.errors, type: 'validation_error' });
@@ -166,8 +168,6 @@ const CoachSignupForm = () => {
           variant: "destructive",
         });
       } else {
-        console.error("[CoachSignupForm] Submission error:", error);
-        setDebugInfo({ error, type: 'submission_error' });
         toast({
           title: "Something went wrong",
           description: "Please try again later.",
