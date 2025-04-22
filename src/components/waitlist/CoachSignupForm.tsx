@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Mail, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import { supabase } from "@/integrations/supabase/client";
 
 // Form validation schema
 const formSchema = z.object({
@@ -68,9 +68,17 @@ const CoachSignupForm = () => {
       // Validate form data
       formSchema.parse(formData);
 
-      // Here you would typically send the data to your backend
-      // For testing, we'll just simulate a delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Insert into Supabase
+      const { error } = await supabase
+        .from('waitlist_signups')
+        .insert({
+          email: formData.email,
+          full_name: formData.fullName,
+          years_experience: parseInt(formData.yearsExperience),
+          message: formData.message || null
+        });
+
+      if (error) throw error;
       
       toast({
         title: "Thank you for joining the waitlist!",
