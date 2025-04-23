@@ -10,7 +10,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface Article {
   id: string;
@@ -18,54 +20,109 @@ interface Article {
   status: string;
   category: string;
   created_at: string;
+  slug: string;
 }
 
 export const ArticleList = () => {
   const [articles, setArticles] = useState<Article[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchArticles = async () => {
-    const { data, error } = await supabase
-      .from('blog_articles')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const { data, error } = await supabase
+        .from('blog_articles')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to fetch articles",
-      });
-      return;
+      if (error) {
+        console.error("Error fetching articles:", error);
+        setError("Failed to fetch articles");
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to fetch articles",
+        });
+        return;
+      }
+
+      setArticles(data || []);
+    } catch (err) {
+      console.error("Exception fetching articles:", err);
+      setError("An unexpected error occurred");
+    } finally {
+      setIsLoading(false);
     }
-
-    setArticles(data);
   };
 
   const publishArticle = async (id: string) => {
-    const { error } = await supabase
-      .from('blog_articles')
-      .update({
-        status: 'published',
-        published_at: new Date().toISOString()
-      })
-      .eq('id', id);
+    try {
+      const { error } = await supabase
+        .from('blog_articles')
+        .update({
+          status: 'published',
+          published_at: new Date().toISOString()
+        })
+        .eq('id', id);
 
-    if (error) {
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to publish article",
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Article published successfully",
+      });
+      
+      fetchArticles();
+    } catch (err) {
+      console.error("Exception publishing article:", err);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to publish article",
+        description: "An unexpected error occurred",
       });
-      return;
     }
-
-    fetchArticles();
   };
 
   useEffect(() => {
     fetchArticles();
   }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-tennis-green-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert variant="destructive" className="mb-6">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (articles.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-muted-foreground">No articles found. Create your first article by clicking the "New Article" button.</p>
+      </div>
+    );
+  }
 
   return (
     <Table>
@@ -83,19 +140,40 @@ export const ArticleList = () => {
           <TableRow key={article.id}>
             <TableCell>{article.title}</TableCell>
             <TableCell>{article.category}</TableCell>
-            <TableCell>{article.status}</TableCell>
+            <TableCell>
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                article.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+              }`}>
+                {article.status}
+              </span>
+            </TableCell>
             <TableCell>
               {new Date(article.created_at).toLocaleDateString()}
             </TableCell>
             <TableCell>
-              {article.status === 'draft' && (
+              <div className="flex space-x-2">
+                {article.status === 'draft' && (
+                  <Button
+                    size="sm"
+                    onClick={() => publishArticle(article.id)}
+                  >
+                    Publish
+                  </Button>
+                )}
                 <Button
+                  variant="outline"
                   size="sm"
-                  onClick={() => publishArticle(article.id)}
+                  onClick={() => {
+                    // Edit functionality will be implemented later
+                    toast({
+                      title: "Coming Soon",
+                      description: "Edit functionality will be available soon",
+                    });
+                  }}
                 >
-                  Publish
+                  Edit
                 </Button>
-              )}
+              </div>
             </TableCell>
           </TableRow>
         ))}
