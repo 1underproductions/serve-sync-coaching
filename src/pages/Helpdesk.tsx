@@ -56,12 +56,13 @@ const Helpdesk = () => {
     try {
       const { error } = await supabase
         .from("support_tickets")
-        .insert([{
+        .insert({
           user_id: user?.id,
           email: user?.email || profile?.email,
-          subject,
-          message,
-        }]);
+          title: subject,
+          description: message,
+          category: "support", // Default category for user submissions
+        });
       if (error) throw error;
       toast({ title: "Ticket submitted!", description: "Our support team will get back to you soon." });
       setSubject("");
