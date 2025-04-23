@@ -11,7 +11,7 @@ export const useBlogArticles = () => {
         .from('blog_articles')
         .select(`
           *,
-          author:profiles(full_name)
+          profiles!author_id(full_name)
         `)
         .eq('status', 'published')
         .order('published_at', { ascending: false });

@@ -34,7 +34,7 @@ export const ProfilePicture = () => {
     }
   }, [user, fetchUserProfile]);
 
-  const handleImageUpload = async (file: File) => {
+  const handleImageUpload = async (url: string) => {
     if (!user) {
       toast({
         variant: "destructive",
@@ -47,39 +47,12 @@ export const ProfilePicture = () => {
     try {
       setIsSubmitting(true);
       
-      // Use a simpler file path structure - always use the same filename to overwrite previous uploads
-      const fileExt = file.name.split('.').pop();
-      const filePath = `avatars/${user.id}.${fileExt}`;
-      
-      // Create bucket if it doesn't exist
-      const { data: bucketData, error: bucketError } = await supabase.storage.getBucket('profile-images');
-      if (bucketError && bucketError.message.includes('does not exist')) {
-        // Create the bucket if it doesn't exist
-        await supabase.storage.createBucket('profile-images', { public: true });
-      }
-      
-      // Upload the file to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from('profile-images')
-        .upload(filePath, file, { upsert: true });
-        
-      if (uploadError) throw uploadError;
-      
-      // Get the public URL for the uploaded image
-      const { data } = supabase.storage
-        .from('profile-images')
-        .getPublicUrl(filePath);
-        
-      if (!data || !data.publicUrl) {
-        throw new Error('Failed to get public URL for uploaded image');
-      }
-      
       // First update the local UI
-      setAvatarSrc(data.publicUrl);
+      setAvatarSrc(url);
       
       // Use the security definer function to update avatar safely
       const { error: updateError } = await supabase.rpc('update_user_avatar_safe', {
-        new_avatar_url: data.publicUrl
+        new_avatar_url: url
       });
         
       if (updateError) {
@@ -88,7 +61,7 @@ export const ProfilePicture = () => {
         // Fallback to direct update
         const { error: directUpdateError } = await supabase
           .from('profiles')
-          .update({ avatar_url: data.publicUrl })
+          .update({ avatar_url: url })
           .eq('id', user.id);
           
         if (directUpdateError) throw directUpdateError;
@@ -132,7 +105,7 @@ export const ProfilePicture = () => {
           </Avatar>
 
           <ImageUploader 
-            onImageChange={handleImageUpload}
+            onUploadComplete={handleImageUpload}
             isSubmitting={isSubmitting}
             className="mt-4 w-full max-w-xs"
           />
