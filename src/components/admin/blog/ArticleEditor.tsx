@@ -19,7 +19,7 @@ export const ArticleEditor = () => {
   const { toast } = useToast();
   const [imageUrl, setImageUrl] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { register, handleSubmit, reset, watch, formState } = useForm<ArticleFormData>();
+  const { register, handleSubmit, reset, watch } = useForm<ArticleFormData>();
 
   // Watch form values to prevent losing data during image upload
   const formValues = watch();
@@ -117,11 +117,15 @@ export const ArticleEditor = () => {
         />
       </div>
       
-      <div>
+      <div className="space-y-4">
         {imageUrl && (
-          <div className="mb-2">
-            <p className="text-sm text-gray-500 mb-1">Image selected:</p>
-            <img src={imageUrl} alt="Article preview" className="h-32 w-auto object-cover rounded-md" />
+          <div className="rounded-lg overflow-hidden border bg-gray-50 p-4">
+            <p className="text-sm text-gray-500 mb-2">Featured image preview:</p>
+            <img 
+              src={imageUrl} 
+              alt="Article preview" 
+              className="h-48 w-full object-cover rounded-md"
+            />
           </div>
         )}
         <ImageUploader

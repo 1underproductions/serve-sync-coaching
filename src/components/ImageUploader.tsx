@@ -3,18 +3,18 @@ import React, { useRef, useState } from 'react';
 import { Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from "@/lib/supabase";  // Using the main supabase client
+import { supabase } from "@/lib/supabase";
 
 interface ImageUploaderProps {
   onUploadComplete: (url: string) => void;
-  bucket?: string;  // Add bucket as an optional prop
+  bucket?: string;
   isSubmitting?: boolean;
   className?: string;
 }
 
 export function ImageUploader({ 
   onUploadComplete,
-  bucket = 'avatars',  // Default bucket if none specified
+  bucket = 'avatars',
   isSubmitting = false,
   className 
 }: ImageUploaderProps) {
@@ -39,11 +39,7 @@ export function ImageUploader({
         title: "File Too Large",
         description: "Please select an image under 5MB.",
       });
-      
-      // Reset the file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
 
@@ -54,37 +50,12 @@ export function ImageUploader({
         title: "Invalid File Type",
         description: "Please select an image file.",
       });
-      
-      // Reset the file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
 
     try {
       setUploading(true);
-      
-      console.log(`Attempting to upload image to ${bucket} bucket...`);
-      
-      // First check if the bucket exists
-      const { data: buckets, error: bucketError } = await supabase
-        .storage
-        .listBuckets();
-      
-      console.log("Available buckets:", buckets);
-      
-      if (bucketError) {
-        console.error("Error listing buckets:", bucketError);
-        throw new Error(`Failed to check bucket: ${bucketError.message}`);
-      }
-      
-      // Check if our bucket exists, create it if not (admins only)
-      const bucketExists = buckets.some(b => b.name === bucket);
-      if (!bucketExists) {
-        console.log(`Bucket "${bucket}" doesn't exist, uploading to default "avatars" bucket instead`);
-        // Fall back to avatars bucket
-      }
       
       // Upload the file to Supabase Storage
       const fileExt = file.name.split('.').pop();
@@ -92,29 +63,24 @@ export function ImageUploader({
       
       const { error: uploadError, data } = await supabase
         .storage
-        .from(bucketExists ? bucket : 'avatars')
+        .from(bucket)
         .upload(filePath, file, {
           cacheControl: '3600'
         });
         
       if (uploadError) {
         console.error("Upload error:", uploadError);
-        throw new Error(`Failed to upload: ${uploadError.message}`);
+        throw new Error(uploadError.message);
       }
-      
-      console.log("Upload successful, data:", data);
       
       // Get the public URL
       const { data: publicUrlData } = supabase
         .storage
-        .from(bucketExists ? bucket : 'avatars')
+        .from(bucket)
         .getPublicUrl(filePath);
         
-      const publicUrl = publicUrlData.publicUrl;
-      console.log("Public URL:", publicUrl);
-      
       // Call the callback with the public URL
-      onUploadComplete(publicUrl);
+      onUploadComplete(publicUrlData.publicUrl);
       
       toast({
         title: "Upload Successful",
@@ -127,10 +93,8 @@ export function ImageUploader({
         title: "Upload Failed",
         description: error.message || "There was a problem uploading your image.",
       });
-      // Important: do NOT reset the form here
     } finally {
       setUploading(false);
-      // Reset only the file input, not the entire form
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
