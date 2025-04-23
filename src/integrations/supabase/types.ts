@@ -524,6 +524,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_confirm_email: {
+        Args: { admin_email: string }
+        Returns: undefined
+      }
       create_payment_link: {
         Args: {
           p_player_id: string

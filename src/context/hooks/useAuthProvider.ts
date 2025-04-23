@@ -3,6 +3,7 @@ import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, sendCustomEmail, Profile } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { confirmAdminEmail } from '@/utils/adminUtils';
 
 export const useAuthProvider = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -289,16 +290,14 @@ export const useAuthProvider = () => {
 
   const adminBypassEmailConfirmation = async (email: string) => {
     try {
-      // This is a special function just for the demo to handle the case
-      // where the admin email is not confirmed
+      // Use our new utility function instead of direct RPC call
       console.log("Attempting to bypass email confirmation for admin:", email);
       
-      const { error } = await supabase
-        .rpc('admin_confirm_email', { admin_email: email });
-        
-      if (error) {
-        console.error("Error bypassing email confirmation:", error);
-        throw error;
+      const success = await confirmAdminEmail(email);
+      
+      if (!success) {
+        console.error("Error bypassing email confirmation");
+        throw new Error("Failed to confirm email");
       }
       
       console.log("Successfully bypassed email confirmation");

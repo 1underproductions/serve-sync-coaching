@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -19,6 +18,7 @@ import { Eye, EyeOff, Mail, Lock, ShieldAlert } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/useAuth";
+import { confirmAdminEmail } from "@/utils/adminUtils";
 
 const loginSchema = z.object({
   email: z.string().email({
@@ -40,7 +40,6 @@ const AdminLogin = () => {
   const { isAdmin, isLoading, signIn, authError } = useAuth();
   
   useEffect(() => {
-    // Debug output to help trace auth issues
     console.log("AdminLogin auth state:", { isAdmin, isLoading, authError });
     
     if (!isLoading && isAdmin) {
@@ -62,13 +61,11 @@ const AdminLogin = () => {
       try {
         setIsCreatingAdmin(true);
         
-        // First check if the admin user already exists
         const { data: userExists, error: checkError } = await supabase.auth.signInWithPassword({
           email: "admin@tennexis.com",
           password: "admin123",
         });
         
-        // If user doesn't exist, create them
         if (checkError && checkError.message.includes("Invalid login credentials")) {
           console.log("Admin user doesn't exist, creating it...");
           
@@ -88,16 +85,13 @@ const AdminLogin = () => {
             throw error;
           }
           
-          // Sign out after creation to avoid automatic login
           if (data.user) {
             await supabase.auth.signOut();
           }
         } else if (userExists && userExists.user) {
-          // Sign out again to not stay logged in
           await supabase.auth.signOut();
         }
         
-        // Always try to set the user as admin regardless of whether they're new or existing
         try {
           const { error: roleError } = await supabase
             .rpc('set_user_as_admin', { input_email: 'admin@tennexis.com' });
@@ -108,12 +102,9 @@ const AdminLogin = () => {
             console.log("Admin role set successfully");
           }
           
-          // Also try to confirm the email for the admin account
-          const { error: confirmError } = await supabase
-            .rpc('admin_confirm_email', { admin_email: 'admin@tennexis.com' });
-            
-          if (confirmError) {
-            console.error("Error confirming admin email:", confirmError);
+          const confirmed = await confirmAdminEmail('admin@tennexis.com');
+          if (!confirmed) {
+            console.error("Error confirming admin email");
           } else {
             console.log("Admin email confirmed successfully");
           }
@@ -139,23 +130,18 @@ const AdminLogin = () => {
     try {
       console.log("Attempting admin login with:", data.email);
       await signIn(data.email, data.password);
-      // The redirection is handled in the signIn function
     } catch (error: any) {
       console.error("Login error details:", error);
-      // Error handling is now done within the signIn function
     }
   };
 
-  // Function to manually confirm email for admin
   const handleConfirmEmail = async () => {
     try {
       setIsConfirmingEmail(true);
       
-      const { error } = await supabase
-        .rpc('admin_confirm_email', { admin_email: form.getValues('email') });
+      const success = await confirmAdminEmail(form.getValues('email'));
       
-      if (error) {
-        console.error("Error confirming email:", error);
+      if (!success) {
         toast({
           variant: "destructive",
           title: "Error",
@@ -167,7 +153,6 @@ const AdminLogin = () => {
           description: "Email confirmed successfully. Please try logging in again.",
         });
         
-        // Try login again after confirmation
         await signIn(form.getValues('email'), form.getValues('password'));
       }
     } catch (error: any) {
