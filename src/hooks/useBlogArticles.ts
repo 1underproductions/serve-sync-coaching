@@ -1,6 +1,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
 
 export const useBlogArticles = () => {
   const { toast } = useToast();
@@ -11,46 +12,30 @@ export const useBlogArticles = () => {
       try {
         console.log("Fetching published blog articles...");
         
-        // First get the published blog articles using a direct REST API approach
-        // to completely bypass the RLS recursion issue
-        const response = await fetch(
-          `https://cugwtwpgccpcjeumrkxf.supabase.co/rest/v1/blog_articles?select=*&status=eq.published&order=published_at.desc`, 
-          {
-            headers: {
-              'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z3d0d3BnY2NwY2pldW1ya3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNjA1MDEsImV4cCI6MjA1ODkzNjUwMX0.DjWV3Jt7OcVaJh4QYQ8NsBpPtrI1m8FJ5O3n-SHhMrk',
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-            },
-            method: 'GET'
-          }
-        );
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`Error fetching articles: Status ${response.status}`, errorText);
+        // Now that RLS policies are fixed, we can use the Supabase client directly
+        const { data: articles, error } = await supabase
+          .from('blog_articles')
+          .select('*')
+          .eq('status', 'published')
+          .order('published_at', { ascending: false });
           
-          // Check if it's the infinite recursion error
-          if (errorText.includes("infinite recursion")) {
-            toast({
-              variant: "destructive",
-              title: "Database Error",
-              description: "There was an issue with the database policies. The admin has been notified.",
-            });
-          }
+        if (error) {
+          console.error("Error fetching articles:", error);
           
-          throw new Error(`Failed to fetch articles: ${response.status} ${errorText}`);
+          toast({
+            variant: "destructive",
+            title: "Error loading articles",
+            description: "Unable to load blog articles. Please try again later.",
+          });
+          
+          throw new Error(`Failed to fetch articles: ${error.message}`);
         }
         
-        const articles = await response.json();
-        console.log("Successfully fetched articles:", articles);
-        
-        // If no articles, return empty array immediately
         if (!articles || articles.length === 0) {
           return [];
         }
         
-        // Then for each article, get the author's information safely
-        // using a similar direct REST API approach
+        // For each article, get the author's information
         const articlesWithAuthors = await Promise.all(
           articles.map(async (article) => {
             try {
@@ -61,32 +46,24 @@ export const useBlogArticles = () => {
                 };
               }
               
-              // Get author's name using direct REST API call
-              const authorResponse = await fetch(
-                `https://cugwtwpgccpcjeumrkxf.supabase.co/rest/v1/profiles?id=eq.${article.author_id}&select=full_name`,
-                {
-                  headers: {
-                    'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z3d0d3BnY2NwY2pldW1ya3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNjA1MDEsImV4cCI6MjA1ODkzNjUwMX0.DjWV3Jt7OcVaJh4QYQ8NsBpPtrI1m8FJ5O3n-SHhMrk',
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                  },
-                  method: 'GET'
-                }
-              );
+              // Get author using Supabase client
+              const { data: authorData, error: authorError } = await supabase
+                .from('profiles')
+                .select('full_name')
+                .eq('id', article.author_id)
+                .single();
               
-              if (!authorResponse.ok) {
-                console.error(`Error fetching author for article ${article.id}: Status ${authorResponse.status}`);
+              if (authorError || !authorData) {
+                console.error(`Error fetching author for article ${article.id}:`, authorError);
                 return {
                   ...article,
                   author: { full_name: "Unknown Author" }
                 };
               }
               
-              const authorData = await authorResponse.json();
-              
               return {
                 ...article,
-                author: authorData && authorData[0] ? authorData[0] : { full_name: "Unknown Author" }
+                author: authorData
               };
             } catch (error) {
               console.error(`Error fetching author data for article ${article.id}:`, error);
@@ -112,9 +89,9 @@ export const useBlogArticles = () => {
         throw new Error("An unexpected error occurred while fetching articles");
       }
     },
-    retry: 1, // Only retry once to avoid excessive retries on server issues
-    retryDelay: 1000, // Wait 1 second between retries
-    refetchOnWindowFocus: false, // Disable refetching when window regains focus
+    retry: 1,
+    retryDelay: 1000,
+    refetchOnWindowFocus: false,
     meta: {
       errorMessage: "An unexpected error occurred while fetching articles"
     }

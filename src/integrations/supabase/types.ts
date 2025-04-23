@@ -644,6 +644,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      is_tennexis_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       set_user_as_admin: {
         Args: { input_email: string }
         Returns: boolean

@@ -35,42 +35,19 @@ export const ArticleList = () => {
       setIsLoading(true);
       setError(null);
       
-      console.log("Attempting to fetch articles with direct REST API call...");
+      console.log("Fetching articles with Supabase client...");
       
-      // Get the access token first to use in the direct fetch
-      const { data: session } = await supabase.auth.getSession();
-      
-      if (!session || !session.session) {
-        throw new Error("No authenticated session available");
-      }
-      
-      // Using direct REST API with explicit auth token to bypass RLS issues
-      const response = await fetch(
-        `https://cugwtwpgccpcjeumrkxf.supabase.co/rest/v1/blog_articles?select=id,title,status,category,created_at,slug&order=created_at.desc`,
-        {
-          headers: {
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z3d0d3BnY2NwY2pldW1ya3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNjA1MDEsImV4cCI6MjA1ODkzNjUwMX0.DjWV3Jt7OcVaJh4QYQ8NsBpPtrI1m8FJ5O3n-SHhMrk',
-            'Authorization': `Bearer ${session.session.access_token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          method: 'GET'
-        }
-      );
+      // With our fixed RLS policies, we can now use the Supabase client directly
+      const { data, error } = await supabase
+        .from('blog_articles')
+        .select('id,title,status,category,created_at,slug')
+        .order('created_at', { ascending: false });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Error fetching articles: Status ${response.status}`, errorText);
-        
-        // Check if it's the infinite recursion error and provide a more helpful message
-        if (errorText.includes("infinite recursion")) {
-          throw new Error("Database policy error: There's a conflict in how the database manages access permissions.");
-        }
-        
-        throw new Error(`Failed to fetch articles: ${response.status} ${errorText}`);
+      if (error) {
+        console.error("Error fetching articles:", error);
+        throw new Error(`Failed to fetch articles: ${error.message}`);
       }
 
-      const data = await response.json();
       console.log("Successfully fetched articles:", data);
       setArticles(data || []);
     } catch (err: any) {
@@ -89,36 +66,17 @@ export const ArticleList = () => {
 
   const publishArticle = async (id: string) => {
     try {
-      // First get the current session to use the access token
-      const { data: session } = await supabase.auth.getSession();
-      
-      if (!session || !session.session) {
-        throw new Error("No authenticated session available");
-      }
-      
-      // Use direct fetch with Authorization header to avoid RLS recursion
-      const response = await fetch(
-        `https://cugwtwpgccpcjeumrkxf.supabase.co/rest/v1/blog_articles?id=eq.${id}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z3d0d3BnY2NwY2pldW1ya3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNjA1MDEsImV4cCI6MjA1ODkzNjUwMX0.DjWV3Jt7OcVaJh4QYQ8NsBpPtrI1m8FJ5O3n-SHhMrk',
-            'Authorization': `Bearer ${session.session.access_token}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({
-            status: 'published',
-            published_at: new Date().toISOString()
-          })
-        }
-      );
+      const { error } = await supabase
+        .from('blog_articles')
+        .update({
+          status: 'published',
+          published_at: new Date().toISOString()
+        })
+        .eq('id', id);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Error publishing article: Status ${response.status}`, errorText);
-        throw new Error(`Failed to publish article: ${response.status} ${errorText}`);
+      if (error) {
+        console.error("Error publishing article:", error);
+        throw new Error(`Failed to publish article: ${error.message}`);
       }
 
       toast({
@@ -161,15 +119,6 @@ export const ArticleList = () => {
         <AlertTitle>Error</AlertTitle>
         <AlertDescription className="space-y-4">
           <p>{error}</p>
-          {error.includes("infinite recursion") || error.includes("Database policy") ? (
-            <div className="bg-red-50 p-3 rounded border border-red-200 text-sm">
-              <div className="flex items-center gap-2 font-semibold mb-2">
-                <ShieldAlert size={16} />
-                <span>Database Policy Error</span>
-              </div>
-              <p>The admin content library is experiencing a database permission issue. This typically happens when database policies reference themselves.</p>
-            </div>
-          ) : null}
           <div className="mt-4">
             <Button variant="outline" onClick={handleRefresh} size="sm" disabled={refreshing}>
               <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />

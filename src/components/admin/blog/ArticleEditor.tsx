@@ -25,45 +25,33 @@ export const ArticleEditor = () => {
     try {
       setIsSubmitting(true);
       
-      // Get the current session for authentication
-      const { data: sessionData } = await supabase.auth.getSession();
+      // Get current user for author_id
       const { data: userData } = await supabase.auth.getUser();
       
-      if (!sessionData?.session || !userData?.user) {
+      if (!userData?.user) {
         throw new Error("No authenticated session available");
       }
       
       // Generate a slug from the title
       const slug = data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
       
-      // Use direct fetch with Authorization header to avoid RLS recursion
-      const response = await fetch(
-        `https://cugwtwpgccpcjeumrkxf.supabase.co/rest/v1/blog_articles`,
-        {
-          method: 'POST',
-          headers: {
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z3d0d3BnY2NwY2pldW1ya3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNjA1MDEsImV4cCI6MjA1ODkzNjUwMX0.DjWV3Jt7OcVaJh4QYQ8NsBpPtrI1m8FJ5O3n-SHhMrk',
-            'Authorization': `Bearer ${sessionData.session.access_token}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal'
-          },
-          body: JSON.stringify({
-            title: data.title,
-            content: data.content,
-            excerpt: data.excerpt,
-            category: data.category,
-            image_url: imageUrl,
-            status: 'draft',
-            author_id: userData.user.id,
-            slug: slug
-          })
-        }
-      );
+      // With our fixed RLS policies, we can now use the Supabase client directly
+      const { error } = await supabase
+        .from('blog_articles')
+        .insert({
+          title: data.title,
+          content: data.content,
+          excerpt: data.excerpt,
+          category: data.category,
+          image_url: imageUrl,
+          status: 'draft',
+          author_id: userData.user.id,
+          slug: slug
+        });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Error creating article:", errorText);
-        throw new Error(`Failed to create article: ${errorText}`);
+      if (error) {
+        console.error("Error creating article:", error);
+        throw new Error(`Failed to create article: ${error.message}`);
       }
 
       toast({
