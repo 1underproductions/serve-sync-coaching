@@ -21,8 +21,11 @@ const AdminLayout = ({
   const navigate = useNavigate();
   const { isAdmin, isLoading, profile, user } = useAuth();
   
+  // Note: We've removed the redirect logic from here since RouteGuard now handles it
+  // This prevents duplicate redirects and loops
+  
   useEffect(() => {
-    // Add debugging to trace the issue
+    // Just log for debugging, but don't redirect
     console.log("AdminLayout auth check:", { 
       isLoading, 
       isAdmin, 
@@ -30,16 +33,7 @@ const AdminLayout = ({
       profile,
       userExists: !!user
     });
-    
-    if (!isLoading && requiresAdmin && user) {
-      if (!isAdmin) {
-        console.log("User is not an admin, redirecting to dashboard");
-        navigate("/dashboard", { replace: true });
-      } else {
-        console.log("User is admin, staying on admin page");
-      }
-    }
-  }, [navigate, requiresAdmin, isAdmin, isLoading, profile, user]);
+  }, [isAdmin, isLoading, profile, requiresAdmin, user]);
 
   if (isLoading) {
     return (
@@ -49,10 +43,6 @@ const AdminLayout = ({
         </div>
       </Layout>
     );
-  }
-
-  if (requiresAdmin && !isAdmin && user) {
-    return null;
   }
 
   return (

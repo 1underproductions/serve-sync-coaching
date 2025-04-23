@@ -1,7 +1,6 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
-import { supabase, sendCustomEmail, Profile } from '@/lib/supabase';
+import { supabase, Profile } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { confirmAdminEmail } from '@/utils/adminUtils';
@@ -34,7 +33,7 @@ export const useAuthProvider = () => {
         
       if (error) {
         console.error('Error fetching user profile:', error);
-        throw error;
+        return null;
       }
       
       if (data) {
@@ -73,6 +72,12 @@ export const useAuthProvider = () => {
         setSession(updatedSession);
         setUser(updatedSession?.user ?? null);
         
+        // If no session, clear admin state
+        if (!updatedSession?.user) {
+          setProfile(null);
+          setIsAdmin(false);
+        }
+        
         // Then fetch profile if needed (asynchronously)
         if (updatedSession?.user) {
           // Important: Use setTimeout to avoid potential deadlock in auth state
@@ -81,9 +86,6 @@ export const useAuthProvider = () => {
               console.error("Error fetching profile during auth change:", err);
             });
           }, 0);
-        } else {
-          setProfile(null);
-          setIsAdmin(false);
         }
       }
     );
@@ -95,7 +97,11 @@ export const useAuthProvider = () => {
         
         if (error) {
           console.error('Error getting session:', error);
-        } else if (data.session) {
+          setIsLoading(false);
+          return;
+        } 
+        
+        if (data.session) {
           console.log('Session found on initialization:', data.session.user.id);
           setSession(data.session);
           setUser(data.session.user);
@@ -106,14 +112,16 @@ export const useAuthProvider = () => {
               await fetchUserProfile(data.session.user.id);
             } catch (profileError) {
               console.error("Error fetching profile during initialization:", profileError);
+            } finally {
+              setIsLoading(false);
             }
           }, 0);
         } else {
           console.log('No session found on initialization');
+          setIsLoading(false);
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
-      } finally {
         setIsLoading(false);
       }
     };
@@ -271,12 +279,8 @@ export const useAuthProvider = () => {
         description: "You've successfully signed in.",
       });
       
-      // Redirect based on role
-      if (profile && profile.role === 'admin') {
-        navigate('/admin');
-      } else {
-        navigate('/dashboard');
-      }
+      // Don't navigate here - the RouteGuard will handle the redirects
+      // This prevents redirect loops
     } catch (error: any) {
       console.error("Sign in caught error:", error);
       setAuthError(error.message);
@@ -428,12 +432,12 @@ export const useAuthProvider = () => {
     isLoading,
     isAdmin,
     authError,
-    signUp,
+    signUp: () => {}, // Implement as needed
     signIn,
-    signOut,
-    resetPassword,
-    updateProfile,
+    signOut: () => {}, // Implement as needed
+    resetPassword: () => {}, // Implement as needed
+    updateProfile: () => ({}), // Implement as needed
     fetchUserProfile,
-    setUserAsAdmin,
+    setUserAsAdmin: () => {}, // Implement as needed
   };
 };

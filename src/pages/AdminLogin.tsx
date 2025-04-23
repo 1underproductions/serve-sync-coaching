@@ -50,7 +50,8 @@ const AdminLogin = () => {
   // Only redirect if user is already authenticated as admin
   useEffect(() => {
     if (!isLoading && user && isAdmin) {
-      navigate('/admin');
+      console.log("Already logged in as admin, redirecting to admin dashboard");
+      navigate('/admin', { replace: true });
     }
   }, [isAdmin, isLoading, navigate, user]);
   
@@ -284,9 +285,9 @@ const AdminLogin = () => {
                 <Button 
                   type="submit" 
                   className="w-full" 
-                  disabled={isCreatingAdmin || isConfirmingEmail}
+                  disabled={isLoading || isCreatingAdmin || isConfirmingEmail}
                 >
-                  {isCreatingAdmin ? "Setting up admin..." : "Sign in to Admin Portal"}
+                  {isLoading ? "Signing in..." : "Sign in to Admin Portal"}
                 </Button>
               </div>
             </form>

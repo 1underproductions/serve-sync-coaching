@@ -16,7 +16,7 @@ interface RouteGuardProps {
  * - Public routes (coming soon, login, etc.) are accessible to all
  */
 const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGuardProps) => {
-  const { user, isAdmin, isLoading, authError } = useAuth();
+  const { user, isAdmin, isLoading } = useAuth();
   const location = useLocation();
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
 
@@ -60,6 +60,14 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
     return <div className="min-h-screen flex items-center justify-center">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-tennis-green-600"></div>
     </div>;
+  }
+  
+  // Special case for admin-login: always accessible, but redirect to /admin if already authenticated as admin
+  if (location.pathname === '/admin-login') {
+    if (user && isAdmin) {
+      return <Navigate to="/admin" replace />;
+    }
+    return <>{children}</>;
   }
   
   // Paths that start with /admin require admin privileges
