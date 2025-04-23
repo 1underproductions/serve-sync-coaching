@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -28,7 +29,7 @@ const AdminDashboard = () => {
       
       console.log("Fetching waitlist data...");
       
-      // Using direct table access - no longer using profiles table in the query
+      // Using direct table access without joining to profiles table to avoid recursive policy issues
       const { data, error } = await supabase
         .from('waitlist_signups')
         .select('*')

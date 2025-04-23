@@ -2,17 +2,17 @@
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Confirms an admin email directly using raw SQL
- * This is a workaround to avoid TypeScript errors with RPC functions
+ * Confirms an admin email directly using the admin_confirm_email function
+ * This bypasses email confirmation for admin accounts
  */
 export const confirmAdminEmail = async (email: string): Promise<boolean> => {
   try {
     console.log("Confirming admin email for:", email);
     
-    // Skip the problematic profile lookup and directly execute the RPC
+    // Call the database function directly without any profile lookups
     // This avoids the infinite recursion in policies
     const { error } = await supabase.rpc(
-      'admin_confirm_email' as any, 
+      'admin_confirm_email',
       { admin_email: email }
     );
     
