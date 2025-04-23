@@ -36,15 +36,24 @@ export const ArticleList = () => {
       
       console.log("Attempting to fetch articles with direct query...");
       
-      // Using the JavaScript REST API to completely bypass RLS
-      // This is a more direct approach that should avoid the recursion issue
-      const response = await fetch(`https://cugwtwpgccpcjeumrkxf.supabase.co/rest/v1/blog_articles?select=id,title,status,category,created_at,slug`, {
-        headers: {
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z3d0d3BnY2NwY2pldW1ya3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNjA1MDEsImV4cCI6MjA1ODkzNjUwMX0.DjWV3Jt7OcVaJh4QYQ8NsBpPtrI1m8FJ5O3n-SHhMrk',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-          'Content-Type': 'application/json'
+      // Get the access token first to use in the direct fetch
+      const { data: session } = await supabase.auth.getSession();
+      
+      if (!session || !session.session) {
+        throw new Error("No authenticated session available");
+      }
+      
+      // Using the JavaScript REST API with explicit auth token to bypass RLS issues
+      const response = await fetch(
+        `https://cugwtwpgccpcjeumrkxf.supabase.co/rest/v1/blog_articles?select=id,title,status,category,created_at,slug`,
+        {
+          headers: {
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z3d0d3BnY2NwY2pldW1ya3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNjA1MDEsImV4cCI6MjA1ODkzNjUwMX0.DjWV3Jt7OcVaJh4QYQ8NsBpPtrI1m8FJ5O3n-SHhMrk',
+            'Authorization': `Bearer ${session.session.access_token}`,
+            'Content-Type': 'application/json'
+          }
         }
-      });
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -70,22 +79,35 @@ export const ArticleList = () => {
 
   const publishArticle = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('blog_articles')
-        .update({
-          status: 'published',
-          published_at: new Date().toISOString()
-        })
-        .eq('id', id);
+      // First get the current session to use the access token
+      const { data: session } = await supabase.auth.getSession();
+      
+      if (!session || !session.session) {
+        throw new Error("No authenticated session available");
+      }
+      
+      // Use direct fetch with Authorization header to avoid RLS recursion
+      const response = await fetch(
+        `https://cugwtwpgccpcjeumrkxf.supabase.co/rest/v1/blog_articles?id=eq.${id}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z3d0d3BnY2NwY2pldW1ya3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNjA1MDEsImV4cCI6MjA1ODkzNjUwMX0.DjWV3Jt7OcVaJh4QYQ8NsBpPtrI1m8FJ5O3n-SHhMrk',
+            'Authorization': `Bearer ${session.session.access_token}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify({
+            status: 'published',
+            published_at: new Date().toISOString()
+          })
+        }
+      );
 
-      if (error) {
-        console.error("Error publishing article:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: `Failed to publish article: ${error.message}`,
-        });
-        return;
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error publishing article:", errorText);
+        throw new Error(`Failed to publish article: ${errorText}`);
       }
 
       toast({
