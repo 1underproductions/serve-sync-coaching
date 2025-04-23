@@ -35,31 +35,37 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
     '/helpdesk'
   ];
 
-  // Use effect to prevent redirect loops
+  // Use effect to prevent redirect loops and ensure auth state is stable
   useEffect(() => {
-    // Only set auth check flag once loading is complete
     if (!isLoading) {
-      setHasCheckedAuth(true);
+      // Add a small delay to ensure auth state is fully processed
+      const timer = setTimeout(() => {
+        setHasCheckedAuth(true);
+      }, 100);
+      
+      return () => clearTimeout(timer);
     }
   }, [isLoading]);
   
   // Don't render anything until auth is checked and not loading
-  if (isLoading) {
+  if (isLoading || !hasCheckedAuth) {
     return <div className="min-h-screen flex items-center justify-center">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-tennis-green-600"></div>
     </div>;
   }
+  
+  // Log detailed auth information for debugging
+  console.log("RouteGuard auth check:", { 
+    path: location.pathname,
+    isAdmin,
+    isAuthenticated: !!user,
+    adminOnly,
+    requireAuth
+  });
   
   // If the current path is public, render it without restrictions
   if (publicPaths.includes(location.pathname) || location.pathname.startsWith('/blog/')) {
     return <>{children}</>;
-  }
-  
-  // Only proceed with redirects if we've checked auth status
-  if (!hasCheckedAuth) {
-    return <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-tennis-green-600"></div>
-    </div>;
   }
   
   // Special case for admin-login: always accessible, but redirect to /admin if already authenticated as admin
@@ -72,23 +78,17 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
   
   // Paths that start with /admin require admin privileges
   if (adminOnly || location.pathname.startsWith('/admin')) {
-    console.log("Admin route check:", { 
-      user: !!user, // log boolean rather than full user object
-      isAdmin, 
-      path: location.pathname
-    });
-    
     if (!user) {
-      console.log("No user, redirecting to admin-login");
+      console.log("Admin route: No user, redirecting to admin-login");
       return <Navigate to="/admin-login" state={{ from: location }} replace />;
     }
     
     if (!isAdmin) {
-      console.log("User is not admin, redirecting to dashboard");
+      console.log("Admin route: User is not admin, redirecting to dashboard");
       return <Navigate to="/dashboard" state={{ from: location }} replace />;
     }
     
-    console.log("User is admin, allowing access to admin route");
+    console.log("Admin route: User is admin, allowing access");
     return <>{children}</>;
   }
   

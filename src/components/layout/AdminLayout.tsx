@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import Layout from "./Layout";
 import { Shield } from "lucide-react";
 import { useAuth } from "@/context/useAuth";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -21,11 +23,8 @@ const AdminLayout = ({
   const navigate = useNavigate();
   const { isAdmin, isLoading, profile, user } = useAuth();
   
-  // Note: We've removed the redirect logic from here since RouteGuard now handles it
-  // This prevents duplicate redirects and loops
-  
+  // Add a check to ensure the user is an admin
   useEffect(() => {
-    // Just log for debugging, but don't redirect
     console.log("AdminLayout auth check:", { 
       isLoading, 
       isAdmin, 
@@ -33,7 +32,18 @@ const AdminLayout = ({
       profile,
       userExists: !!user
     });
-  }, [isAdmin, isLoading, profile, requiresAdmin, user]);
+
+    // Only redirect if not loading and the check is complete
+    if (!isLoading) {
+      if (requiresAdmin && !isAdmin && !user) {
+        console.log("Not logged in, redirecting to admin login");
+        navigate('/admin-login', { replace: true });
+      } else if (requiresAdmin && !isAdmin && user) {
+        console.log("Not admin, redirecting to dashboard");
+        navigate('/dashboard', { replace: true });
+      }
+    }
+  }, [isAdmin, isLoading, navigate, profile, requiresAdmin, user]);
 
   if (isLoading) {
     return (
@@ -41,6 +51,20 @@ const AdminLayout = ({
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-tennis-green-600"></div>
         </div>
+      </Layout>
+    );
+  }
+
+  // Show an error message if not admin but still reaching this point
+  if (requiresAdmin && !isAdmin) {
+    return (
+      <Layout>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            You do not have admin privileges. Please log in with an admin account.
+          </AlertDescription>
+        </Alert>
       </Layout>
     );
   }

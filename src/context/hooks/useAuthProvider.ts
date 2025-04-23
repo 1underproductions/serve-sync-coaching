@@ -28,28 +28,35 @@ export const useAuthProvider = () => {
       console.log('Fetching profile for user:', currentUserId);
       
       // Direct query to avoid recursion
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', currentUserId)
-        .single();
+      const response = await fetch(
+        `https://cugwtwpgccpcjeumrkxf.supabase.co/rest/v1/profiles?id=eq.${currentUserId}&select=*`,
+        {
+          headers: {
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z3d0d3BnY2NwY2pldW1ya3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNjA1MDEsImV4cCI6MjA1ODkzNjUwMX0.DjWV3Jt7OcVaJh4QYQ8NsBpPtrI1m8FJ5O3n-SHhMrk',
+            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
         
-      if (error) {
-        console.error('Error fetching user profile:', error);
+      if (!response.ok) {
+        console.error('Error fetching user profile:', await response.text());
         return null;
       }
       
-      if (data) {
-        console.log('Profile data retrieved:', data);
+      const data = await response.json();
+      
+      if (data && data.length > 0) {
+        console.log('Profile data retrieved:', data[0]);
         
         // Update admin status based on the role field directly
-        const isAdminUser = data.role === 'tennexis_admin';
+        const isAdminUser = data[0].role === 'tennexis_admin';
         console.log('Setting admin status:', isAdminUser);
         setIsAdmin(isAdminUser);
         
         const profileData: Profile = {
-          ...data,
-          role: data.role as 'user' | 'admin'
+          ...data[0],
+          role: data[0].role as 'user' | 'admin'
         };
         
         setProfile(profileData);
@@ -112,9 +119,9 @@ export const useAuthProvider = () => {
           setTimeout(async () => {
             try {
               await fetchUserProfile(data.session.user.id);
+              setIsLoading(false);
             } catch (profileError) {
               console.error("Error fetching profile during initialization:", profileError);
-            } finally {
               setIsLoading(false);
             }
           }, 0);
