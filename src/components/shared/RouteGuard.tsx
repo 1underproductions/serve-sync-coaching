@@ -1,7 +1,7 @@
 
 import { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import useAuth from '@/context/useAuth';
+import { useAuth } from '@/context/useAuth';
 
 interface RouteGuardProps {
   children: ReactNode;
@@ -16,7 +16,7 @@ interface RouteGuardProps {
  * - Public routes (coming soon, login, etc.) are accessible to all
  */
 const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGuardProps) => {
-  const { auth, isAuthenticated, isAdmin, isLoading } = useAuth();
+  const { isAuthenticated, isAdmin, isLoading } = useAuth();
   const location = useLocation();
 
   // Public routes that should always be accessible regardless of auth status

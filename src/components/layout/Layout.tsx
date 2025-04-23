@@ -3,7 +3,7 @@ import { ReactNode } from "react";
 import Navbar from "./Navbar";
 import Sidebar from "./Sidebar";
 import Footer from "./Footer";
-import useAuth from "@/context/useAuth";
+import { useAuth } from "@/context/useAuth";
 
 interface LayoutProps {
   children: ReactNode;
