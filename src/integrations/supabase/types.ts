@@ -526,7 +526,11 @@ export type Database = {
     Functions: {
       admin_confirm_email: {
         Args: { admin_email: string }
-        Returns: undefined
+        Returns: boolean
+      }
+      can_access_waitlist: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
       }
       create_payment_link: {
         Args: {
@@ -578,6 +582,10 @@ export type Database = {
           status: string | null
           years_experience: number | null
         }[]
+      }
+      is_admin_direct: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
       }
       set_user_as_admin: {
         Args: { input_email: string }

@@ -25,13 +25,19 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     if (isAdmin) {
+      console.log("Admin is authenticated, fetching waitlist data...");
       fetchWaitlist();
+      
+      // Set up auto-refresh interval (30 seconds)
       const refreshInterval = setInterval(() => {
         fetchWaitlist();
       }, 30000);
+      
       return () => {
         clearInterval(refreshInterval);
       };
+    } else {
+      console.log("User is not an admin, skipping waitlist fetch");
     }
   }, [isAdmin, fetchWaitlist]);
 

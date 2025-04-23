@@ -9,9 +9,8 @@ export const confirmAdminEmail = async (email: string): Promise<boolean> => {
   try {
     console.log("Confirming admin email for:", email);
     
-    // Call the database function directly without any profile lookups
-    // This avoids the infinite recursion in policies
-    const { error } = await supabase.rpc(
+    // Call the revised database function with boolean return type
+    const { data, error } = await supabase.rpc(
       'admin_confirm_email',
       { admin_email: email }
     );
@@ -21,8 +20,8 @@ export const confirmAdminEmail = async (email: string): Promise<boolean> => {
       return false;
     }
     
-    console.log("Successfully confirmed admin email");
-    return true;
+    console.log("Admin email confirmation result:", data);
+    return !!data; // Convert to boolean if needed
   } catch (error) {
     console.error("Exception in confirmAdminEmail:", error);
     return false;

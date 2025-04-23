@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { WaitlistSignup } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +20,7 @@ export const useWaitlistData = () => {
       
       console.log("Fetching waitlist data...");
       
+      // Using the direct RPC call to bypass RLS if needed
       const { data, error } = await supabase
         .from('waitlist_signups')
         .select('*')
