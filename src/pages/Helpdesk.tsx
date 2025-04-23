@@ -55,18 +55,27 @@ const Helpdesk = () => {
     
     setSubmitting(true);
     try {
+      // Make sure we have a user ID
+      if (!user?.id) {
+        throw new Error("You must be logged in to submit a ticket");
+      }
+
+      console.log("Submitting ticket for user:", user.id);
+      
       // Use Edge Function to create the ticket instead of direct database operation
-      // This avoids triggering the recursive RLS policy
-      const { data, error } = await supabase.functions.invoke('create-support-ticket', {
+      const response = await supabase.functions.invoke('create-support-ticket', {
         body: {
-          userId: user?.id,
+          userId: user.id,
           title: subject,
           description: message,
           category: "support"
         }
       });
       
-      if (error) throw error;
+      if (response.error) {
+        console.error("Function response error:", response.error);
+        throw response.error;
+      }
       
       toast({ title: "Ticket submitted!", description: "Our support team will get back to you soon." });
       setSubject("");
@@ -78,8 +87,9 @@ const Helpdesk = () => {
         description: "Please try again later or contact us directly.", 
         variant: "destructive" 
       });
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
 
   return (
