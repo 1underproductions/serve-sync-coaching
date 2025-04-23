@@ -37,7 +37,7 @@ const AdminLogin = () => {
   const [isConfirmingEmail, setIsConfirmingEmail] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isAdmin, isLoading, signIn, authError } = useAuth();
+  const { isAdmin, isLoading, signIn, authError, user } = useAuth();
   
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -49,10 +49,10 @@ const AdminLogin = () => {
 
   // Only redirect if user is already authenticated as admin
   useEffect(() => {
-    if (!isLoading && isAdmin) {
+    if (!isLoading && user && isAdmin) {
       navigate('/admin');
     }
-  }, [isAdmin, isLoading, navigate]);
+  }, [isAdmin, isLoading, navigate, user]);
   
   // Setup admin account once on component mount
   useEffect(() => {

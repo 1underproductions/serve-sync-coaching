@@ -19,7 +19,7 @@ const AdminLayout = ({
   description = "Manage your platform and users" 
 }: AdminLayoutProps) => {
   const navigate = useNavigate();
-  const { isAdmin, isLoading, profile } = useAuth();
+  const { isAdmin, isLoading, profile, user } = useAuth();
   
   useEffect(() => {
     // Add debugging to trace the issue
@@ -27,18 +27,19 @@ const AdminLayout = ({
       isLoading, 
       isAdmin, 
       requiresAdmin,
-      profile
+      profile,
+      userExists: !!user
     });
     
-    if (!isLoading && requiresAdmin) {
+    if (!isLoading && requiresAdmin && user) {
       if (!isAdmin) {
         console.log("User is not an admin, redirecting to dashboard");
-        navigate("/dashboard");
+        navigate("/dashboard", { replace: true });
       } else {
         console.log("User is admin, staying on admin page");
       }
     }
-  }, [navigate, requiresAdmin, isAdmin, isLoading, profile]);
+  }, [navigate, requiresAdmin, isAdmin, isLoading, profile, user]);
 
   if (isLoading) {
     return (
@@ -50,7 +51,7 @@ const AdminLayout = ({
     );
   }
 
-  if (requiresAdmin && !isAdmin) {
+  if (requiresAdmin && !isAdmin && user) {
     return null;
   }
 
