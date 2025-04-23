@@ -13,6 +13,11 @@ const Index = () => {
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1">
+        <div className="container mx-auto px-4 pt-10 text-center">
+          <h1 className="text-4xl md:text-5xl font-bold text-tennis-green-700 mb-6">
+            Tennis Coaching Software That Helps You Grow
+          </h1>
+        </div>
         <HeroSection />
         <FeaturesSection />
         <BenefitsSection />
@@ -23,5 +28,4 @@ const Index = () => {
     </div>
   );
 };
-
 export default Index;
