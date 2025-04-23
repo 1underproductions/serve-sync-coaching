@@ -1,7 +1,8 @@
 
 import '@testing-library/jest-dom';
 import { expect } from 'vitest';
-import matchers from '@testing-library/jest-dom/matchers';
+// The matchers are now directly exported from the base package, not from a /matchers path
+import * as matchers from '@testing-library/jest-dom';
 
 // Extend Vitest's expect with Jest DOM matchers
 expect.extend(matchers);
