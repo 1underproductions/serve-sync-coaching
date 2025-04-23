@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, sendCustomEmail, Profile } from '@/lib/supabase';
@@ -290,7 +291,7 @@ export const useAuthProvider = () => {
 
   const adminBypassEmailConfirmation = async (email: string) => {
     try {
-      // Use our new utility function instead of direct RPC call
+      // Use our utility function instead of direct RPC call
       console.log("Attempting to bypass email confirmation for admin:", email);
       
       const success = await confirmAdminEmail(email);

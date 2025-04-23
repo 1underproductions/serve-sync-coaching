@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -39,15 +40,6 @@ const AdminLogin = () => {
   const { toast } = useToast();
   const { isAdmin, isLoading, signIn, authError } = useAuth();
   
-  useEffect(() => {
-    console.log("AdminLogin auth state:", { isAdmin, isLoading, authError });
-    
-    if (!isLoading && isAdmin) {
-      console.log("User is already an admin, redirecting to admin panel");
-      navigate('/admin');
-    }
-  }, [isAdmin, isLoading, navigate, authError]);
-  
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -56,9 +48,20 @@ const AdminLogin = () => {
     },
   });
 
+  // Only redirect if user is already authenticated as admin
+  useEffect(() => {
+    if (!isLoading && isAdmin) {
+      navigate('/admin');
+    }
+  }, [isAdmin, isLoading, navigate]);
+  
+  // Setup admin account once on component mount
   useEffect(() => {
     const setupAdminAccount = async () => {
       try {
+        // Prevent multiple setup attempts
+        if (isCreatingAdmin) return;
+        
         setIsCreatingAdmin(true);
         
         const { data: userExists, error: checkError } = await supabase.auth.signInWithPassword({
@@ -153,7 +156,12 @@ const AdminLogin = () => {
           description: "Email confirmed successfully. Please try logging in again.",
         });
         
-        await signIn(form.getValues('email'), form.getValues('password'));
+        // Attempt to sign in immediately after confirmation
+        try {
+          await signIn(form.getValues('email'), form.getValues('password'));
+        } catch (signInError) {
+          console.error("Sign in after confirmation failed:", signInError);
+        }
       }
     } catch (error: any) {
       console.error("Email confirmation error:", error);
