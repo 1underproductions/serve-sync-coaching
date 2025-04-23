@@ -34,7 +34,9 @@ export const ArticleList = () => {
       setIsLoading(true);
       setError(null);
       
-      // Using a more direct query to bypass potential RLS policy issues
+      console.log("Fetching articles with updated RLS policies...");
+      
+      // Using a more direct query with specific fields to avoid RLS issues
       const { data, error } = await supabase
         .from('blog_articles')
         .select('id, title, status, category, created_at, slug')
@@ -51,6 +53,7 @@ export const ArticleList = () => {
         return;
       }
 
+      console.log("Successfully fetched articles:", data);
       setArticles(data || []);
     } catch (err) {
       console.error("Exception fetching articles:", err);
