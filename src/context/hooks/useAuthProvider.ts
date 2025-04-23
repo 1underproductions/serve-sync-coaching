@@ -26,6 +26,8 @@ export const useAuthProvider = () => {
       }
       
       console.log('Fetching profile for user:', currentUserId);
+      
+      // Direct query to avoid recursion
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -40,15 +42,14 @@ export const useAuthProvider = () => {
       if (data) {
         console.log('Profile data retrieved:', data);
         
-        // Update admin status based on the role field
-        // The role 'tennexis_admin' gives admin privileges
+        // Update admin status based on the role field directly
         const isAdminUser = data.role === 'tennexis_admin';
         console.log('Setting admin status:', isAdminUser);
         setIsAdmin(isAdminUser);
         
         const profileData: Profile = {
           ...data,
-          role: isAdminUser ? 'admin' : 'user'
+          role: data.role as 'user' | 'admin'
         };
         
         setProfile(profileData);

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -10,6 +9,7 @@ import { Info, Users, RefreshCw } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/useAuth";
 
 const AdminDashboard = () => {
   const [waitlistSignups, setWaitlistSignups] = useState<WaitlistSignup[]>([]);
@@ -18,17 +18,24 @@ const AdminDashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const { toast } = useToast();
+  const { isAdmin } = useAuth();
 
   const fetchWaitlist = async () => {
     try {
       setIsLoading(true);
       setError(null);
       setDebugInfo(null);
+      
+      console.log("Fetching waitlist data...");
+      
+      // Using direct table access - no longer using profiles table in the query
       const { data, error } = await supabase
         .from('waitlist_signups')
         .select('*')
         .order('created_at', { ascending: false });
+        
       if (error) {
+        console.error("Error fetching waitlist:", error);
         setError(`Failed to fetch waitlist data: ${error.message}`);
         setDebugInfo({ type: 'fetch_error', error });
         toast({
@@ -36,24 +43,24 @@ const AdminDashboard = () => {
           description: error.message,
           variant: "destructive",
         });
-        setIsLoading(false);
-        setRefreshing(false);
         return;
       }
+      
       if (!data) {
         setError("No data returned from the database");
         setDebugInfo({ type: 'no_data_error' });
         setWaitlistSignups([]);
-        setIsLoading(false);
-        setRefreshing(false);
         return;
       }
+      
+      console.log("Waitlist data fetched:", data.length, "entries");
       if (Array.isArray(data)) {
         setWaitlistSignups(data);
       } else {
         setWaitlistSignups([]);
       }
     } catch (error: any) {
+      console.error("Exception during waitlist fetch:", error);
       setError(`Failed to fetch waitlist data: ${error.message}`);
       setDebugInfo({ type: 'exception_error', error });
       toast({
@@ -73,14 +80,17 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
-    fetchWaitlist();
-    const refreshInterval = setInterval(() => {
+    // Only fetch if the user is admin
+    if (isAdmin) {
       fetchWaitlist();
-    }, 30000);
-    return () => {
-      clearInterval(refreshInterval);
-    };
-  }, []);
+      const refreshInterval = setInterval(() => {
+        fetchWaitlist();
+      }, 30000);
+      return () => {
+        clearInterval(refreshInterval);
+      };
+    }
+  }, [isAdmin]);
 
   return (
     <AdminLayout 
