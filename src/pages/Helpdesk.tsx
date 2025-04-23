@@ -52,23 +52,32 @@ const Helpdesk = () => {
       toast({ title: "Please enter a subject and message.", variant: "destructive" });
       return;
     }
+    
     setSubmitting(true);
     try {
-      // Remove the email field from the insert payload since it doesn't exist in the schema
-      const { error } = await supabase
-        .from("support_tickets")
-        .insert({
-          user_id: user?.id,
+      // Use Edge Function to create the ticket instead of direct database operation
+      // This avoids triggering the recursive RLS policy
+      const { data, error } = await supabase.functions.invoke('create-support-ticket', {
+        body: {
+          userId: user?.id,
           title: subject,
           description: message,
-          category: "support", // Default category for user submissions
-        });
+          category: "support"
+        }
+      });
+      
       if (error) throw error;
+      
       toast({ title: "Ticket submitted!", description: "Our support team will get back to you soon." });
       setSubject("");
       setMessage("");
     } catch (err) {
-      toast({ title: "Failed to submit ticket.", description: (err as Error).message, variant: "destructive" });
+      console.error("Ticket submission error:", err);
+      toast({ 
+        title: "Failed to submit ticket.", 
+        description: "Please try again later or contact us directly.", 
+        variant: "destructive" 
+      });
     }
     setSubmitting(false);
   };
