@@ -1,11 +1,16 @@
 
 import { useQuery } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
 export const useBlogArticles = () => {
+  const { toast } = useToast();
+  
   return useQuery({
     queryKey: ['blog-articles'],
     queryFn: async () => {
       try {
+        console.log("Fetching published blog articles...");
+        
         // First get the published blog articles using a direct REST API approach
         // to completely bypass the RLS recursion issue
         const response = await fetch(
@@ -13,14 +18,26 @@ export const useBlogArticles = () => {
           {
             headers: {
               'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z3d0d3BnY2NwY2pldW1ya3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNjA1MDEsImV4cCI6MjA1ODkzNjUwMX0.DjWV3Jt7OcVaJh4QYQ8NsBpPtrI1m8FJ5O3n-SHhMrk',
-              'Content-Type': 'application/json'
-            }
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            method: 'GET'
           }
         );
         
         if (!response.ok) {
           const errorText = await response.text();
           console.error(`Error fetching articles: Status ${response.status}`, errorText);
+          
+          // Check if it's the infinite recursion error
+          if (errorText.includes("infinite recursion")) {
+            toast({
+              variant: "destructive",
+              title: "Database Error",
+              description: "There was an issue with the database policies. The admin has been notified.",
+            });
+          }
+          
           throw new Error(`Failed to fetch articles: ${response.status} ${errorText}`);
         }
         
@@ -50,8 +67,10 @@ export const useBlogArticles = () => {
                 {
                   headers: {
                     'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z3d0d3BnY2NwY2pldW1ya3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNjA1MDEsImV4cCI6MjA1ODkzNjUwMX0.DjWV3Jt7OcVaJh4QYQ8NsBpPtrI1m8FJ5O3n-SHhMrk',
-                    'Content-Type': 'application/json'
-                  }
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                  },
+                  method: 'GET'
                 }
               );
               
@@ -82,6 +101,14 @@ export const useBlogArticles = () => {
         return articlesWithAuthors;
       } catch (error) {
         console.error("Error in useBlogArticles:", error);
+        
+        // Show a toast notification with a more user-friendly error message
+        toast({
+          variant: "destructive",
+          title: "Error loading articles",
+          description: "Unable to load blog articles. Please try again later.",
+        });
+        
         throw new Error("An unexpected error occurred while fetching articles");
       }
     },

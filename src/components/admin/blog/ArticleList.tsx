@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
-import { AlertCircle, RefreshCw } from "lucide-react";
+import { AlertCircle, RefreshCw, ShieldAlert } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface Article {
@@ -35,7 +35,7 @@ export const ArticleList = () => {
       setIsLoading(true);
       setError(null);
       
-      console.log("Attempting to fetch articles with direct query...");
+      console.log("Attempting to fetch articles with direct REST API call...");
       
       // Get the access token first to use in the direct fetch
       const { data: session } = await supabase.auth.getSession();
@@ -44,21 +44,29 @@ export const ArticleList = () => {
         throw new Error("No authenticated session available");
       }
       
-      // Using the JavaScript REST API with explicit auth token to bypass RLS issues
+      // Using direct REST API with explicit auth token to bypass RLS issues
       const response = await fetch(
         `https://cugwtwpgccpcjeumrkxf.supabase.co/rest/v1/blog_articles?select=id,title,status,category,created_at,slug&order=created_at.desc`,
         {
           headers: {
             'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z3d0d3BnY2NwY2pldW1ya3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNjA1MDEsImV4cCI6MjA1ODkzNjUwMX0.DjWV3Jt7OcVaJh4QYQ8NsBpPtrI1m8FJ5O3n-SHhMrk',
             'Authorization': `Bearer ${session.session.access_token}`,
-            'Content-Type': 'application/json'
-          }
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          method: 'GET'
         }
       );
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`Error fetching articles: Status ${response.status}`, errorText);
+        
+        // Check if it's the infinite recursion error and provide a more helpful message
+        if (errorText.includes("infinite recursion")) {
+          throw new Error("Database policy error: There's a conflict in how the database manages access permissions.");
+        }
+        
         throw new Error(`Failed to fetch articles: ${response.status} ${errorText}`);
       }
 
@@ -97,7 +105,8 @@ export const ArticleList = () => {
             'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z3d0d3BnY2NwY2pldW1ya3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNjA1MDEsImV4cCI6MjA1ODkzNjUwMX0.DjWV3Jt7OcVaJh4QYQ8NsBpPtrI1m8FJ5O3n-SHhMrk',
             'Authorization': `Bearer ${session.session.access_token}`,
             'Content-Type': 'application/json',
-            'Prefer': 'return=minimal'
+            'Prefer': 'return=minimal',
+            'Accept': 'application/json'
           },
           body: JSON.stringify({
             status: 'published',
@@ -150,13 +159,24 @@ export const ArticleList = () => {
       <Alert variant="destructive" className="mb-6">
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Error</AlertTitle>
-        <AlertDescription>{error}</AlertDescription>
-        <div className="mt-4">
-          <Button variant="outline" onClick={handleRefresh} size="sm">
-            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-            Try Again
-          </Button>
-        </div>
+        <AlertDescription className="space-y-4">
+          <p>{error}</p>
+          {error.includes("infinite recursion") || error.includes("Database policy") ? (
+            <div className="bg-red-50 p-3 rounded border border-red-200 text-sm">
+              <div className="flex items-center gap-2 font-semibold mb-2">
+                <ShieldAlert size={16} />
+                <span>Database Policy Error</span>
+              </div>
+              <p>The admin content library is experiencing a database permission issue. This typically happens when database policies reference themselves.</p>
+            </div>
+          ) : null}
+          <div className="mt-4">
+            <Button variant="outline" onClick={handleRefresh} size="sm" disabled={refreshing}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Trying Again...' : 'Try Again'}
+            </Button>
+          </div>
+        </AlertDescription>
       </Alert>
     );
   }
