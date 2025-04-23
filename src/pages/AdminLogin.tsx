@@ -47,7 +47,6 @@ const AdminLogin = () => {
     },
   });
 
-  // Only redirect if user is already authenticated as admin
   useEffect(() => {
     if (!isLoading && user && isAdmin) {
       console.log("Already logged in as admin, redirecting to admin dashboard");
@@ -55,11 +54,9 @@ const AdminLogin = () => {
     }
   }, [isAdmin, isLoading, navigate, user]);
   
-  // Setup admin account once on component mount
   useEffect(() => {
     const setupAdminAccount = async () => {
       try {
-        // Prevent multiple setup attempts
         if (isCreatingAdmin) return;
         
         setIsCreatingAdmin(true);
@@ -95,7 +92,6 @@ const AdminLogin = () => {
           await supabase.auth.signOut();
         }
         
-        // Set up admin role and confirm email
         try {
           const { error: roleError } = await supabase
             .rpc('set_user_as_admin', { input_email: 'admin@tennexis.com' });
@@ -106,7 +102,6 @@ const AdminLogin = () => {
             console.log("Admin role set successfully");
           }
           
-          // Confirm admin email
           await confirmAdminEmail('admin@tennexis.com');
         } catch (roleError) {
           console.error("Exception setting admin role:", roleError);
@@ -153,7 +148,6 @@ const AdminLogin = () => {
           description: "Email confirmed successfully. Please try logging in again.",
         });
         
-        // Attempt to sign in immediately after confirmation
         try {
           await signIn(form.getValues('email'), form.getValues('password'));
         } catch (signInError) {
