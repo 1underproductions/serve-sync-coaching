@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -44,6 +43,7 @@ import CoachBooking from "@/pages/CoachBooking";
 import BookingSuccess from "@/pages/BookingSuccess";
 import ComingSoon from "@/pages/ComingSoon";
 import AdminCoachVerifications from "@/pages/Admin/AdminCoachVerifications";
+import Helpdesk from "@/pages/Helpdesk";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -72,6 +72,11 @@ function App() {
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/faq" element={<FAQ />} />
+              <Route path="/helpdesk" element={
+                <RouteGuard requireAuth>
+                  <Helpdesk />
+                </RouteGuard>
+              } />
               
               {/* Root path - redirects to ComingSoon for unauthenticated users */}
               <Route path="/" element={
