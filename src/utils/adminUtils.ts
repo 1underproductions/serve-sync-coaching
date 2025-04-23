@@ -27,3 +27,18 @@ export const confirmAdminEmail = async (email: string): Promise<boolean> => {
     return false;
   }
 };
+
+/**
+ * Safely access waitlist data as an admin without triggering RLS recursion
+ */
+export const fetchWaitlistAsAdmin = async (): Promise<{ data: any, error: any }> => {
+  try {
+    console.log("Fetching waitlist data as admin...");
+    // Call the safe RPC function for admin access
+    const response = await supabase.rpc('admin_access_waitlist');
+    return response;
+  } catch (error) {
+    console.error("Exception in fetchWaitlistAsAdmin:", error);
+    return { data: null, error };
+  }
+};

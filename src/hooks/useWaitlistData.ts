@@ -20,11 +20,8 @@ export const useWaitlistData = () => {
       
       console.log("Fetching waitlist data...");
       
-      // Using the direct RPC call to bypass RLS if needed
-      const { data, error } = await supabase
-        .from('waitlist_signups')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Use the admin_access_waitlist RPC function to avoid RLS recursion issues
+      const { data, error } = await supabase.rpc('admin_access_waitlist');
         
       if (error) {
         console.error("Error fetching waitlist:", error);
