@@ -30,6 +30,7 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
     '/reset-password',
     '/contact',
     '/faq',
+    '/blog',
     '/helpdesk'
   ];
   
@@ -41,7 +42,7 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
   }
   
   // If the current path is public, render it without restrictions
-  if (publicPaths.includes(location.pathname)) {
+  if (publicPaths.includes(location.pathname) || location.pathname.startsWith('/blog/')) {
     return <>{children}</>;
   }
   
