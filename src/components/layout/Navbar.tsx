@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -15,7 +14,8 @@ import {
   Home,
   BarChart,
   Settings,
-  X
+  X,
+  HelpCircle
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -59,7 +59,6 @@ const Navbar = () => {
     }
   };
 
-  // Get initials for avatar fallback
   const getInitials = () => {
     if (!profile?.full_name) return "U";
     return profile.full_name
@@ -73,7 +72,6 @@ const Navbar = () => {
   return (
     <header className="sticky top-0 z-40 border-b bg-white">
       <div className="container flex h-16 items-center justify-between px-4">
-        {/* Mobile Menu Button */}
         <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
           <DrawerTrigger asChild className="md:hidden">
             <Button variant="ghost" size="icon" className="p-2 rounded-md hover:bg-gray-100">
@@ -130,14 +128,12 @@ const Navbar = () => {
           </DrawerContent>
         </Drawer>
         
-        {/* Branded Logo (Only visible on mobile) */}
         <div className="md:hidden flex-1 flex justify-center">
           <Link to="/dashboard" className="flex items-center">
             <span className="text-xl font-bold text-tennis-green-600">Tennexis</span>
           </Link>
         </div>
         
-        {/* Search Bar (Hidden on mobile) */}
         <div className="hidden md:flex flex-1 max-w-md relative">
           <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -149,7 +145,6 @@ const Navbar = () => {
           </div>
         </div>
         
-        {/* Right side icons and menu */}
         <div className="flex items-center space-x-3">
           <Button variant="ghost" size="icon" className="relative">
             <Bell className="h-5 w-5" />
@@ -157,6 +152,12 @@ const Navbar = () => {
               3
             </span>
           </Button>
+          
+          <Link to="/helpdesk">
+            <Button variant="ghost" size="icon">
+              <HelpCircle className="h-5 w-5" />
+            </Button>
+          </Link>
           
           <Button variant="ghost" size="icon" className="md:hidden">
             <Search className="h-5 w-5" />
@@ -184,6 +185,12 @@ const Navbar = () => {
                 <Link to="/settings" className="cursor-pointer">
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Settings</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/helpdesk" className="cursor-pointer">
+                  <HelpCircle className="mr-2 h-4 w-4" />
+                  <span>Helpdesk</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
