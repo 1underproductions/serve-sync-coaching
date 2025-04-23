@@ -1,6 +1,6 @@
 
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 
 export const useBlogArticles = () => {
   return useQuery({
@@ -11,7 +11,7 @@ export const useBlogArticles = () => {
         .from('blog_articles')
         .select(`
           *,
-          profiles!author_id(full_name)
+          author:profiles(full_name)
         `)
         .eq('status', 'published')
         .order('published_at', { ascending: false });

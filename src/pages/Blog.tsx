@@ -67,7 +67,7 @@ const Blog = () => {
                     <span className="mx-2">•</span>
                     <span className="flex items-center">
                       <User className="h-4 w-4 mr-1" />
-                      {post.profiles?.full_name || "Unknown Author"}
+                      {post.author?.full_name || "Unknown Author"}
                     </span>
                   </div>
                   <Link to={`/blog/${post.slug}`} className="block mb-3">
