@@ -1,4 +1,3 @@
-
 import { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/useAuth';
@@ -16,7 +15,7 @@ interface RouteGuardProps {
  * - Public routes (coming soon, login, etc.) are accessible to all
  */
 const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGuardProps) => {
-  const { isAuthenticated, isAdmin, isLoading } = useAuth();
+  const { user, isAdmin, isLoading } = useAuth();
   const location = useLocation();
 
   // Public routes that should always be accessible regardless of auth status
@@ -45,7 +44,7 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
   
   // Paths that start with /admin require admin privileges
   if (adminOnly || location.pathname.startsWith('/admin')) {
-    if (!isAuthenticated) {
+    if (!user) {
       return <Navigate to="/admin-login" state={{ from: location }} />;
     }
     
@@ -57,8 +56,7 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
   }
   
   // For all other routes, if user is not authenticated, redirect to coming soon
-  if (requireAuth && !isAuthenticated) {
-    // Store the attempted URL for redirecting after login
+  if (requireAuth && !user) {
     return <Navigate to="/coming-soon" state={{ from: location }} />;
   }
 

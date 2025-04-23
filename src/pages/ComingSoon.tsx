@@ -1,24 +1,97 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CalendarClock, Users, Clock, Mail } from "lucide-react";
 import { motion } from "framer-motion";
 import CoachSignupForm from '@/components/waitlist/CoachSignupForm';
 
+// Contact Modal UI (simple, reusable)
+const ContactUsModal = ({ open, onClose }: { open: boolean, onClose: () => void }) => {
+  const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+    setError("");
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError("");
+
+    try {
+      const res = await fetch("/functions/v1/send-support-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          message: form.message
+        })
+      });
+      if (!res.ok) throw new Error("Failed to send");
+
+      setSent(true);
+    } catch (err: any) {
+      setError("Failed to send your message. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
+      <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 relative">
+        <button className="absolute right-4 top-4 text-xl text-gray-400 hover:text-tennis-green-500" onClick={onClose}>&times;</button>
+        <h2 className="text-2xl font-bold mb-4">Contact Tennexis Support</h2>
+        {sent ? (
+          <div className="text-green-600 text-center font-medium py-6">Thank you! Your message has been sent.</div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-gray-700 mb-1">Your Name</label>
+              <input name="name" type="text" required className="w-full border px-3 py-2 rounded focus:outline-none" value={form.name} onChange={handleChange} />
+            </div>
+            <div>
+              <label className="block text-gray-700 mb-1">Your Email</label>
+              <input name="email" type="email" required className="w-full border px-3 py-2 rounded focus:outline-none" value={form.email} onChange={handleChange} />
+            </div>
+            <div>
+              <label className="block text-gray-700 mb-1">Message</label>
+              <textarea name="message" required className="w-full border px-3 py-2 rounded focus:outline-none" value={form.message} rows={4} onChange={handleChange}></textarea>
+            </div>
+            {error && <div className="text-red-500 text-sm">{error}</div>}
+            <Button type="submit" className="w-full" disabled={submitting}>
+              {submitting ? "Sending..." : "Send"}
+            </Button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const ComingSoon = () => {
+  const [showContact, setShowContact] = useState(false);
+
   return (
     <div className="min-h-screen flex flex-col">
       <header className="bg-white border-b py-4">
         <div className="container flex justify-between items-center">
           <Link to="/" className="text-2xl font-bold text-tennis-green-600">Tennexis</Link>
-          <Button asChild variant="outline" size="sm">
-            <a href="mailto:contact@tennexis.com" className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowContact(true)}>
+            <span className="flex items-center gap-2">
               Contact Us
-            </a>
+            </span>
           </Button>
         </div>
       </header>
-      
+
       <main className="flex-1 flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100">
         <div className="container max-w-6xl py-20">
           <motion.div
@@ -106,6 +179,7 @@ const ComingSoon = () => {
             </motion.div>
           </div>
         </div>
+        <ContactUsModal open={showContact} onClose={() => setShowContact(false)} />
       </main>
       
       <footer className="bg-white border-t py-6">
