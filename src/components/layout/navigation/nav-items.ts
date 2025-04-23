@@ -1,7 +1,10 @@
+
 import { 
   CalendarClock, 
   Users, 
+  MessageSquare, 
   DollarSign, 
+  BarChart, 
   Settings, 
   Home,
   Shield,
