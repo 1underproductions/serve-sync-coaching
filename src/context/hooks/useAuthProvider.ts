@@ -1,6 +1,7 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
-import { supabase, Profile } from '@/lib/supabase';
+import { supabase, Profile, sendCustomEmail } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { confirmAdminEmail } from '@/utils/adminUtils';
@@ -432,12 +433,12 @@ export const useAuthProvider = () => {
     isLoading,
     isAdmin,
     authError,
-    signUp: () => {}, // Implement as needed
+    signUp,
     signIn,
-    signOut: () => {}, // Implement as needed
-    resetPassword: () => {}, // Implement as needed
-    updateProfile: () => ({}), // Implement as needed
+    signOut,
+    resetPassword,
+    updateProfile,
     fetchUserProfile,
-    setUserAsAdmin: () => {}, // Implement as needed
+    setUserAsAdmin,
   };
 };
