@@ -28,7 +28,8 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
     '/forgot-password',
     '/reset-password',
     '/contact',
-    '/faq'
+    '/faq',
+    '/helpdesk'  // Added helpdesk to public paths
   ];
   
   // Don't redirect while auth is still loading
@@ -45,14 +46,19 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
   
   // Paths that start with /admin require admin privileges
   if (adminOnly || location.pathname.startsWith('/admin')) {
+    console.log("Admin route check:", { user, isAdmin });
+    
     if (!user) {
+      console.log("No user, redirecting to admin-login");
       return <Navigate to="/admin-login" state={{ from: location }} />;
     }
     
     if (!isAdmin) {
-      return <Navigate to="/coming-soon" state={{ from: location }} />;
+      console.log("User is not admin, redirecting to dashboard");
+      return <Navigate to="/dashboard" state={{ from: location }} />;
     }
     
+    console.log("User is admin, allowing access to admin route");
     return <>{children}</>;
   }
   

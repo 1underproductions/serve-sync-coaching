@@ -44,6 +44,7 @@ import BookingSuccess from "@/pages/BookingSuccess";
 import ComingSoon from "@/pages/ComingSoon";
 import AdminCoachVerifications from "@/pages/Admin/AdminCoachVerifications";
 import Helpdesk from "@/pages/Helpdesk";
+import AdminTickets from "@/pages/Admin/AdminTickets";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -54,7 +55,7 @@ const queryClient = new QueryClient({
   },
 });
 
-function App() {
+const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
@@ -73,7 +74,7 @@ function App() {
               <Route path="/contact" element={<Contact />} />
               <Route path="/faq" element={<FAQ />} />
               <Route path="/helpdesk" element={
-                <RouteGuard requireAuth>
+                <RouteGuard requireAuth={false}>
                   <Helpdesk />
                 </RouteGuard>
               } />
@@ -226,6 +227,11 @@ function App() {
               <Route path="/admin/settings" element={
                 <RouteGuard adminOnly={true}>
                   <AdminSettings />
+                </RouteGuard>
+              } />
+              <Route path="/admin/tickets" element={
+                <RouteGuard adminOnly={true}>
+                  <AdminTickets />
                 </RouteGuard>
               } />
               

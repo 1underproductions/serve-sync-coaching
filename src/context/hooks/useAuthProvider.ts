@@ -35,19 +35,19 @@ export const useAuthProvider = () => {
       
       if (data) {
         console.log('Profile data retrieved:', data);
+        
+        // Update admin status based on the role field
+        // The role 'tennexis_admin' gives admin privileges
+        const isAdminUser = data.role === 'tennexis_admin';
+        console.log('Setting admin status:', isAdminUser);
+        setIsAdmin(isAdminUser);
+        
         const profileData: Profile = {
           ...data,
-          // Only set isAdmin to true if the user has a specific tennexis staff role
-          role: (data.role === 'tennexis_admin' ? 'admin' : 'user') as 'user' | 'admin'
+          role: isAdminUser ? 'admin' : 'user'
         };
         
         setProfile(profileData);
-        
-        // Explicitly set isAdmin based on role
-        const adminStatus = profileData.role === 'admin';
-        console.log('Setting admin status:', adminStatus);
-        setIsAdmin(adminStatus);
-        
         return profileData;
       }
       
@@ -217,68 +217,7 @@ export const useAuthProvider = () => {
       setIsLoading(true);
       console.log(`Attempting to sign in with: ${email}`);
       
-      // Clear previous session to avoid conflicts
-      await supabase.auth.signOut();
-      
-      // Special handling for demo admin account
-      if (email === "admin@tennexis.com") {
-        console.log("Attempting to sign in with demo admin account");
-        
-        // First try normal sign in
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        
-        // If email not confirmed error, but it's the demo admin, try to proceed anyway
-        if (error && error.message.includes("Email not confirmed")) {
-          console.log("Demo admin email not confirmed, trying to proceed anyway");
-          
-          // Check if user exists in profiles table and has admin role
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('email', email)
-            .single();
-            
-          if (profileError) {
-            console.error("Error fetching profile:", profileError);
-            throw new Error("Failed to verify admin account");
-          }
-          
-          if (profileData && profileData.role === 'tennexis_admin') {
-            // For demo purposes, manually set the admin state and redirect
-            setIsAdmin(true);
-            setProfile({
-              ...profileData,
-              role: 'admin',
-            });
-            
-            toast({
-              title: "Demo Admin Login",
-              description: "Logged in with demo admin account.",
-            });
-            
-            // Redirect to admin dashboard
-            navigate('/admin');
-            return;
-          } else {
-            throw new Error("User does not have admin privileges");
-          }
-        } else if (error) {
-          throw error;
-        }
-        
-        if (data.session) {
-          await fetchUserProfile(data.user.id);
-          
-          // Redirect to admin dashboard
-          navigate('/admin');
-          return;
-        }
-      }
-      
-      // Standard sign in for non-admin users
+      // Sign in with password
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -392,7 +331,7 @@ export const useAuthProvider = () => {
         throw signUpError;
       }
 
-      // Then, use the RPC function to set the user as an admin with the correct parameter name
+      // Then, use the RPC function to set the user as an admin
       const { error: adminError } = await supabase
         .rpc('set_user_as_admin', { input_email: email });
 

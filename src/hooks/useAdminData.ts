@@ -35,10 +35,21 @@ export function useAdminData() {
   });
 
   const updateTicketStatus = useMutation({
-    mutationFn: async ({ ticketId, status }: { ticketId: string; status: SupportTicket['status'] }) => {
+    mutationFn: async ({ ticketId, status, assignee_id }: { 
+      ticketId: string; 
+      status: SupportTicket['status']; 
+      assignee_id?: string 
+    }) => {
+      const updateData: Partial<SupportTicket> = { status };
+      
+      // If assignee_id is provided, add it to the update data
+      if (assignee_id) {
+        updateData.assignee_id = assignee_id;
+      }
+      
       const { error } = await supabase
         .from('support_tickets')
-        .update({ status })
+        .update(updateData)
         .eq('id', ticketId);
       
       if (error) throw error;

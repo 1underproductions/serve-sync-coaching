@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -17,7 +16,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Mail, Lock, ShieldAlert } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/useAuth";
 
 const loginSchema = z.object({
@@ -58,18 +57,19 @@ const AdminLogin = () => {
   });
 
   useEffect(() => {
-    const createAdminUser = async () => {
+    const setupAdminAccount = async () => {
       try {
         setIsCreatingAdmin(true);
         
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('email', 'admin@tennexis.com')
-          .single();
-          
-        if (profileError && profileError.code === 'PGRST116') {
-          console.log("Admin profile doesn't exist, creating it...");
+        // First check if the admin user already exists
+        const { data: userExists, error: checkError } = await supabase.auth.signInWithPassword({
+          email: "admin@tennexis.com",
+          password: "admin123",
+        });
+        
+        // If user doesn't exist, create them
+        if (checkError && checkError.message.includes("Invalid login credentials")) {
+          console.log("Admin user doesn't exist, creating it...");
           
           const { data, error } = await supabase.auth.signUp({
             email: "admin@tennexis.com",
@@ -77,6 +77,7 @@ const AdminLogin = () => {
             options: {
               data: {
                 full_name: "Tennexis Admin",
+                role: "tennexis_admin"
               }
             }
           });
@@ -86,37 +87,41 @@ const AdminLogin = () => {
             throw error;
           }
           
+          // Sign out after creation to avoid automatic login
           if (data.user) {
-            const { error: roleError } = await supabase
-              .rpc('set_user_as_admin', { input_email: 'admin@tennexis.com' });
-              
-            if (roleError) {
-              console.error("Error setting admin role:", roleError);
-              throw roleError;
-            }
+            await supabase.auth.signOut();
           }
-        } else if (profileData) {
+        } else if (userExists && userExists.user) {
+          // Sign out again to not stay logged in
+          await supabase.auth.signOut();
+        }
+        
+        // Always try to set the user as admin regardless of whether they're new or existing
+        try {
           const { error: roleError } = await supabase
             .rpc('set_user_as_admin', { input_email: 'admin@tennexis.com' });
             
           if (roleError) {
             console.error("Error setting admin role:", roleError);
-            throw roleError;
+          } else {
+            console.log("Admin role set successfully");
           }
+        } catch (roleError) {
+          console.error("Exception setting admin role:", roleError);
         }
       } catch (error: any) {
         console.error("Admin setup error:", error);
         toast({
           variant: "destructive",
-          title: "Admin Setup Failed",
-          description: error.message || "Could not prepare admin account",
+          title: "Admin Setup Issue",
+          description: "There was an issue with the admin account setup. You can still try to log in.",
         });
       } finally {
         setIsCreatingAdmin(false);
       }
     };
     
-    createAdminUser();
+    setupAdminAccount();
   }, [toast]);
 
   const onSubmit = async (data: LoginFormValues) => {
