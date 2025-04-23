@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -95,6 +94,7 @@ const AdminLogin = () => {
           await supabase.auth.signOut();
         }
         
+        // Set up admin role and confirm email
         try {
           const { error: roleError } = await supabase
             .rpc('set_user_as_admin', { input_email: 'admin@tennexis.com' });
@@ -105,12 +105,8 @@ const AdminLogin = () => {
             console.log("Admin role set successfully");
           }
           
-          const confirmed = await confirmAdminEmail('admin@tennexis.com');
-          if (!confirmed) {
-            console.error("Error confirming admin email");
-          } else {
-            console.log("Admin email confirmed successfully");
-          }
+          // Confirm admin email
+          await confirmAdminEmail('admin@tennexis.com');
         } catch (roleError) {
           console.error("Exception setting admin role:", roleError);
         }

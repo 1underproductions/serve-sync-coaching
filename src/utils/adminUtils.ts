@@ -9,25 +9,15 @@ export const confirmAdminEmail = async (email: string): Promise<boolean> => {
   try {
     console.log("Confirming admin email for:", email);
     
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('email')
-      .eq('email', email)
-      .single();
-      
-    if (error || !data) {
-      console.error("Error finding user profile:", error);
-      return false;
-    }
-    
-    // Execute raw SQL to confirm email
-    const { error: sqlError } = await supabase.rpc(
+    // Skip the problematic profile lookup and directly execute the RPC
+    // This avoids the infinite recursion in policies
+    const { error } = await supabase.rpc(
       'admin_confirm_email' as any, 
       { admin_email: email }
     );
     
-    if (sqlError) {
-      console.error("Error confirming admin email:", sqlError);
+    if (error) {
+      console.error("Error confirming admin email:", error);
       return false;
     }
     
