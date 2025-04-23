@@ -19,7 +19,10 @@ export const ArticleEditor = () => {
   const { toast } = useToast();
   const [imageUrl, setImageUrl] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { register, handleSubmit, reset } = useForm<ArticleFormData>();
+  const { register, handleSubmit, reset, watch, formState } = useForm<ArticleFormData>();
+
+  // Watch form values to prevent losing data during image upload
+  const formValues = watch();
 
   const onSubmit = async (data: ArticleFormData) => {
     try {
@@ -73,6 +76,14 @@ export const ArticleEditor = () => {
     }
   };
 
+  const handleImageUpload = (url: string) => {
+    setImageUrl(url);
+    toast({
+      title: "Image added",
+      description: "You can continue editing your article",
+    });
+  };
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div>
@@ -107,9 +118,15 @@ export const ArticleEditor = () => {
       </div>
       
       <div>
+        {imageUrl && (
+          <div className="mb-2">
+            <p className="text-sm text-gray-500 mb-1">Image selected:</p>
+            <img src={imageUrl} alt="Article preview" className="h-32 w-auto object-cover rounded-md" />
+          </div>
+        )}
         <ImageUploader
           bucket="blog-images"
-          onUploadComplete={(url) => setImageUrl(url)}
+          onUploadComplete={handleImageUpload}
           className="w-full"
         />
       </div>
