@@ -3,6 +3,7 @@ import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { WaitlistSignup } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
+import { fetchWaitlistAsAdmin } from "@/utils/adminUtils";
 
 export const useWaitlistData = () => {
   const [waitlistSignups, setWaitlistSignups] = useState<WaitlistSignup[]>([]);
@@ -20,8 +21,8 @@ export const useWaitlistData = () => {
       
       console.log("Fetching waitlist data...");
       
-      // Use the admin_access_waitlist RPC function to avoid RLS recursion issues
-      const { data, error } = await supabase.rpc('admin_access_waitlist');
+      // Use the dedicated admin utility function to fetch waitlist data safely
+      const { data, error } = await fetchWaitlistAsAdmin();
         
       if (error) {
         console.error("Error fetching waitlist:", error);
@@ -42,7 +43,7 @@ export const useWaitlistData = () => {
         return;
       }
       
-      console.log("Waitlist data fetched:", data.length, "entries");
+      console.log("Waitlist data fetched:", Array.isArray(data) ? data.length : "non-array data", "entries");
       setWaitlistSignups(Array.isArray(data) ? data : []);
     } catch (error: any) {
       console.error("Exception during waitlist fetch:", error);

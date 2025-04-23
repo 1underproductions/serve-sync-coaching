@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { WaitlistSignup } from "@/lib/supabase";
 
 /**
  * Confirms an admin email directly using the admin_confirm_email function
@@ -31,12 +32,17 @@ export const confirmAdminEmail = async (email: string): Promise<boolean> => {
 /**
  * Safely access waitlist data as an admin without triggering RLS recursion
  */
-export const fetchWaitlistAsAdmin = async (): Promise<{ data: any, error: any }> => {
+export const fetchWaitlistAsAdmin = async (): Promise<{ data: WaitlistSignup[] | null, error: any }> => {
   try {
     console.log("Fetching waitlist data as admin...");
-    // Call the safe RPC function for admin access
-    const response = await supabase.rpc('admin_access_waitlist');
-    return response;
+    
+    // Call the safe RPC function for admin access that we created in the migration
+    const { data, error } = await supabase.rpc('admin_access_waitlist') as { 
+      data: WaitlistSignup[] | null, 
+      error: any 
+    };
+    
+    return { data, error };
   } catch (error) {
     console.error("Exception in fetchWaitlistAsAdmin:", error);
     return { data: null, error };

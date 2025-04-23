@@ -524,6 +524,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_access_waitlist: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          message: string | null
+          status: string | null
+          years_experience: number | null
+        }[]
+      }
       admin_confirm_email: {
         Args: { admin_email: string }
         Returns: boolean
