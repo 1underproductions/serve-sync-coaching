@@ -6,7 +6,7 @@ export const useBlogArticles = () => {
   return useQuery({
     queryKey: ['blog-articles'],
     queryFn: async () => {
-      // First get the blog articles
+      // First get the published blog articles
       const { data: articles, error } = await supabase
         .from('blog_articles')
         .select('*')
@@ -18,6 +18,7 @@ export const useBlogArticles = () => {
       // Then for each article, get the author's information
       const articlesWithAuthors = await Promise.all(
         articles.map(async (article) => {
+          // Get author's name separately to avoid RLS policy issues
           const { data: authorData } = await supabase
             .from('profiles')
             .select('full_name')
@@ -26,7 +27,7 @@ export const useBlogArticles = () => {
           
           return {
             ...article,
-            author: authorData
+            author: authorData || { full_name: "Unknown Author" }
           };
         })
       );

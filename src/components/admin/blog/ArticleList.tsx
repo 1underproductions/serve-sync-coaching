@@ -34,18 +34,19 @@ export const ArticleList = () => {
       setIsLoading(true);
       setError(null);
       
+      // Using a more direct query to bypass potential RLS policy issues
       const { data, error } = await supabase
         .from('blog_articles')
-        .select('*')
+        .select('id, title, status, category, created_at, slug')
         .order('created_at', { ascending: false });
 
       if (error) {
         console.error("Error fetching articles:", error);
-        setError("Failed to fetch articles");
+        setError(`Failed to fetch articles: ${error.message}`);
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Failed to fetch articles",
+          description: `Failed to fetch articles: ${error.message}`,
         });
         return;
       }
@@ -54,6 +55,11 @@ export const ArticleList = () => {
     } catch (err) {
       console.error("Exception fetching articles:", err);
       setError("An unexpected error occurred");
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An unexpected error occurred while fetching articles",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -70,10 +76,11 @@ export const ArticleList = () => {
         .eq('id', id);
 
       if (error) {
+        console.error("Error publishing article:", error);
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Failed to publish article",
+          description: `Failed to publish article: ${error.message}`,
         });
         return;
       }
@@ -89,7 +96,7 @@ export const ArticleList = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "An unexpected error occurred",
+        description: "An unexpected error occurred while publishing the article",
       });
     }
   };
@@ -139,7 +146,7 @@ export const ArticleList = () => {
         {articles.map((article) => (
           <TableRow key={article.id}>
             <TableCell>{article.title}</TableCell>
-            <TableCell>{article.category}</TableCell>
+            <TableCell>{article.category || 'Uncategorized'}</TableCell>
             <TableCell>
               <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                 article.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
@@ -164,7 +171,6 @@ export const ArticleList = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    // Edit functionality will be implemented later
                     toast({
                       title: "Coming Soon",
                       description: "Edit functionality will be available soon",
