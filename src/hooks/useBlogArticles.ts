@@ -20,16 +20,30 @@ export const useBlogArticles = () => {
         
         if (!response.ok) {
           const errorText = await response.text();
-          throw new Error(`Failed to fetch articles: ${errorText}`);
+          console.error(`Error fetching articles: Status ${response.status}`, errorText);
+          throw new Error(`Failed to fetch articles: ${response.status} ${errorText}`);
         }
         
         const articles = await response.json();
+        console.log("Successfully fetched articles:", articles);
+        
+        // If no articles, return empty array immediately
+        if (!articles || articles.length === 0) {
+          return [];
+        }
         
         // Then for each article, get the author's information safely
         // using a similar direct REST API approach
         const articlesWithAuthors = await Promise.all(
           articles.map(async (article) => {
             try {
+              if (!article.author_id) {
+                return {
+                  ...article,
+                  author: { full_name: "Unknown Author" }
+                };
+              }
+              
               // Get author's name using direct REST API call
               const authorResponse = await fetch(
                 `https://cugwtwpgccpcjeumrkxf.supabase.co/rest/v1/profiles?id=eq.${article.author_id}&select=full_name`,
@@ -42,6 +56,7 @@ export const useBlogArticles = () => {
               );
               
               if (!authorResponse.ok) {
+                console.error(`Error fetching author for article ${article.id}: Status ${authorResponse.status}`);
                 return {
                   ...article,
                   author: { full_name: "Unknown Author" }
@@ -55,7 +70,7 @@ export const useBlogArticles = () => {
                 author: authorData && authorData[0] ? authorData[0] : { full_name: "Unknown Author" }
               };
             } catch (error) {
-              console.error("Error fetching author data:", error);
+              console.error(`Error fetching author data for article ${article.id}:`, error);
               return {
                 ...article,
                 author: { full_name: "Unknown Author" }
@@ -67,8 +82,14 @@ export const useBlogArticles = () => {
         return articlesWithAuthors;
       } catch (error) {
         console.error("Error in useBlogArticles:", error);
-        throw error;
+        throw new Error("An unexpected error occurred while fetching articles");
       }
+    },
+    retry: 1, // Only retry once to avoid excessive retries on server issues
+    retryDelay: 1000, // Wait 1 second between retries
+    refetchOnWindowFocus: false, // Disable refetching when window regains focus
+    meta: {
+      errorMessage: "An unexpected error occurred while fetching articles"
     }
   });
 };

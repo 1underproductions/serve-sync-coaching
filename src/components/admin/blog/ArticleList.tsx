@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface Article {
@@ -28,6 +28,7 @@ export const ArticleList = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchArticles = async () => {
     try {
@@ -45,7 +46,7 @@ export const ArticleList = () => {
       
       // Using the JavaScript REST API with explicit auth token to bypass RLS issues
       const response = await fetch(
-        `https://cugwtwpgccpcjeumrkxf.supabase.co/rest/v1/blog_articles?select=id,title,status,category,created_at,slug`,
+        `https://cugwtwpgccpcjeumrkxf.supabase.co/rest/v1/blog_articles?select=id,title,status,category,created_at,slug&order=created_at.desc`,
         {
           headers: {
             'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z3d0d3BnY2NwY2pldW1ya3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNjA1MDEsImV4cCI6MjA1ODkzNjUwMX0.DjWV3Jt7OcVaJh4QYQ8NsBpPtrI1m8FJ5O3n-SHhMrk',
@@ -57,23 +58,24 @@ export const ArticleList = () => {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("Error fetching articles:", errorText);
-        throw new Error(`Failed to fetch articles: ${errorText}`);
+        console.error(`Error fetching articles: Status ${response.status}`, errorText);
+        throw new Error(`Failed to fetch articles: ${response.status} ${errorText}`);
       }
 
       const data = await response.json();
       console.log("Successfully fetched articles:", data);
       setArticles(data || []);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Exception fetching articles:", err);
-      setError("An unexpected error occurred");
+      setError(err.message || "An unexpected error occurred");
       toast({
         variant: "destructive",
         title: "Error",
-        description: "An unexpected error occurred while fetching articles",
+        description: err.message || "An unexpected error occurred while fetching articles",
       });
     } finally {
       setIsLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -106,8 +108,8 @@ export const ArticleList = () => {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("Error publishing article:", errorText);
-        throw new Error(`Failed to publish article: ${errorText}`);
+        console.error(`Error publishing article: Status ${response.status}`, errorText);
+        throw new Error(`Failed to publish article: ${response.status} ${errorText}`);
       }
 
       toast({
@@ -116,14 +118,19 @@ export const ArticleList = () => {
       });
       
       fetchArticles();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Exception publishing article:", err);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "An unexpected error occurred while publishing the article",
+        description: err.message || "An unexpected error occurred while publishing the article",
       });
     }
+  };
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchArticles();
   };
 
   useEffect(() => {
@@ -144,6 +151,12 @@ export const ArticleList = () => {
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Error</AlertTitle>
         <AlertDescription>{error}</AlertDescription>
+        <div className="mt-4">
+          <Button variant="outline" onClick={handleRefresh} size="sm">
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Try Again
+          </Button>
+        </div>
       </Alert>
     );
   }
