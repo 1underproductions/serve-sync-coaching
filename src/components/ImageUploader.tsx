@@ -3,7 +3,7 @@ import React, { useRef, useState } from 'react';
 import { Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";  // <-- Fixed import path
 
 interface ImageUploaderProps {
   onUploadComplete: (url: string) => void;
