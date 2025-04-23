@@ -79,12 +79,8 @@ const App = () => {
                 </RouteGuard>
               } />
               
-              {/* Root path - redirects to ComingSoon for unauthenticated users */}
-              <Route path="/" element={
-                <RouteGuard>
-                  <Index />
-                </RouteGuard>
-              } />
+              {/* Root path - make it public */}
+              <Route path="/" element={<Index />} />
 
               {/* Protected routes - require authentication */}
               <Route path="/dashboard" element={

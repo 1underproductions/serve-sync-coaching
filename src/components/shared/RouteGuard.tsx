@@ -21,6 +21,7 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
 
   // Public routes that should always be accessible regardless of auth status
   const publicPaths = [
+    '/',  // Make homepage public
     '/coming-soon',
     '/login',
     '/admin-login',
@@ -29,7 +30,7 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
     '/reset-password',
     '/contact',
     '/faq',
-    '/helpdesk'  // Added helpdesk to public paths
+    '/helpdesk'
   ];
   
   // Don't redirect while auth is still loading

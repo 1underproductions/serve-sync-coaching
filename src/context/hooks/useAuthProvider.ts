@@ -25,6 +25,7 @@ export const useAuthProvider = () => {
         return null;
       }
       
+      console.log('Fetching profile for user:', currentUserId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -76,7 +77,9 @@ export const useAuthProvider = () => {
         if (updatedSession?.user) {
           // Important: Use setTimeout to avoid potential deadlock in auth state
           setTimeout(() => {
-            fetchUserProfile(updatedSession.user.id);
+            fetchUserProfile(updatedSession.user.id).catch(err => {
+              console.error("Error fetching profile during auth change:", err);
+            });
           }, 0);
         } else {
           setProfile(null);
@@ -99,7 +102,11 @@ export const useAuthProvider = () => {
           
           // Important: Use setTimeout to avoid potential deadlock
           setTimeout(async () => {
-            await fetchUserProfile(data.session.user.id);
+            try {
+              await fetchUserProfile(data.session.user.id);
+            } catch (profileError) {
+              console.error("Error fetching profile during initialization:", profileError);
+            }
           }, 0);
         } else {
           console.log('No session found on initialization');
@@ -233,6 +240,22 @@ export const useAuthProvider = () => {
       if (error) {
         setAuthError(error.message);
         console.error("Sign in error:", error);
+        
+        // Special handling for admin email not confirmed
+        if (error.message?.includes("Email not confirmed") && email === "admin@tennexis.com") {
+          console.log("Admin email not confirmed, attempting to confirm it now");
+          try {
+            const confirmed = await confirmAdminEmail(email);
+            if (confirmed) {
+              console.log("Admin email confirmed successfully, retrying login");
+              // Try signing in again
+              return signIn(email, password);
+            }
+          } catch (confirmError) {
+            console.error("Error confirming admin email:", confirmError);
+          }
+        }
+        
         throw error;
       }
 
@@ -260,17 +283,6 @@ export const useAuthProvider = () => {
       
       // Special handling for email not confirmed
       if (error.message?.includes("Email not confirmed")) {
-        // For the demo admin account, try to force email confirmation
-        if (email === "admin@tennexis.com") {
-          try {
-            await adminBypassEmailConfirmation(email);
-            // Try signing in again silently
-            return signIn(email, password);
-          } catch (bypassError) {
-            console.error("Failed to bypass email confirmation:", bypassError);
-          }
-        }
-        
         toast({
           variant: "destructive",
           title: "Email not confirmed",
