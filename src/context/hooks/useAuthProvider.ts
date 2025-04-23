@@ -1,6 +1,7 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
+import { supabase, Profile, sendCustomEmail } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { confirmAdminEmail } from '@/utils/adminUtils';
