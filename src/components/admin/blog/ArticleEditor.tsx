@@ -38,7 +38,7 @@ export const ArticleEditor = () => {
       // Generate a slug from the title
       const slug = data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
       
-      // With our fixed RLS policies, we can now use the Supabase client directly
+      // Insert the article
       const { error } = await supabase
         .from('blog_articles')
         .insert({
@@ -88,7 +88,7 @@ export const ArticleEditor = () => {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div>
         <Input
-          {...register("title")}
+          {...register("title", { required: true })}
           placeholder="Article Title"
           className="text-lg font-bold"
         />
@@ -111,7 +111,7 @@ export const ArticleEditor = () => {
       
       <div>
         <Textarea
-          {...register("content")}
+          {...register("content", { required: true })}
           placeholder="Article content..."
           className="min-h-[400px]"
         />

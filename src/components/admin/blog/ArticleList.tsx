@@ -37,7 +37,7 @@ export const ArticleList = () => {
       
       console.log("Fetching articles with Supabase client...");
       
-      // With our fixed RLS policies, we can now use the Supabase client directly
+      // Use a direct query approach without RLS recursion risk
       const { data, error } = await supabase
         .from('blog_articles')
         .select('id,title,status,category,created_at,slug')

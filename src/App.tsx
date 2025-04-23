@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -47,6 +46,7 @@ import ComingSoon from "@/pages/ComingSoon";
 import AdminCoachVerifications from "@/pages/Admin/AdminCoachVerifications";
 import Helpdesk from "@/pages/Helpdesk";
 import AdminTickets from "@/pages/Admin/AdminTickets";
+import { setupStorage } from "./utils/setupStorage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -56,6 +56,9 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Initialize storage buckets on app start
+setupStorage().catch(console.error);
 
 const App = () => {
   return (
