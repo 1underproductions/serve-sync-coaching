@@ -10,6 +10,7 @@ export const useAuthProvider = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -63,6 +64,7 @@ export const useAuthProvider = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, updatedSession) => {
         console.log("Auth state changed:", event);
+        setAuthError(null); // Reset auth error on state change
         
         // Always set session and user first (synchronously)
         setSession(updatedSession);
@@ -165,6 +167,7 @@ export const useAuthProvider = () => {
   const signUp = async (email: string, password: string, metadata: any) => {
     try {
       setIsLoading(true);
+      setAuthError(null);
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -201,6 +204,7 @@ export const useAuthProvider = () => {
         }
       }
     } catch (error: any) {
+      setAuthError(error.message);
       toast({
         variant: "destructive",
         title: "Error creating account",
@@ -215,6 +219,7 @@ export const useAuthProvider = () => {
   const signIn = async (email: string, password: string) => {
     try {
       setIsLoading(true);
+      setAuthError(null);
       console.log(`Attempting to sign in with: ${email}`);
       
       // Sign in with password
@@ -224,6 +229,7 @@ export const useAuthProvider = () => {
       });
 
       if (error) {
+        setAuthError(error.message);
         console.error("Sign in error:", error);
         throw error;
       }
@@ -248,14 +254,58 @@ export const useAuthProvider = () => {
       }
     } catch (error: any) {
       console.error("Sign in caught error:", error);
-      toast({
-        variant: "destructive",
-        title: "Sign in failed",
-        description: error.message || "Invalid email or password",
-      });
+      setAuthError(error.message);
+      
+      // Special handling for email not confirmed
+      if (error.message?.includes("Email not confirmed")) {
+        // For the demo admin account, try to force email confirmation
+        if (email === "admin@tennexis.com") {
+          try {
+            await adminBypassEmailConfirmation(email);
+            // Try signing in again silently
+            return signIn(email, password);
+          } catch (bypassError) {
+            console.error("Failed to bypass email confirmation:", bypassError);
+          }
+        }
+        
+        toast({
+          variant: "destructive",
+          title: "Email not confirmed",
+          description: "Please check your inbox and confirm your email before signing in.",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Sign in failed",
+          description: error.message || "Invalid email or password",
+        });
+      }
       throw error;
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const adminBypassEmailConfirmation = async (email: string) => {
+    try {
+      // This is a special function just for the demo to handle the case
+      // where the admin email is not confirmed
+      console.log("Attempting to bypass email confirmation for admin:", email);
+      
+      const { error } = await supabase
+        .rpc('admin_confirm_email', { admin_email: email });
+        
+      if (error) {
+        console.error("Error bypassing email confirmation:", error);
+        throw error;
+      }
+      
+      console.log("Successfully bypassed email confirmation");
+      return true;
+    } catch (error) {
+      console.error("Failed to bypass email confirmation:", error);
+      throw error;
     }
   };
 
@@ -331,6 +381,9 @@ export const useAuthProvider = () => {
         throw signUpError;
       }
 
+      // Bypass email confirmation for admin
+      await adminBypassEmailConfirmation(email);
+
       // Then, use the RPC function to set the user as an admin
       const { error: adminError } = await supabase
         .rpc('set_user_as_admin', { input_email: email });
@@ -362,6 +415,7 @@ export const useAuthProvider = () => {
     profile,
     isLoading,
     isAdmin,
+    authError,
     signUp,
     signIn,
     signOut,

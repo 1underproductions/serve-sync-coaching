@@ -8,11 +8,12 @@ export type AuthContextType = {
   profile: Profile | null;
   isLoading: boolean;
   isAdmin: boolean;
+  authError: string | null;
   signUp: (email: string, password: string, metadata: any) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updateProfile: (data: Partial<Profile>) => Promise<Profile | null>;
   fetchUserProfile: (userId?: string) => Promise<Profile | null>;
-  setUserAsAdmin: (email: string) => Promise<SupabaseUser | null>; // New method
+  setUserAsAdmin: (email: string) => Promise<SupabaseUser | null>;
 };

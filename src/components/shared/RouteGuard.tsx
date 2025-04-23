@@ -16,7 +16,7 @@ interface RouteGuardProps {
  * - Public routes (coming soon, login, etc.) are accessible to all
  */
 const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGuardProps) => {
-  const { user, isAdmin, isLoading } = useAuth();
+  const { user, isAdmin, isLoading, authError } = useAuth();
   const location = useLocation();
 
   // Public routes that should always be accessible regardless of auth status
@@ -46,7 +46,7 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
   
   // Paths that start with /admin require admin privileges
   if (adminOnly || location.pathname.startsWith('/admin')) {
-    console.log("Admin route check:", { user, isAdmin });
+    console.log("Admin route check:", { user, isAdmin, authError });
     
     if (!user) {
       console.log("No user, redirecting to admin-login");

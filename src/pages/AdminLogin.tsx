@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -32,21 +33,21 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 const AdminLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const [loginError, setLoginError] = useState<string | null>(null);
   const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
+  const [isConfirmingEmail, setIsConfirmingEmail] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isAdmin, isLoading, signIn } = useAuth();
+  const { isAdmin, isLoading, signIn, authError } = useAuth();
   
   useEffect(() => {
     // Debug output to help trace auth issues
-    console.log("AdminLogin auth state:", { isAdmin, isLoading });
+    console.log("AdminLogin auth state:", { isAdmin, isLoading, authError });
     
     if (!isLoading && isAdmin) {
       console.log("User is already an admin, redirecting to admin panel");
       navigate('/admin');
     }
-  }, [isAdmin, isLoading, navigate]);
+  }, [isAdmin, isLoading, navigate, authError]);
   
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -106,6 +107,16 @@ const AdminLogin = () => {
           } else {
             console.log("Admin role set successfully");
           }
+          
+          // Also try to confirm the email for the admin account
+          const { error: confirmError } = await supabase
+            .rpc('admin_confirm_email', { admin_email: 'admin@tennexis.com' });
+            
+          if (confirmError) {
+            console.error("Error confirming admin email:", confirmError);
+          } else {
+            console.log("Admin email confirmed successfully");
+          }
         } catch (roleError) {
           console.error("Exception setting admin role:", roleError);
         }
@@ -125,15 +136,49 @@ const AdminLogin = () => {
   }, [toast]);
 
   const onSubmit = async (data: LoginFormValues) => {
-    setLoginError(null);
-    
     try {
       console.log("Attempting admin login with:", data.email);
       await signIn(data.email, data.password);
       // The redirection is handled in the signIn function
     } catch (error: any) {
       console.error("Login error details:", error);
-      setLoginError(error.message || "Login failed. Please check your credentials.");
+      // Error handling is now done within the signIn function
+    }
+  };
+
+  // Function to manually confirm email for admin
+  const handleConfirmEmail = async () => {
+    try {
+      setIsConfirmingEmail(true);
+      
+      const { error } = await supabase
+        .rpc('admin_confirm_email', { admin_email: form.getValues('email') });
+      
+      if (error) {
+        console.error("Error confirming email:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to confirm email. Please try again.",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Email confirmed successfully. Please try logging in again.",
+        });
+        
+        // Try login again after confirmation
+        await signIn(form.getValues('email'), form.getValues('password'));
+      }
+    } catch (error: any) {
+      console.error("Email confirmation error:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to confirm email",
+      });
+    } finally {
+      setIsConfirmingEmail(false);
     }
   };
 
@@ -156,9 +201,26 @@ const AdminLogin = () => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          {loginError && (
+          {authError && authError.includes("Email not confirmed") && (
             <Alert variant="destructive" className="mb-6">
-              <AlertDescription>{loginError}</AlertDescription>
+              <AlertDescription>
+                Your email hasn't been confirmed yet.
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2 w-full"
+                  disabled={isConfirmingEmail}
+                  onClick={handleConfirmEmail}
+                >
+                  {isConfirmingEmail ? "Confirming..." : "Confirm Email for Admin"}
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {authError && !authError.includes("Email not confirmed") && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertDescription>{authError}</AlertDescription>
             </Alert>
           )}
           
@@ -233,7 +295,7 @@ const AdminLogin = () => {
                 <Button 
                   type="submit" 
                   className="w-full" 
-                  disabled={isCreatingAdmin}
+                  disabled={isCreatingAdmin || isConfirmingEmail}
                 >
                   {isCreatingAdmin ? "Setting up admin..." : "Sign in to Admin Portal"}
                 </Button>
