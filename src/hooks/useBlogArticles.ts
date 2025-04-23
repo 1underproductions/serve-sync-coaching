@@ -6,18 +6,32 @@ export const useBlogArticles = () => {
   return useQuery({
     queryKey: ['blog-articles'],
     queryFn: async () => {
-      // Join with profiles table to get author information
-      const { data, error } = await supabase
+      // First get the blog articles
+      const { data: articles, error } = await supabase
         .from('blog_articles')
-        .select(`
-          *,
-          author:profiles(full_name)
-        `)
+        .select('*')
         .eq('status', 'published')
         .order('published_at', { ascending: false });
 
       if (error) throw error;
-      return data;
+      
+      // Then for each article, get the author's information
+      const articlesWithAuthors = await Promise.all(
+        articles.map(async (article) => {
+          const { data: authorData } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', article.author_id)
+            .single();
+          
+          return {
+            ...article,
+            author: authorData
+          };
+        })
+      );
+      
+      return articlesWithAuthors;
     }
   });
 };
