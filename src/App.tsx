@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -39,6 +40,7 @@ import AdminDashboard from "@/pages/Admin/AdminDashboard";
 import AdminUsers from "@/pages/Admin/AdminUsers";
 import AdminTransactions from "@/pages/Admin/AdminTransactions";
 import AdminSettings from "@/pages/Admin/AdminSettings";
+import AdminContent from "@/pages/Admin/AdminContent";
 import CoachBooking from "@/pages/CoachBooking";
 import BookingSuccess from "@/pages/BookingSuccess";
 import ComingSoon from "@/pages/ComingSoon";
@@ -168,16 +170,8 @@ const App = () => {
                   <Profile />
                 </RouteGuard>
               } />
-              <Route path="/blog" element={
-                <RouteGuard>
-                  <Blog />
-                </RouteGuard>
-              } />
-              <Route path="/blog/:postId" element={
-                <RouteGuard>
-                  <BlogPost />
-                </RouteGuard>
-              } />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:postId" element={<BlogPost />} />
               <Route path="/payments/new" element={
                 <RouteGuard>
                   <NewPayment />
@@ -218,6 +212,11 @@ const App = () => {
               <Route path="/admin/transactions" element={
                 <RouteGuard adminOnly={true}>
                   <AdminTransactions />
+                </RouteGuard>
+              } />
+              <Route path="/admin/content" element={
+                <RouteGuard adminOnly={true}>
+                  <AdminContent />
                 </RouteGuard>
               } />
               <Route path="/admin/settings" element={
