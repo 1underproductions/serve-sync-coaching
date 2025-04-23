@@ -1,22 +1,26 @@
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from "@/integrations/supabase/client";
 
 interface ImageUploaderProps {
-  onImageChange: (file: File) => Promise<void>;
+  onUploadComplete: (url: string) => void;
+  bucket?: string;  // Add bucket as an optional prop
   isSubmitting?: boolean;
   className?: string;
 }
 
 export function ImageUploader({ 
-  onImageChange, 
+  onUploadComplete,
+  bucket = 'avatars',  // Default bucket if none specified
   isSubmitting = false,
   className 
 }: ImageUploaderProps) {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
 
   const handleClick = () => {
     if (fileInputRef.current) {
@@ -59,12 +63,44 @@ export function ImageUploader({
     }
 
     try {
-      await onImageChange(file);
+      setUploading(true);
+      
+      // Upload the file to Supabase Storage
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${Math.random().toString(36).slice(2)}-${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError, data } = await supabase
+        .storage
+        .from(bucket)
+        .upload(filePath, file);
+        
+      if (uploadError) throw uploadError;
+      
+      // Get the public URL
+      const { data: publicUrlData } = supabase
+        .storage
+        .from(bucket)
+        .getPublicUrl(filePath);
+        
+      const publicUrl = publicUrlData.publicUrl;
+      
+      // Call the callback with the public URL
+      onUploadComplete(publicUrl);
+      
+      toast({
+        title: "Upload Successful",
+        description: "Image uploaded successfully.",
+      });
     } catch (error) {
-      // Error is handled by the parent component
-      console.error('Error in parent component during image upload:', error);
+      console.error('Error uploading image:', error);
+      toast({
+        variant: "destructive",
+        title: "Upload Failed",
+        description: "There was a problem uploading your image.",
+      });
     } finally {
-      // Reset the file input to allow selecting the same file again
+      setUploading(false);
+      // Reset the file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -79,16 +115,16 @@ export function ImageUploader({
         className="hidden"
         accept="image/*"
         onChange={handleFileChange}
-        disabled={isSubmitting}
+        disabled={isSubmitting || uploading}
       />
       <Button 
         variant="outline" 
         onClick={handleClick}
-        disabled={isSubmitting}
+        disabled={isSubmitting || uploading}
         className="w-full"
       >
         <Upload className="mr-2 h-4 w-4" /> 
-        {isSubmitting ? "Uploading..." : "Add Image"}
+        {uploading ? "Uploading..." : isSubmitting ? "Uploading..." : "Add Image"}
       </Button>
     </div>
   );

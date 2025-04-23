@@ -6,6 +6,7 @@ export const useBlogArticles = () => {
   return useQuery({
     queryKey: ['blog-articles'],
     queryFn: async () => {
+      // Join with profiles table to get author information
       const { data, error } = await supabase
         .from('blog_articles')
         .select(`
