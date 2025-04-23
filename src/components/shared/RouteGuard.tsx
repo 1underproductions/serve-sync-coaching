@@ -1,5 +1,5 @@
 
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/useAuth';
 
@@ -18,6 +18,7 @@ interface RouteGuardProps {
 const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGuardProps) => {
   const { user, isAdmin, isLoading, authError } = useAuth();
   const location = useLocation();
+  const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
 
   // Public routes that should always be accessible regardless of auth status
   const publicPaths = [
@@ -33,8 +34,16 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
     '/blog',
     '/helpdesk'
   ];
+
+  // Use effect to prevent redirect loops
+  useEffect(() => {
+    // Only set auth check flag once loading is complete
+    if (!isLoading) {
+      setHasCheckedAuth(true);
+    }
+  }, [isLoading]);
   
-  // Don't redirect while auth is still loading
+  // Don't render anything until auth is checked and not loading
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-tennis-green-600"></div>
@@ -46,18 +55,29 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
     return <>{children}</>;
   }
   
+  // Only proceed with redirects if we've checked auth status
+  if (!hasCheckedAuth) {
+    return <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-tennis-green-600"></div>
+    </div>;
+  }
+  
   // Paths that start with /admin require admin privileges
   if (adminOnly || location.pathname.startsWith('/admin')) {
-    console.log("Admin route check:", { user, isAdmin, authError });
+    console.log("Admin route check:", { 
+      user: !!user, // log boolean rather than full user object
+      isAdmin, 
+      path: location.pathname
+    });
     
     if (!user) {
       console.log("No user, redirecting to admin-login");
-      return <Navigate to="/admin-login" state={{ from: location }} />;
+      return <Navigate to="/admin-login" state={{ from: location }} replace />;
     }
     
     if (!isAdmin) {
       console.log("User is not admin, redirecting to dashboard");
-      return <Navigate to="/dashboard" state={{ from: location }} />;
+      return <Navigate to="/dashboard" state={{ from: location }} replace />;
     }
     
     console.log("User is admin, allowing access to admin route");
@@ -66,7 +86,7 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
   
   // For all other routes, if user is not authenticated, redirect to login
   if (requireAuth && !user) {
-    return <Navigate to="/login" state={{ from: location }} />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // User is authenticated or route doesn't require auth
