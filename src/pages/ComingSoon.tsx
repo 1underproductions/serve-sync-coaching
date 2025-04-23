@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -77,18 +76,20 @@ const ContactUsModal = ({ open, onClose }: { open: boolean, onClose: () => void 
 };
 
 const ComingSoon = () => {
-  const [showContact, setShowContact] = useState(false);
-
   return (
     <div className="min-h-screen flex flex-col">
       <header className="bg-white border-b py-4">
         <div className="container flex justify-between items-center">
           <Link to="/" className="text-2xl font-bold text-tennis-green-600">Tennexis</Link>
-          <Button variant="outline" size="sm" onClick={() => setShowContact(true)}>
-            <span className="flex items-center gap-2">
-              Contact Us
-            </span>
-          </Button>
+          <a
+            href="mailto:support@tennexis.com"
+            rel="noopener noreferrer"
+            className="inline-flex"
+          >
+            <Button variant="outline" size="sm">
+              <span className="flex items-center gap-2">Contact Us</span>
+            </Button>
+          </a>
         </div>
       </header>
 
@@ -179,7 +180,7 @@ const ComingSoon = () => {
             </motion.div>
           </div>
         </div>
-        <ContactUsModal open={showContact} onClose={() => setShowContact(false)} />
+        
       </main>
       
       <footer className="bg-white border-t py-6">
