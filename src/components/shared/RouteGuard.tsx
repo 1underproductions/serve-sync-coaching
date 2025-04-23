@@ -1,3 +1,4 @@
+
 import { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/useAuth';
@@ -10,7 +11,7 @@ interface RouteGuardProps {
 
 /**
  * A component that guards routes based on authentication status
- * - Unauthenticated users are redirected to the coming soon page
+ * - Unauthenticated users are redirected to the login page
  * - Admin routes require admin privileges
  * - Public routes (coming soon, login, etc.) are accessible to all
  */
@@ -55,9 +56,9 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
     return <>{children}</>;
   }
   
-  // For all other routes, if user is not authenticated, redirect to coming soon
+  // For all other routes, if user is not authenticated, redirect to login
   if (requireAuth && !user) {
-    return <Navigate to="/coming-soon" state={{ from: location }} />;
+    return <Navigate to="/login" state={{ from: location }} />;
   }
 
   // User is authenticated or route doesn't require auth
