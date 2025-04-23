@@ -16,7 +16,7 @@ interface RouteGuardProps {
  * - Public routes (coming soon, login, etc.) are accessible to all
  */
 const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGuardProps) => {
-  const { user, isAdmin, isLoading } = useAuth();
+  const { user, isAdmin, isLoading, profile } = useAuth();
   const location = useLocation();
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
 
@@ -41,7 +41,7 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
       // Add a small delay to ensure auth state is fully processed
       const timer = setTimeout(() => {
         setHasCheckedAuth(true);
-      }, 100);
+      }, 200); // Increased delay for more stable auth checking
       
       return () => clearTimeout(timer);
     }
@@ -60,7 +60,8 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
     isAdmin,
     isAuthenticated: !!user,
     adminOnly,
-    requireAuth
+    requireAuth,
+    profile
   });
   
   // If the current path is public, render it without restrictions

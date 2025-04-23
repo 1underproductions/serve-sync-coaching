@@ -1,7 +1,6 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
-import { supabase, Profile, sendCustomEmail } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { confirmAdminEmail } from '@/utils/adminUtils';
@@ -33,7 +32,7 @@ export const useAuthProvider = () => {
         {
           headers: {
             'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z3d0d3BnY2NwY2pldW1ya3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNjA1MDEsImV4cCI6MjA1ODkzNjUwMX0.DjWV3Jt7OcVaJh4QYQ8NsBpPtrI1m8FJ5O3n-SHhMrk',
-            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+            'Authorization': `Bearer ${session?.access_token || ''}`,
             'Content-Type': 'application/json'
           }
         }
@@ -68,12 +67,12 @@ export const useAuthProvider = () => {
       console.error('Error in fetchUserProfile:', error);
       return null;
     }
-  }, [user?.id]);
+  }, [user?.id, session?.access_token]);
 
   useEffect(() => {
     // First set up auth listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, updatedSession) => {
+      async (event, updatedSession) => {
         console.log("Auth state changed:", event);
         setAuthError(null); // Reset auth error on state change
         
@@ -90,10 +89,12 @@ export const useAuthProvider = () => {
         // Then fetch profile if needed (asynchronously)
         if (updatedSession?.user) {
           // Important: Use setTimeout to avoid potential deadlock in auth state
-          setTimeout(() => {
-            fetchUserProfile(updatedSession.user.id).catch(err => {
+          setTimeout(async () => {
+            try {
+              await fetchUserProfile(updatedSession.user.id);
+            } catch (err) {
               console.error("Error fetching profile during auth change:", err);
-            });
+            }
           }, 0);
         }
       }
@@ -280,16 +281,26 @@ export const useAuthProvider = () => {
         throw new Error("Failed to establish a session. Please try again.");
       }
 
+      // Set session first to ensure access token is available
+      setSession(data.session);
+      setUser(data.user);
+
+      console.log("Successfully signed in, fetching profile data");
+      
       // Fetch user profile to determine role
-      const profile = await fetchUserProfile(data.user.id);
+      await fetchUserProfile(data.user.id);
       
       toast({
         title: "Welcome back!",
         description: "You've successfully signed in.",
       });
       
-      // Don't navigate here - the RouteGuard will handle the redirects
-      // This prevents redirect loops
+      // Special handling for admin users - directly navigate to admin dashboard
+      if (email === "admin@tennexis.com" || profile?.role === "tennexis_admin") {
+        console.log("Admin login detected, navigating to admin dashboard");
+        navigate('/admin', { replace: true });
+      }
+      
     } catch (error: any) {
       console.error("Sign in caught error:", error);
       setAuthError(error.message);

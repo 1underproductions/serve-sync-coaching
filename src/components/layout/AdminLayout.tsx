@@ -21,7 +21,7 @@ const AdminLayout = ({
   description = "Manage your platform and users" 
 }: AdminLayoutProps) => {
   const navigate = useNavigate();
-  const { isAdmin, isLoading, profile, user } = useAuth();
+  const { isAdmin, isLoading, profile, user, session } = useAuth();
   
   // Add a check to ensure the user is an admin
   useEffect(() => {
@@ -30,7 +30,8 @@ const AdminLayout = ({
       isAdmin, 
       requiresAdmin,
       profile,
-      userExists: !!user
+      userExists: !!user,
+      sessionExists: !!session
     });
 
     // Only redirect if not loading and the check is complete
@@ -43,7 +44,7 @@ const AdminLayout = ({
         navigate('/dashboard', { replace: true });
       }
     }
-  }, [isAdmin, isLoading, navigate, profile, requiresAdmin, user]);
+  }, [isAdmin, isLoading, navigate, profile, requiresAdmin, user, session]);
 
   if (isLoading) {
     return (
@@ -64,6 +65,14 @@ const AdminLayout = ({
           <AlertDescription>
             You do not have admin privileges. Please log in with an admin account.
           </AlertDescription>
+          <div className="mt-4">
+            <button 
+              className="bg-tennis-green-600 text-white px-4 py-2 rounded"
+              onClick={() => navigate('/admin-login', { replace: true })}
+            >
+              Go to Admin Login
+            </button>
+          </div>
         </Alert>
       </Layout>
     );

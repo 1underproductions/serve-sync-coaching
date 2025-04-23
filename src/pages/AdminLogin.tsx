@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -35,6 +36,7 @@ const AdminLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
   const [isConfirmingEmail, setIsConfirmingEmail] = useState(false);
+  const [loginAttempted, setLoginAttempted] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAdmin, isLoading, signIn, authError, user } = useAuth();
@@ -47,13 +49,17 @@ const AdminLogin = () => {
     },
   });
 
+  // Check if user is already logged in and is admin
   useEffect(() => {
+    console.log("AdminLogin auth check:", { isAdmin, isLoading, user, loginAttempted });
+    
     if (!isLoading && user && isAdmin) {
       console.log("Already logged in as admin, redirecting to admin dashboard");
       navigate('/admin', { replace: true });
     }
-  }, [isAdmin, isLoading, navigate, user]);
+  }, [isAdmin, isLoading, navigate, user, loginAttempted]);
   
+  // Handle admin account setup
   useEffect(() => {
     const setupAdminAccount = async () => {
       try {
@@ -125,6 +131,9 @@ const AdminLogin = () => {
     try {
       console.log("Attempting admin login with:", data.email);
       await signIn(data.email, data.password);
+      setLoginAttempted(true);
+      
+      // Navigate will happen automatically in the useEffect if login is successful
     } catch (error: any) {
       console.error("Login error details:", error);
     }
@@ -150,6 +159,7 @@ const AdminLogin = () => {
         
         try {
           await signIn(form.getValues('email'), form.getValues('password'));
+          setLoginAttempted(true);
         } catch (signInError) {
           console.error("Sign in after confirmation failed:", signInError);
         }
