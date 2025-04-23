@@ -54,11 +54,11 @@ const Helpdesk = () => {
     }
     setSubmitting(true);
     try {
+      // Remove the email field from the insert payload since it doesn't exist in the schema
       const { error } = await supabase
         .from("support_tickets")
         .insert({
           user_id: user?.id,
-          email: user?.email || profile?.email,
           title: subject,
           description: message,
           category: "support", // Default category for user submissions
