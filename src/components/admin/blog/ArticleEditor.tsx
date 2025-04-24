@@ -38,6 +38,8 @@ export const ArticleEditor = () => {
       // Generate a slug from the title
       const slug = data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
       
+      console.log("Creating blog article with image:", imageUrl);
+      
       // Insert the article
       const { error } = await supabase
         .from('blog_articles')

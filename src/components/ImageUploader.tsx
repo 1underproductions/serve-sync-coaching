@@ -32,12 +32,13 @@ export function ImageUploader({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check file size (limit to 5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    // Check file size (limit to 5MB for avatars, 10MB for blog images)
+    const maxSize = bucket === 'avatars' ? 5 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > maxSize) {
       toast({
         variant: "destructive",
         title: "File Too Large",
-        description: "Please select an image under 5MB.",
+        description: `Please select an image under ${maxSize / (1024 * 1024)}MB.`,
       });
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
@@ -57,6 +58,8 @@ export function ImageUploader({
     try {
       setUploading(true);
       
+      console.log(`Uploading file to ${bucket} bucket...`);
+      
       // Upload the file to Supabase Storage
       const fileExt = file.name.split('.').pop();
       const filePath = `${Math.random().toString(36).slice(2)}-${Date.now()}.${fileExt}`;
@@ -65,7 +68,8 @@ export function ImageUploader({
         .storage
         .from(bucket)
         .upload(filePath, file, {
-          cacheControl: '3600'
+          cacheControl: '3600',
+          upsert: false
         });
         
       if (uploadError) {
@@ -73,12 +77,16 @@ export function ImageUploader({
         throw new Error(uploadError.message);
       }
       
+      console.log("File uploaded successfully:", data);
+      
       // Get the public URL
       const { data: publicUrlData } = supabase
         .storage
         .from(bucket)
         .getPublicUrl(filePath);
         
+      console.log("Public URL:", publicUrlData.publicUrl);
+      
       // Call the callback with the public URL
       onUploadComplete(publicUrlData.publicUrl);
       

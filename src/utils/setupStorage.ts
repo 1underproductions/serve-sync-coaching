@@ -7,6 +7,8 @@ import { supabase } from "@/lib/supabase";
  */
 export async function setupStorage() {
   try {
+    console.log("Setting up storage buckets...");
+    
     // Create avatars bucket if it doesn't exist
     const { error: avatarsError } = await supabase.storage.createBucket(
       'avatars', 
