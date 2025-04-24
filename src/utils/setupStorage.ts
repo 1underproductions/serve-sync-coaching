@@ -10,7 +10,7 @@ export async function setupStorage() {
     // Create avatars bucket if it doesn't exist
     const { error: avatarsError } = await supabase.storage.createBucket(
       'avatars', 
-      { public: true }
+      { public: true, fileSizeLimit: 5242880 } // 5MB limit
     );
     
     if (avatarsError && avatarsError.message !== "Bucket already exists") {
@@ -22,7 +22,7 @@ export async function setupStorage() {
     // Create blog-images bucket if it doesn't exist
     const { error: blogImagesError } = await supabase.storage.createBucket(
       'blog-images', 
-      { public: true }
+      { public: true, fileSizeLimit: 10485760 } // 10MB limit for blog images
     );
     
     if (blogImagesError && blogImagesError.message !== "Bucket already exists") {
