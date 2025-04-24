@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { ImageUploader } from "@/components/ImageUploader";
@@ -21,26 +20,22 @@ export const ArticleEditor = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { register, handleSubmit, reset, watch } = useForm<ArticleFormData>();
 
-  // Watch form values to prevent losing data during image upload
   const formValues = watch();
 
   const onSubmit = async (data: ArticleFormData) => {
     try {
       setIsSubmitting(true);
       
-      // Get current user for author_id
       const { data: userData } = await supabase.auth.getUser();
       
       if (!userData?.user) {
         throw new Error("No authenticated session available");
       }
       
-      // Generate a slug from the title
       const slug = data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
       
       console.log("Creating blog article with image:", imageUrl);
       
-      // Insert the article
       const { error } = await supabase
         .from('blog_articles')
         .insert({
@@ -54,10 +49,7 @@ export const ArticleEditor = () => {
           slug: slug
         });
 
-      if (error) {
-        console.error("Error creating article:", error);
-        throw new Error(`Failed to create article: ${error.message}`);
-      }
+      if (error) throw error;
 
       toast({
         title: "Success",
