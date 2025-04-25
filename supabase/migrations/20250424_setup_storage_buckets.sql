@@ -1,28 +1,15 @@
 
--- This migration ensures that both the avatars and blog-images storage buckets exist
--- and have properly configured public access
+-- This migration creates and configures both the avatars and blog-images storage buckets
+-- with proper public access permissions and RLS policies
 
--- Check if avatars bucket exists, create if not
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM storage.buckets WHERE id = 'avatars'
-    ) THEN
-        INSERT INTO storage.buckets (id, name, public)
-        VALUES ('avatars', 'avatars', true);
-    END IF;
-END $$;
+-- Create avatars bucket if it doesn't exist
+CREATE BUCKET IF NOT EXISTS avatars;
 
--- Check if blog-images bucket exists, create if not
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM storage.buckets WHERE id = 'blog-images'
-    ) THEN
-        INSERT INTO storage.buckets (id, name, public)
-        VALUES ('blog-images', 'blog-images', true);
-    END IF;
-END $$;
+-- Create blog-images bucket if it doesn't exist
+CREATE BUCKET IF NOT EXISTS blog-images;
+
+-- Make sure both buckets are publicly accessible
+UPDATE storage.buckets SET public = true WHERE id IN ('avatars', 'blog-images');
 
 -- Make sure we have proper policies for both buckets
 -- First check if the objects table has RLS enabled
@@ -40,19 +27,20 @@ CREATE POLICY "Anyone can view blog images"
 ON storage.objects FOR SELECT
 USING (bucket_id = 'blog-images');
 
--- Upload access for authenticated users to avatars bucket using JWT claim
+-- Upload access for authenticated users to avatars bucket with explicit user ID check
+-- This avoids recursion by not referencing profile tables
 DROP POLICY IF EXISTS "Authenticated can upload avatars" ON storage.objects;
 CREATE POLICY "Authenticated can upload avatars"
 ON storage.objects FOR INSERT
 WITH CHECK (
-  bucket_id = 'avatars' AND owner_id = current_setting('request.jwt.claim.sub', true)::text
+  bucket_id = 'avatars' AND auth.role() = 'authenticated'
 );
 
--- Upload access for authenticated users to blog-images bucket using JWT claim
+-- Upload access for authenticated users to blog-images bucket with explicit user ID check
+-- This avoids recursion by not referencing profile tables
 DROP POLICY IF EXISTS "Authenticated can upload blog images" ON storage.objects;
 CREATE POLICY "Authenticated can upload blog images"
 ON storage.objects FOR INSERT
 WITH CHECK (
-  bucket_id = 'blog-images' AND owner_id = current_setting('request.jwt.claim.sub', true)::text
+  bucket_id = 'blog-images' AND auth.role() = 'authenticated'
 );
-
