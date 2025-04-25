@@ -58,45 +58,41 @@ export function ImageUploader({
     try {
       setUploading(true);
       
-      // Generate file path with unique name
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).slice(2)}-${Date.now()}.${fileExt}`;
-      const filePath = fileName;
-      
-      // Get authenticated user session to use auth token in headers
+      // Get session for auth token
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
         throw new Error("Authentication required");
       }
-      
-      // Use direct fetch with FormData instead of Supabase client
-      // This bypasses RLS completely by using the REST API directly
+
+      // Create form data for the file upload
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('bucket', bucket);
       
+      // Call the edge function instead of using Storage API directly
       const response = await fetch(
-        `https://cugwtwpgccpcjeumrkxf.supabase.co/storage/v1/object/${bucket}/${filePath}`,
+        'https://cugwtwpgccpcjeumrkxf.supabase.co/functions/v1/file-upload',
         {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${session.access_token}`,
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z3d0d3BnY2NwY2pldW1ya3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNjA1MDEsImV4cCI6MjA1ODkzNjUwMX0.DjWV3Jt7OcVaJh4QYQ8NsBpPtrI1m8FJ5O3n-SHhMrk'
           },
           body: formData,
         }
       );
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Upload error:", errorText);
-        throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+        const errorData = await response.json().catch(() => null);
+        console.error("Upload error:", errorData || response.statusText);
+        throw new Error(`Upload failed: ${response.status} ${errorData?.details || response.statusText}`);
       }
       
-      // Get the public URL
-      const publicUrl = `https://cugwtwpgccpcjeumrkxf.supabase.co/storage/v1/object/public/${bucket}/${filePath}`;
+      const data = await response.json();
       
       // Call the callback with the public URL
-      onUploadComplete(publicUrl);
+      onUploadComplete(data.url);
       
       toast({
         title: "Upload Successful",

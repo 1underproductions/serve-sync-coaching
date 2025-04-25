@@ -4,7 +4,7 @@ import { User } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { ImageUploader } from "@/components/ImageUploader";
-import { supabase } from "@/lib/supabase"; // Add this import
+import { supabase } from "@/lib/supabase";
 import {
   Card,
   CardHeader,
@@ -56,21 +56,19 @@ export const ProfilePicture = () => {
       if (!session) {
         throw new Error("Authentication required");
       }
-      
-      // Use direct fetch with REST API instead of Supabase client
-      // This bypasses RLS completely
+
+      // Call the update-avatar edge function which bypasses RLS
       const response = await fetch(
-        'https://cugwtwpgccpcjeumrkxf.supabase.co/rest/v1/profiles',
+        'https://cugwtwpgccpcjeumrkxf.supabase.co/functions/v1/update-avatar',
         {
-          method: 'PATCH',
+          method: 'POST',
           headers: {
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z3d0d3BnY2NwY2pldW1ya3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNjA1MDEsImV4cCI6MjA1ODkzNjUwMX0.DjWV3Jt7OcVaJh4QYQ8NsBpPtrI1m8FJ5O3n-SHhMrk',
             'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal'
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z3d0d3BnY2NwY2pldW1ya3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNjA1MDEsImV4cCI6MjA1ODkzNjUwMX0.DjWV3Jt7OcVaJh4QYQ8NsBpPtrI1m8FJ5O3n-SHhMrk',
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            avatar_url: url
+            avatarUrl: url
           })
         }
       );
