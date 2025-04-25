@@ -4,6 +4,7 @@ import { User } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { ImageUploader } from "@/components/ImageUploader";
+import { supabase } from "@/lib/supabase"; // Add this import
 import {
   Card,
   CardHeader,
