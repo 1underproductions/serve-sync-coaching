@@ -648,6 +648,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      is_admin_safe: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       is_tennexis_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean

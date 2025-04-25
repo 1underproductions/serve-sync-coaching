@@ -39,3 +39,19 @@ DROP POLICY IF EXISTS "Anyone can view blog images" ON storage.objects;
 CREATE POLICY "Anyone can view blog images" 
 ON storage.objects FOR SELECT
 USING (bucket_id = 'blog-images');
+
+-- Upload access for authenticated users to avatars bucket
+DROP POLICY IF EXISTS "Authenticated can upload avatars" ON storage.objects;
+CREATE POLICY "Authenticated can upload avatars"
+ON storage.objects FOR INSERT
+WITH CHECK (
+  bucket_id = 'avatars' AND auth.uid()::text = owner_id
+);
+
+-- Upload access for authenticated users to blog-images bucket
+DROP POLICY IF EXISTS "Authenticated can upload blog images" ON storage.objects;
+CREATE POLICY "Authenticated can upload blog images"
+ON storage.objects FOR INSERT
+WITH CHECK (
+  bucket_id = 'blog-images' AND auth.uid()::text = owner_id
+);

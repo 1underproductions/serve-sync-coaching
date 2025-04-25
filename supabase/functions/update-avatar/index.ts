@@ -73,39 +73,56 @@ serve(async (req) => {
       )
     }
 
-    // Update profile
-    const { data, error: updateError } = await supabase
-      .from('profiles')
-      .update({ avatar_url: avatarUrl })
-      .eq('id', user.id)
-      .select('avatar_url')
+    // Use our safe RPC function to update the avatar
+    const { error: rpcError } = await supabase.rpc('update_user_avatar_safe', {
+      new_avatar_url: avatarUrl
+    });
+    
+    if (rpcError) {
+      console.error('RPC function failed:', rpcError);
+      
+      // Fallback to direct update as a backup approach
+      const { data, error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: avatarUrl })
+        .eq('id', user.id)
+        .select('avatar_url');
 
-    if (updateError) {
-      console.error('Error updating profile:', updateError)
+      if (updateError) {
+        console.error('Error updating profile:', updateError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to update profile', details: updateError.message }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          }
+        );
+      }
+      
       return new Response(
-        JSON.stringify({ error: 'Failed to update profile', details: updateError.message }),
+        JSON.stringify({ success: true, data }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500,
+          status: 200,
         }
-      )
+      );
     }
-
+    
     return new Response(
-      JSON.stringify({ success: true, data }),
+      JSON.stringify({ success: true }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       }
-    )
+    );
   } catch (error) {
-    console.error('Unexpected error:', error)
+    console.error('Unexpected error:', error);
     return new Response(
       JSON.stringify({ error: 'Internal server error', details: error.message }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       }
-    )
+    );
   }
-})
+});
