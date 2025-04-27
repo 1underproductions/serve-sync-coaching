@@ -23,7 +23,7 @@ export const ArticleEditor = ({ onSaveSuccess }: { onSaveSuccess?: () => void })
 
   const formValues = watch();
 
-  const onSubmit = async (data: ArticleFormData) => {
+  const onSubmit = async (data: ArticleFormData, publishDirectly = false) => {
     try {
       setIsSubmitting(true);
       
@@ -45,7 +45,8 @@ export const ArticleEditor = ({ onSaveSuccess }: { onSaveSuccess?: () => void })
           excerpt: data.excerpt,
           category: data.category,
           image_url: imageUrl,
-          status: 'draft',
+          status: publishDirectly ? 'published' : 'draft',
+          published_at: publishDirectly ? new Date().toISOString() : null,
           author_id: userData.user.id,
           slug: slug
         });
@@ -54,15 +55,18 @@ export const ArticleEditor = ({ onSaveSuccess }: { onSaveSuccess?: () => void })
 
       toast({
         title: "Success",
-        description: "Article saved as draft",
+        description: publishDirectly ? "Article published successfully" : "Article saved as draft",
       });
       
-      reset();
-      setImageUrl("");
-      
-      // Call the onSaveSuccess callback to return to the article list
-      if (onSaveSuccess) {
-        onSaveSuccess();
+      if (publishDirectly || !imageUrl) {
+        // Only reset and redirect if publishing or if no image was being uploaded
+        reset();
+        setImageUrl("");
+        
+        // Call the onSaveSuccess callback to return to the article list
+        if (onSaveSuccess) {
+          onSaveSuccess();
+        }
       }
     } catch (error: any) {
       console.error("Error creating article:", error);
@@ -84,8 +88,12 @@ export const ArticleEditor = ({ onSaveSuccess }: { onSaveSuccess?: () => void })
     });
   };
 
+  const handleSaveAndReturn = () => {
+    handleSubmit((data) => onSubmit(data, false))();
+  };
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit((data) => onSubmit(data, false))} className="space-y-6">
       <div>
         <Input
           {...register("title", { required: true })}
@@ -136,12 +144,37 @@ export const ArticleEditor = ({ onSaveSuccess }: { onSaveSuccess?: () => void })
       </div>
 
       <div className="flex justify-end space-x-4">
+        <Button 
+          type="button"
+          variant="outline"
+          onClick={onSaveSuccess}
+        >
+          Cancel
+        </Button>
         <Button
           type="submit"
           disabled={isSubmitting}
         >
-          {isSubmitting ? "Saving..." : "Save as Draft"}
+          Save as Draft
         </Button>
+        <Button
+          type="button"
+          disabled={isSubmitting}
+          onClick={handleSubmit((data) => onSubmit(data, true))}
+          variant="default"
+          className="bg-green-600 hover:bg-green-700"
+        >
+          Publish Now
+        </Button>
+        {imageUrl && (
+          <Button
+            type="button"
+            onClick={handleSaveAndReturn}
+            disabled={isSubmitting}
+          >
+            Save and Return
+          </Button>
+        )}
       </div>
     </form>
   );
