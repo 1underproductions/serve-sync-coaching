@@ -12,7 +12,6 @@ export const useBlogArticles = () => {
       try {
         console.log("Fetching published blog articles...");
         
-        // Fetch published articles
         const { data: articles, error } = await supabase
           .from('blog_articles')
           .select('*')
@@ -35,47 +34,13 @@ export const useBlogArticles = () => {
           return [];
         }
         
-        // For each article, get the author's information
-        const articlesWithAuthors = await Promise.all(
-          articles.map(async (article) => {
-            try {
-              if (!article.author_id) {
-                return {
-                  ...article,
-                  author: { full_name: "Unknown Author" }
-                };
-              }
-              
-              // Get author using Supabase client
-              const { data: authorData, error: authorError } = await supabase
-                .from('profiles')
-                .select('full_name')
-                .eq('id', article.author_id)
-                .single();
-              
-              if (authorError || !authorData) {
-                console.error(`Error fetching author for article ${article.id}:`, authorError);
-                return {
-                  ...article,
-                  author: { full_name: "Unknown Author" }
-                };
-              }
-              
-              return {
-                ...article,
-                author: authorData
-              };
-            } catch (error) {
-              console.error(`Error fetching author data for article ${article.id}:`, error);
-              return {
-                ...article,
-                author: { full_name: "Unknown Author" }
-              };
-            }
-          })
-        );
+        // Add Tennexis as the default author for all articles
+        const articlesWithAuthor = articles.map(article => ({
+          ...article,
+          author: { full_name: "Tennexis" }
+        }));
         
-        return articlesWithAuthors;
+        return articlesWithAuthor;
       } catch (error) {
         console.error("Error in useBlogArticles:", error);
         

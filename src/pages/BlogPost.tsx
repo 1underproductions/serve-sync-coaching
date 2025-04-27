@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, User, Tag } from "lucide-react";
@@ -42,7 +41,6 @@ const BlogPost = () => {
         
         console.log("Fetching blog post with slug:", slug);
         
-        // Get article by slug
         const { data, error } = await supabase
           .from('blog_articles')
           .select(`
@@ -70,20 +68,8 @@ const BlogPost = () => {
           return;
         }
         
-        // Get author details
-        let author = { full_name: "Unknown Author" };
-        
-        if (data.author_id) {
-          const { data: authorData, error: authorError } = await supabase
-            .from('profiles')
-            .select('full_name')
-            .eq('id', data.author_id)
-            .single();
-            
-          if (!authorError && authorData) {
-            author = authorData;
-          }
-        }
+        // Set default author as Tennexis
+        const author = { full_name: "Tennexis" };
         
         setPost({ ...data, author });
       } catch (error: any) {
