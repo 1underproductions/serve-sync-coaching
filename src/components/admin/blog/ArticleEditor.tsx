@@ -93,7 +93,7 @@ export const ArticleEditor = ({ onSaveSuccess }: { onSaveSuccess?: () => void })
   };
 
   return (
-    <form onSubmit={handleSubmit((data) => onSubmit(data, false))} className="space-y-6">
+    <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
       <div>
         <Input
           {...register("title", { required: true })}
@@ -152,7 +152,8 @@ export const ArticleEditor = ({ onSaveSuccess }: { onSaveSuccess?: () => void })
           Cancel
         </Button>
         <Button
-          type="submit"
+          type="button"
+          onClick={handleSubmit((data) => onSubmit(data, false))}
           disabled={isSubmitting}
         >
           Save as Draft
