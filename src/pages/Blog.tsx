@@ -62,7 +62,7 @@ const Blog = () => {
                   <div className="flex items-center text-sm text-gray-500 mb-3">
                     <span className="flex items-center">
                       <Calendar className="h-4 w-4 mr-1" />
-                      {new Date(post.published_at).toLocaleDateString()}
+                      {new Date(post.published_at || post.created_at).toLocaleDateString()}
                     </span>
                     <span className="mx-2">•</span>
                     <span className="flex items-center">

@@ -12,7 +12,7 @@ export const useBlogArticles = () => {
       try {
         console.log("Fetching published blog articles...");
         
-        // Now that RLS policies are fixed, we can use the Supabase client directly
+        // Fetch published articles
         const { data: articles, error } = await supabase
           .from('blog_articles')
           .select('*')
@@ -79,14 +79,13 @@ export const useBlogArticles = () => {
       } catch (error) {
         console.error("Error in useBlogArticles:", error);
         
-        // Show a toast notification with a more user-friendly error message
         toast({
           variant: "destructive",
           title: "Error loading articles",
           description: "Unable to load blog articles. Please try again later.",
         });
         
-        throw new Error("An unexpected error occurred while fetching articles");
+        return [];
       }
     },
     retry: 1,

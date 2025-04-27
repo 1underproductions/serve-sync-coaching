@@ -9,6 +9,10 @@ import { Plus } from "lucide-react";
 export default function AdminContent() {
   const [showEditor, setShowEditor] = useState(false);
 
+  const toggleView = () => {
+    setShowEditor(!showEditor);
+  };
+
   return (
     <AdminLayout 
       title="Content Library" 
@@ -17,7 +21,7 @@ export default function AdminContent() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <Button
-            onClick={() => setShowEditor(!showEditor)}
+            onClick={toggleView}
           >
             {showEditor ? (
               "View Articles"

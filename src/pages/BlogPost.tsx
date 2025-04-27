@@ -15,13 +15,14 @@ interface BlogPost {
   image_url: string;
   category: string;
   published_at: string;
+  created_at: string;
   author: {
     full_name: string;
   };
 }
 
 const BlogPost = () => {
-  const { slug } = useParams();
+  const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [post, setPost] = useState<BlogPost | null>(null);
@@ -50,6 +51,7 @@ const BlogPost = () => {
             image_url,
             category,
             published_at,
+            created_at,
             author_id
           `)
           .eq('slug', slug)
@@ -122,6 +124,8 @@ const BlogPost = () => {
     return null; // We'll redirect in the useEffect
   }
 
+  const displayDate = post.published_at ? new Date(post.published_at) : new Date(post.created_at);
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -146,7 +150,7 @@ const BlogPost = () => {
               <div className="flex flex-wrap items-center text-sm text-gray-500 mb-4">
                 <span className="flex items-center mr-4 mb-2">
                   <Calendar className="h-4 w-4 mr-1" />
-                  {new Date(post.published_at).toLocaleDateString()}
+                  {displayDate.toLocaleDateString()}
                 </span>
                 <span className="flex items-center mr-4 mb-2">
                   <User className="h-4 w-4 mr-1" />
