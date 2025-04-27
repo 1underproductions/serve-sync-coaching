@@ -84,8 +84,8 @@ serve(async (req) => {
 
     console.log(`User authenticated: ${user.id}`);
     
-    // Create service role client for database operations
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    // Get service role key from environment variables
+    const serviceRoleKey = Deno.env.get('SERVICE_ROLE_KEY')
     if (!serviceRoleKey) {
       console.error("No service role key available");
       return new Response(
@@ -97,6 +97,7 @@ serve(async (req) => {
       )
     }
     
+    // Create service role client for database operations
     const adminClient = createClient(supabaseUrl, serviceRoleKey)
     
     // Update the avatar directly using the service role client

@@ -62,9 +62,6 @@ serve(async (req) => {
       )
     }
     
-    console.log(`Creating Supabase client with URL: ${supabaseUrl}, Key length: ${supabaseKey.length}`);
-    console.log(`Authorization header length: ${authHeader.length}`);
-    
     // ===== MANUAL AUTH VALIDATION =====
     // Validate the user's JWT manually by calling the auth API endpoint
     const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
@@ -89,9 +86,8 @@ serve(async (req) => {
 
     console.log(`User authenticated: ${user.id}`);
     
-    // Create a service role client for storage operations
-    // This bypasses RLS policies - but we've already authenticated the user
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    // Get service role key from environment variables
+    const serviceRoleKey = Deno.env.get('SERVICE_ROLE_KEY')
     if (!serviceRoleKey) {
       console.error("No service role key available");
       return new Response(
@@ -103,6 +99,7 @@ serve(async (req) => {
       )
     }
     
+    // Create service role client for storage operations
     const adminClient = createClient(supabaseUrl, serviceRoleKey)
     
     // Generate unique filename
