@@ -40,6 +40,8 @@ const BlogPost = () => {
           return;
         }
         
+        console.log("Fetching blog post with slug:", slug);
+        
         // Get article by slug
         const { data, error } = await supabase
           .from('blog_articles')
@@ -156,10 +158,12 @@ const BlogPost = () => {
                   <User className="h-4 w-4 mr-1" />
                   {post.author?.full_name || "Unknown Author"}
                 </span>
+                {post.category && (
                 <span className="flex items-center mb-2">
                   <Tag className="h-4 w-4 mr-1" />
                   {post.category || "Uncategorized"}
                 </span>
+                )}
               </div>
               
               <h1 className="text-2xl md:text-3xl font-bold mb-6">

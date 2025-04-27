@@ -15,7 +15,7 @@ interface ArticleFormData {
   category: string;
 }
 
-export const ArticleEditor = () => {
+export const ArticleEditor = ({ onSaveSuccess }: { onSaveSuccess?: () => void }) => {
   const { toast } = useToast();
   const [imageUrl, setImageUrl] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -59,6 +59,11 @@ export const ArticleEditor = () => {
       
       reset();
       setImageUrl("");
+      
+      // Call the onSaveSuccess callback to return to the article list
+      if (onSaveSuccess) {
+        onSaveSuccess();
+      }
     } catch (error: any) {
       console.error("Error creating article:", error);
       toast({

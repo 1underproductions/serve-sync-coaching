@@ -13,6 +13,10 @@ export default function AdminContent() {
     setShowEditor(!showEditor);
   };
 
+  const handleSaveSuccess = () => {
+    toggleView(); // Return to article list after saving
+  };
+
   return (
     <AdminLayout 
       title="Content Library" 
@@ -35,7 +39,7 @@ export default function AdminContent() {
         </div>
 
         {showEditor ? (
-          <ArticleEditor />
+          <ArticleEditor onSaveSuccess={handleSaveSuccess} />
         ) : (
           <ArticleList />
         )}
