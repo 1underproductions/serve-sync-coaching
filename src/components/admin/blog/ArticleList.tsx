@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,9 +8,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
-import { AlertCircle, RefreshCw, ShieldAlert } from "lucide-react";
+import { AlertCircle, RefreshCw, Trash2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface Article {
@@ -37,7 +47,6 @@ export const ArticleList = () => {
       
       console.log("Fetching articles with Supabase client...");
       
-      // Use a direct query approach without RLS recursion risk
       const { data, error } = await supabase
         .from('blog_articles')
         .select('id,title,status,category,created_at,slug')
@@ -91,6 +100,34 @@ export const ArticleList = () => {
         variant: "destructive",
         title: "Error",
         description: err.message || "An unexpected error occurred while publishing the article",
+      });
+    }
+  };
+
+  const deleteArticle = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('blog_articles')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error("Error deleting article:", error);
+        throw new Error(`Failed to delete article: ${error.message}`);
+      }
+
+      toast({
+        title: "Success",
+        description: "Article deleted successfully",
+      });
+      
+      fetchArticles();
+    } catch (err: any) {
+      console.error("Exception deleting article:", err);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: err.message || "An unexpected error occurred while deleting the article",
       });
     }
   };
@@ -186,6 +223,33 @@ export const ArticleList = () => {
                 >
                   Edit
                 </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the article.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => deleteArticle(article.id)}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </TableCell>
           </TableRow>
