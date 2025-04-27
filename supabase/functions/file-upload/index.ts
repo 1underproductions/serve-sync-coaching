@@ -16,9 +16,12 @@ serve(async (req) => {
   }
 
   try {
+    console.log("File upload function called");
+    
     // Get and validate auth token
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
+      console.error("Missing Authorization header");
       return new Response(
         JSON.stringify({ error: 'Authorization header required' }),
         {
@@ -29,11 +32,12 @@ serve(async (req) => {
     }
 
     // Parse form data with file
-    const formData = await req.formData()
-    const file = formData.get('file')
-    const bucketName = formData.get('bucket') as string || 'avatars'
+    const formData = await req.formData();
+    const file = formData.get('file');
+    const bucketName = formData.get('bucket') as string || 'avatars';
     
     if (!file || !(file instanceof File)) {
+      console.error("No file in request");
       return new Response(
         JSON.stringify({ error: 'No file provided' }),
         {
@@ -45,7 +49,21 @@ serve(async (req) => {
 
     // Configuration
     const supabaseUrl = 'https://cugwtwpgccpcjeumrkxf.supabase.co'
-    const supabaseKey = req.headers.get('apikey') || ''
+    const supabaseKey = req.headers.get('apikey') || Deno.env.get('SUPABASE_ANON_KEY')
+    
+    if (!supabaseKey) {
+      console.error("No API key provided");
+      return new Response(
+        JSON.stringify({ error: 'API key required' }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
+    
+    console.log(`Creating Supabase client with URL: ${supabaseUrl}, Key length: ${supabaseKey.length}`);
+    console.log(`Authorization header length: ${authHeader.length}`);
     
     // Create authenticated client as the Edge Function (bypasses RLS)
     const supabase = createClient(supabaseUrl, supabaseKey, {
@@ -59,6 +77,7 @@ serve(async (req) => {
     // Get user identity (to ensure authorization)
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) {
+      console.error("Auth error:", userError);
       return new Response(
         JSON.stringify({ error: 'Unauthorized', details: userError?.message }),
         {
@@ -68,9 +87,13 @@ serve(async (req) => {
       )
     }
 
+    console.log(`User authenticated: ${user.id}`);
+    
     // Generate unique filename
     const fileExt = file.name.split('.').pop()
     const fileName = `${Math.random().toString(36).slice(2)}-${Date.now()}.${fileExt}`
+    
+    console.log(`Uploading file to bucket: ${bucketName}, filename: ${fileName}`);
     
     // Upload directly to storage bucket using the Edge Function's permissions
     const { data, error } = await supabase
@@ -82,7 +105,7 @@ serve(async (req) => {
       })
 
     if (error) {
-      console.error('Storage upload error:', error)
+      console.error('Storage upload error:', error);
       return new Response(
         JSON.stringify({ error: 'Upload failed', details: error.message }),
         {
@@ -95,6 +118,8 @@ serve(async (req) => {
     // Get the public URL
     const publicUrl = `${supabaseUrl}/storage/v1/object/public/${bucketName}/${fileName}`
     
+    console.log(`Upload successful, public URL: ${publicUrl}`);
+    
     return new Response(
       JSON.stringify({ 
         success: true, 
@@ -106,7 +131,7 @@ serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('Unexpected error:', error)
+    console.error('Unexpected error:', error);
     return new Response(
       JSON.stringify({ error: 'Internal server error', details: error.message }),
       {

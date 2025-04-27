@@ -16,27 +16,52 @@ serve(async (req) => {
   }
 
   try {
-    // Create authenticated Supabase client
+    console.log("Update avatar function called");
+    
+    // Get and validate auth token
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
+      console.error("Missing Authorization header");
       return new Response(
-        JSON.stringify({ error: 'No authorization header provided' }),
+        JSON.stringify({ error: 'Authorization header required' }),
         {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       )
     }
 
-    const supabaseUrl = 'https://cugwtwpgccpcjeumrkxf.supabase.co'
-    const supabaseKey = req.headers.get('apikey') || ''
+    // Parse request body
+    const { avatarUrl } = await req.json();
     
+    if (!avatarUrl) {
+      console.error("No avatar URL provided");
+      return new Response(
+        JSON.stringify({ error: 'No avatar URL provided' }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
+
+    // Configuration
+    const supabaseUrl = 'https://cugwtwpgccpcjeumrkxf.supabase.co'
+    const supabaseKey = req.headers.get('apikey') || Deno.env.get('SUPABASE_ANON_KEY') 
+    
+    if (!supabaseKey) {
+      console.error("No API key provided");
+      return new Response(
+        JSON.stringify({ error: 'API key required' }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
+    
+    // Create authenticated client as the Edge Function
     const supabase = createClient(supabaseUrl, supabaseKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-        detectSessionInUrl: false,
-      },
       global: {
         headers: {
           Authorization: authHeader,
@@ -44,85 +69,59 @@ serve(async (req) => {
       },
     })
 
-    // Verify auth status
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser()
-
+    // Get user identity (to ensure authorization)
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) {
+      console.error("Auth error:", userError);
       return new Response(
         JSON.stringify({ error: 'Unauthorized', details: userError?.message }),
         {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       )
     }
 
-    // Parse request body
-    const { avatarUrl } = await req.json()
+    console.log(`User authenticated: ${user.id}`);
     
-    if (!avatarUrl) {
+    // Call the RPC function to update the avatar bypassing RLS
+    // This uses a security definer function to avoid RLS recursion issues
+    const { error } = await supabase.rpc(
+      'update_user_avatar_safe',
+      { new_avatar_url: avatarUrl }
+    )
+    
+    if (error) {
+      console.error('Avatar update error:', error);
       return new Response(
-        JSON.stringify({ error: 'Avatar URL is required' }),
+        JSON.stringify({ error: 'Update failed', details: error.message }),
         {
+          status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
         }
       )
     }
 
-    // Use our safe RPC function to update the avatar
-    const { error: rpcError } = await supabase.rpc('update_user_avatar_safe', {
-      new_avatar_url: avatarUrl
-    });
-    
-    if (rpcError) {
-      console.error('RPC function failed:', rpcError);
-      
-      // Fallback to direct update as a backup approach
-      const { data, error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: avatarUrl })
-        .eq('id', user.id)
-        .select('avatar_url');
-
-      if (updateError) {
-        console.error('Error updating profile:', updateError);
-        return new Response(
-          JSON.stringify({ error: 'Failed to update profile', details: updateError.message }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500,
-          }
-        );
-      }
-      
-      return new Response(
-        JSON.stringify({ success: true, data }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        }
-      );
-    }
+    console.log(`Avatar updated successfully for user ${user.id}`);
     
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ 
+        success: true, 
+        message: 'Avatar updated successfully'
+      }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
-    );
+    )
   } catch (error) {
     console.error('Unexpected error:', error);
     return new Response(
       JSON.stringify({ error: 'Internal server error', details: error.message }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
-    );
+    )
   }
-});
+})

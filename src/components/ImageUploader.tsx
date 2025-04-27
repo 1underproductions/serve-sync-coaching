@@ -58,17 +58,24 @@ export function ImageUploader({
     try {
       setUploading(true);
       
-      // Get session for auth token
-      const { data: { session } } = await supabase.auth.getSession();
+      // Get the current auth session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      if (!session) {
-        throw new Error("Authentication required");
+      if (sessionError || !session) {
+        console.error("Authentication error:", sessionError);
+        throw new Error("Authentication required. Please log in again.");
       }
 
       // Create form data for the file upload
       const formData = new FormData();
       formData.append('file', file);
       formData.append('bucket', bucket);
+      
+      // Log the session details for debugging purposes
+      console.log("Using session with token:", {
+        accessTokenLength: session.access_token.length,
+        userExists: !!session.user
+      });
       
       // Call the edge function with authentication headers
       const response = await fetch(
