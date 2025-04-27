@@ -70,7 +70,7 @@ export function ImageUploader({
       formData.append('file', file);
       formData.append('bucket', bucket);
       
-      // Call the edge function instead of using Storage API directly
+      // Call the edge function with authentication headers
       const response = await fetch(
         'https://cugwtwpgccpcjeumrkxf.supabase.co/functions/v1/file-upload',
         {
