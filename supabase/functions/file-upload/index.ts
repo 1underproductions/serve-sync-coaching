@@ -65,21 +65,21 @@ serve(async (req) => {
     console.log(`Creating Supabase client with URL: ${supabaseUrl}, Key length: ${supabaseKey.length}`);
     console.log(`Authorization header length: ${authHeader.length}`);
     
-    // Create authenticated client as the Edge Function (bypasses RLS)
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      global: {
-        headers: {
-          Authorization: authHeader,
-        },
+    // ===== MANUAL AUTH VALIDATION =====
+    // Validate the user's JWT manually by calling the auth API endpoint
+    const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: {
+        Authorization: authHeader,
+        apikey: supabaseKey,
       },
     })
 
-    // Get user identity (to ensure authorization)
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-      console.error("Auth error:", userError);
+    const user = await authResponse.json()
+
+    if (!authResponse.ok) {
+      console.error("Auth validation failed:", user);
       return new Response(
-        JSON.stringify({ error: 'Unauthorized', details: userError?.message }),
+        JSON.stringify({ error: 'Unauthorized', details: user.msg }),
         {
           status: 401,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -88,6 +88,9 @@ serve(async (req) => {
     }
 
     console.log(`User authenticated: ${user.id}`);
+    
+    // Create Supabase client for storage operations
+    const supabase = createClient(supabaseUrl, supabaseKey)
     
     // Generate unique filename
     const fileExt = file.name.split('.').pop()
