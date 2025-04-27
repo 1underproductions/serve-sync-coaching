@@ -174,7 +174,7 @@ const App = () => {
                 </RouteGuard>
               } />
               <Route path="/blog" element={<Blog />} />
-              <Route path="/blog/:postId" element={<BlogPost />} />
+              <Route path="/blog/:slug" element={<BlogPost />} />
               <Route path="/payments/new" element={
                 <RouteGuard>
                   <NewPayment />
