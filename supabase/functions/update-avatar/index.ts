@@ -84,15 +84,26 @@ serve(async (req) => {
 
     console.log(`User authenticated: ${user.id}`);
     
-    // Create authenticated client for database operations
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    // Create service role client for database operations
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    if (!serviceRoleKey) {
+      console.error("No service role key available");
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error' }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
     
-    // Call the RPC function to update the avatar bypassing RLS
-    // This uses a security definer function to avoid RLS recursion issues
-    const { error } = await supabase.rpc(
-      'update_user_avatar_safe',
-      { new_avatar_url: avatarUrl }
-    )
+    const adminClient = createClient(supabaseUrl, serviceRoleKey)
+    
+    // Update the avatar directly using the service role client
+    const { error } = await adminClient
+      .from('profiles')
+      .update({ avatar_url: avatarUrl })
+      .eq('id', user.id)
     
     if (error) {
       console.error('Avatar update error:', error);

@@ -89,8 +89,21 @@ serve(async (req) => {
 
     console.log(`User authenticated: ${user.id}`);
     
-    // Create Supabase client for storage operations
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    // Create a service role client for storage operations
+    // This bypasses RLS policies - but we've already authenticated the user
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    if (!serviceRoleKey) {
+      console.error("No service role key available");
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error' }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
+    
+    const adminClient = createClient(supabaseUrl, serviceRoleKey)
     
     // Generate unique filename
     const fileExt = file.name.split('.').pop()
@@ -98,8 +111,8 @@ serve(async (req) => {
     
     console.log(`Uploading file to bucket: ${bucketName}, filename: ${fileName}`);
     
-    // Upload directly to storage bucket using the Edge Function's permissions
-    const { data, error } = await supabase
+    // Upload directly to storage bucket using the admin client
+    const { data, error } = await adminClient
       .storage
       .from(bucketName)
       .upload(fileName, file, {
