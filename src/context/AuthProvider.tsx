@@ -1,5 +1,5 @@
 
-import { ReactNode } from 'react';
+import React, { ReactNode } from 'react';
 import { useAuthProvider } from './hooks/useAuthProvider';
 import { AuthContext } from './AuthContext';
 

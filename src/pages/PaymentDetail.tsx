@@ -1,370 +1,404 @@
-
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import Layout from "@/components/layout/Layout";
+import { format } from 'date-fns';
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, ExternalLink, Copy, CheckCircle, Clock, AlertOctagon } from "lucide-react";
+import { CalendarClock, Copy, User, Mail, Loader2, AlertCircle, CheckCircle, XCircle } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { BadgeCheck } from 'lucide-react';
+import { useAuth } from "@/context/useAuth";
 import { supabase } from "@/lib/supabase";
+import { cn } from "@/lib/utils";
+import PaymentStatusBadge from "@/components/schedule/PaymentStatusBadge";
 import PaymentReminderManager from "@/components/payments/PaymentReminderManager";
+import Layout from "@/components/layout/Layout";
 
 interface PaymentLink {
   id: string;
-  description: string;
+  created_at: string;
+  coach_id: string;
+  player_id: string;
+  player_email: string;
   amount: number;
   currency: string;
+  description: string;
+  session_id: string | null;
+  package_id: string | null;
+  payment_type: string;
   status: string;
-  created_at: string;
-  expires_at?: string;
-  stripe_checkout_id?: string;
-  player_id?: string;
-  player_email?: string;
-  session_id?: string;
+  expires_at: string;
+  stripe_checkout_id: string | null;
+  updated_at: string;
+  coach_name?: string;
+  session_details?: string;
 }
 
 const PaymentDetail = () => {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  
-  const [paymentLink, setPaymentLink] = useState<PaymentLink | null>(null);
+  const { paymentId } = useParams<{ paymentId: string }>();
+  const [data, setData] = useState<PaymentLink | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
-  const [copySuccess, setCopySuccess] = useState(false);
-  const [playerName, setPlayerName] = useState<string | null>(null);
-  const [sessionTitle, setSessionTitle] = useState<string | null>(null);
+  const [isCopying, setIsCopying] = useState(false);
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchPaymentLink = async () => {
-      if (!id) return;
-      
+      if (!paymentId) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Payment ID is required.",
+        });
+        navigate("/payments");
+        return;
+      }
+
       setIsLoading(true);
+
       try {
-        // Get payment link from localStorage for now
-        const storedPaymentLinks = localStorage.getItem("payment_links");
-        if (storedPaymentLinks) {
-          const paymentLinks = JSON.parse(storedPaymentLinks);
-          const found = paymentLinks.find((p: PaymentLink) => p.id === id);
-          
-          if (found) {
-            setPaymentLink(found);
-            
-            // If payment link has player_id, get player name
-            if (found.player_id) {
-              const storedPlayers = localStorage.getItem("players");
-              if (storedPlayers) {
-                const players = JSON.parse(storedPlayers);
-                const player = players.find((p: any) => p.id === found.player_id);
-                if (player) {
-                  setPlayerName(player.name);
-                }
-              }
-            }
-            
-            // If payment link has session_id, get session title
-            if (found.session_id) {
-              const storedSessions = localStorage.getItem("sessions");
-              if (storedSessions) {
-                const sessions = JSON.parse(storedSessions);
-                const session = sessions.find((s: any) => s.id === found.session_id);
-                if (session) {
-                  setSessionTitle(session.title);
-                }
-              }
-            }
-          } else {
-            // If not found in localStorage, try fetching from API
-            const { data, error } = await supabase.functions.invoke("get-checkout-url", {
-              body: { id }
-            });
-            
-            if (error) {
-              throw new Error(error.message);
-            }
-            
-            if (data) {
-              setPaymentUrl(data.url);
-            }
-          }
+        const { data: paymentLink, error } = await supabase
+          .from("payment_links")
+          .select("*")
+          .eq("id", paymentId)
+          .single();
+
+        if (error) {
+          throw error;
         }
-      } catch (error) {
+
+        if (!paymentLink) {
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Payment link not found.",
+          });
+          navigate("/payments");
+          return;
+        }
+
+        setData(paymentLink);
+      } catch (error: any) {
         console.error("Error fetching payment link:", error);
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Failed to load payment link details",
+          description: error.message || "Failed to fetch payment link.",
         });
       } finally {
         setIsLoading(false);
       }
     };
-    
+
     fetchPaymentLink();
-  }, [id, toast]);
-  
-  const handleGetPaymentUrl = async () => {
-    if (!id) return;
-    
-    try {
-      setIsLoading(true);
-      
-      const { data, error } = await supabase.functions.invoke("get-checkout-url", {
-        body: { id }
-      });
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-      
-      if (data) {
-        setPaymentUrl(data.url);
-      } else {
-        throw new Error("Failed to get payment URL");
-      }
-    } catch (error) {
-      console.error("Error getting payment URL:", error);
+  }, [paymentId, navigate, toast]);
+
+  const handleCopyLink = async () => {
+    if (!data?.stripe_checkout_id) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to get payment URL",
+        description: "Payment link not available.",
+      });
+      return;
+    }
+
+    setIsCopying(true);
+
+    try {
+      const { data: urlData, error: urlError } = await supabase.functions.invoke("get-checkout-url", {
+        body: { id: paymentId }
+      });
+      
+      if (urlError || !urlData?.url) {
+        throw new Error(urlError?.message || "Failed to get payment URL");
+      }
+
+      await navigator.clipboard.writeText(urlData.url);
+      toast({
+        title: "Link copied",
+        description: "Payment link has been copied to clipboard.",
+      });
+    } catch (error: any) {
+      console.error("Error copying link:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to copy payment link.",
       });
     } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  const copyToClipboard = async () => {
-    if (!paymentUrl) return;
-    
-    try {
-      await navigator.clipboard.writeText(paymentUrl);
-      setCopySuccess(true);
-      
-      toast({
-        title: "Copied!",
-        description: "Payment URL copied to clipboard",
-      });
-      
-      setTimeout(() => setCopySuccess(false), 3000);
-    } catch (error) {
-      console.error("Error copying to clipboard:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to copy URL to clipboard",
-      });
+      setIsCopying(false);
     }
   };
 
-  const getStatusBadge = () => {
-    if (!paymentLink) return null;
-    
-    switch (paymentLink.status) {
-      case 'paid':
-      case 'succeeded':
-        return (
-          <div className="flex items-center gap-1.5 text-green-600 bg-green-50 px-2.5 py-0.5 rounded-full text-sm">
-            <CheckCircle className="h-4 w-4" />
-            <span>Paid</span>
-          </div>
-        );
-      
-      case 'pending':
-      case 'active':
-        return (
-          <div className="flex items-center gap-1.5 text-orange-600 bg-orange-50 px-2.5 py-0.5 rounded-full text-sm">
-            <Clock className="h-4 w-4" />
-            <span>Pending</span>
-          </div>
-        );
-      
-      case 'expired':
-        return (
-          <div className="flex items-center gap-1.5 text-gray-600 bg-gray-50 px-2.5 py-0.5 rounded-full text-sm">
-            <AlertOctagon className="h-4 w-4" />
-            <span>Expired</span>
-          </div>
-        );
-      
-      default:
-        return (
-          <div className="flex items-center gap-1.5 text-gray-600 bg-gray-50 px-2.5 py-0.5 rounded-full text-sm">
-            <span>{paymentLink.status}</span>
-          </div>
-        );
-    }
-  };
-  
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Loading payment details...
+        </div>
+      </Layout>
+    );
+  }
 
-  const isPending = paymentLink?.status === "active" || paymentLink?.status === "pending";
+  if (!data) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <AlertCircle className="mr-2 h-4 w-4" />
+          Payment link not found.
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
-      <div className="container max-w-3xl py-8">
-        <div className="flex items-center gap-4 mb-6">
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={() => navigate(-1)}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <h1 className="text-3xl font-bold">Payment Link Details</h1>
-          {!isLoading && getStatusBadge()}
+      <div className="container mx-auto py-10">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight">Payment Details</h1>
+          <p className="text-muted-foreground">
+            View and manage details for payment ID: {data.id}
+          </p>
         </div>
-        
-        {isLoading ? (
-          <div className="flex justify-center p-12">
-            <div className="animate-spin h-8 w-8 border-4 border-tennis-green-600 rounded-full border-t-transparent"></div>
-          </div>
-        ) : paymentLink ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>{paymentLink.description}</CardTitle>
-              <CardDescription>
-                Created on {formatDate(paymentLink.created_at)}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Amount</p>
-                  <p className="font-medium">
-                    {paymentLink.currency} {paymentLink.amount.toFixed(2)}
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Status</p>
-                  <p className="font-medium capitalize">{paymentLink.status}</p>
-                </div>
-                {playerName && (
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Player</p>
-                    <p className="font-medium">{playerName}</p>
-                  </div>
-                )}
-                {sessionTitle && (
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Session</p>
-                    <p className="font-medium">{sessionTitle}</p>
-                  </div>
-                )}
-                {paymentLink.player_email && (
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Email</p>
-                    <p className="font-medium">{paymentLink.player_email}</p>
-                  </div>
-                )}
-                {paymentLink.expires_at && (
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Expires</p>
-                    <p className="font-medium">{formatDate(paymentLink.expires_at)}</p>
-                  </div>
-                )}
-              </div>
-              
-              {isPending && paymentLink.player_email && (
-                <div className="border-t pt-4">
-                  <h3 className="text-sm font-medium mb-2">Payment Reminders</h3>
-                  <PaymentReminderManager 
-                    paymentLinkId={paymentLink.id}
-                    sessionDetails={sessionTitle || paymentLink.description}
-                    playerEmail={paymentLink.player_email}
-                    expiresAt={paymentLink.expires_at}
-                  />
-                </div>
-              )}
 
-              {isPending && (
-                <div className="border rounded-lg p-4 bg-gray-50">
-                  <h3 className="text-sm font-medium mb-2">Payment URL</h3>
-                  {paymentUrl ? (
-                    <div className="flex flex-col gap-3">
-                      <div className="bg-white p-3 rounded border break-all text-sm">
-                        {paymentUrl}
-                      </div>
-                      
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={copyToClipboard}
-                          className="gap-2"
-                        >
-                          {copySuccess ? (
-                            <>
-                              <CheckCircle className="h-4 w-4" />
-                              Copied!
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="h-4 w-4" />
-                              Copy URL
-                            </>
-                          )}
-                        </Button>
-                        
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          as="a"
-                          href={paymentUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="gap-2"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                          Open
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      onClick={handleGetPaymentUrl}
-                      disabled={isLoading}
-                    >
-                      {isLoading ? "Loading..." : "Get Payment URL"}
-                    </Button>
-                  )}
+        <Card className="w-full">
+          <CardHeader>
+            <CardTitle>Payment Information</CardTitle>
+            <CardDescription>Details about this payment link</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <div className="text-sm font-medium leading-none">Status</div>
+                  <div className="text-muted-foreground">
+                    <PaymentStatusBadge status={data.status} showLabel={true} />
+                  </div>
                 </div>
+                <div>
+                  <div className="text-sm font-medium leading-none">Amount</div>
+                  <div className="text-muted-foreground">
+                    {data.amount} {data.currency}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <div className="text-sm font-medium leading-none">Payment Type</div>
+                  <div className="text-muted-foreground">{data.payment_type}</div>
+                </div>
+                <div>
+                  <div className="text-sm font-medium leading-none">Description</div>
+                  <div className="text-muted-foreground">{data.description}</div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <div className="text-sm font-medium leading-none">Created At</div>
+                  <div className="text-muted-foreground">
+                    {format(new Date(data.created_at), "PPP p")}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm font-medium leading-none">Expires At</div>
+                  <div className="text-muted-foreground">
+                    {format(new Date(data.expires_at), "PPP p")}
+                  </div>
+                </div>
+              </div>
+
+              <Separator className="my-4" />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <div className="text-sm font-medium leading-none">Coach</div>
+                    <div className="text-muted-foreground flex items-center gap-2">
+                      <User className="h-3 w-3" />
+                      {data.coach_name || user?.user_metadata?.full_name || "N/A"}
+                    </div>
+                </div>
+                <div>
+                  <div className="text-sm font-medium leading-none">Player</div>
+                  <div className="text-muted-foreground flex items-center gap-2">
+                    <Mail className="h-3 w-3" />
+                    {data.player_email || "N/A"}
+                  </div>
+                </div>
+              </div>
+
+              {data.session_id && (
+                <>
+                  <Separator className="my-4" />
+                  <div>
+                    <div className="text-sm font-medium leading-none">Session Details</div>
+                    <div className="text-muted-foreground">{data.session_details || "N/A"}</div>
+                  </div>
+                </>
               )}
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-between items-center">
+            <Button
+              onClick={handleCopyLink}
+              disabled={isCopying}
+              variant="secondary"
+              size="sm"
+            >
+              {isCopying ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Copying...
+                </>
+              ) : (
+                <>
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copy Payment Link
+                </>
+              )}
+            </Button>
+            <PaymentReminderManager 
+              paymentLinkId={data.id}
+              playerEmail={data.player_email}
+              sessionDetails={data.session_details}
+              expiresAt={data.expires_at}
+            />
+          </CardFooter>
+        </Card>
+
+        <div className="mt-8">
+          <h2 className="text-2xl font-bold tracking-tight">Payment Events</h2>
+          <p className="text-muted-foreground">
+            History of events associated with this payment
+          </p>
+
+          <Card className="w-full mt-4">
+            <CardHeader>
+              <CardTitle>Transactions</CardTitle>
+              <CardDescription>All transactions related to this payment link</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableCaption>A list of your recent transactions.</TableCaption>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[100px]">Date</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell>July 10, 2023</TableCell>
+                    <TableCell>Payment</TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <BadgeCheck className="h-4 w-4 text-green-500 mr-2" />
+                        Completed
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">$100.00</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>July 10, 2023</TableCell>
+                    <TableCell>Refund</TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <XCircle className="h-4 w-4 text-red-500 mr-2" />
+                        Refunded
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">-$100.00</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="mt-8">
+          <h2 className="text-2xl font-bold tracking-tight">Actions</h2>
+          <p className="text-muted-foreground">
+            Take actions related to this payment
+          </p>
+
+          <Card className="w-full mt-4">
+            <CardHeader>
+              <CardTitle>Payment Link</CardTitle>
+              <CardDescription>View and manage the payment link</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-sm font-medium leading-none">Payment URL</div>
+                    <div className="text-muted-foreground truncate">
+                      {data.stripe_checkout_id ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <a
+                                href={data.stripe_checkout_id}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="underline underline-offset-4 hover:text-blue-500"
+                              >
+                                {data.stripe_checkout_id}
+                              </a>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>View Stripe Checkout Session</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        "N/A"
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </CardContent>
             <CardFooter>
-              <Button
+              <Button 
+                onClick={() => window.open(data.payment_url, '_blank', 'noopener')}
+                size="sm" 
                 variant="outline"
-                onClick={() => navigate("/payments")}
+                className="text-xs"
               >
-                Back to Payments
+                View Payment Link
               </Button>
             </CardFooter>
           </Card>
-        ) : (
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-center py-8">
-                <h2 className="text-xl font-semibold mb-2">Payment Link Not Found</h2>
-                <p className="text-muted-foreground">The payment link you're looking for couldn't be found.</p>
-                <Button
-                  className="mt-4"
-                  onClick={() => navigate("/payments")}
-                >
-                  Back to Payments
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        </div>
       </div>
     </Layout>
   );

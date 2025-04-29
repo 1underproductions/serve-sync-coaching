@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, Profile, sendCustomEmail } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';

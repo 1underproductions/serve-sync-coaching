@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -107,7 +106,7 @@ const NewPayment = () => {
           
           // If playerId is provided in URL, select that player
           if (playerId) {
-            const player = parsedPlayers.find((p: Player) => p.id === playerId);
+            const player = players.find((p: Player) => p.id === playerId);
             if (player) {
               setSelectedPlayer(player);
             }
@@ -130,7 +129,7 @@ const NewPayment = () => {
               // If the session has a player, select that player
               if (session.playerId && !playerId) {
                 setValue("playerId", session.playerId);
-                const playerFromSession = parsedPlayers.find((p: Player) => p.id === session.playerId);
+                const playerFromSession = players.find((p: Player) => p.id === session.playerId);
                 if (playerFromSession) {
                   setSelectedPlayer(playerFromSession);
                 }
