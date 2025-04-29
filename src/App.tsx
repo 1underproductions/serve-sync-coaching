@@ -80,6 +80,7 @@ const App = () => {
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/faq" element={<FAQ />} />
+              <Route path="/cookies-policy" element={<CookiesPolicy />} />
               <Route path="/helpdesk" element={
                 <RouteGuard requireAuth={false}>
                   <Helpdesk />
