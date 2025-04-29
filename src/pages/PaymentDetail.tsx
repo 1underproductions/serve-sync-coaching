@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { format } from 'date-fns';
@@ -28,7 +29,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 import { BadgeCheck } from 'lucide-react';
 import { useAuth } from "@/context/useAuth";
 import { supabase } from "@/lib/supabase";
@@ -41,16 +42,16 @@ interface PaymentLink {
   id: string;
   created_at: string;
   coach_id: string;
-  player_id: string;
-  player_email: string;
+  player_id: string | null;
+  player_email?: string;
   amount: number;
   currency: string;
-  description: string;
+  description: string | null;
   session_id: string | null;
   package_id: string | null;
-  payment_type: string;
-  status: string;
-  expires_at: string;
+  payment_type?: string;
+  status: string | null;
+  expires_at: string | null;
   stripe_checkout_id: string | null;
   updated_at: string;
   coach_name?: string;
@@ -101,7 +102,15 @@ const PaymentDetail = () => {
           return;
         }
 
-        setData(paymentLink);
+        // Add the missing required fields to match our PaymentLink interface
+        const completePaymentLink: PaymentLink = {
+          ...paymentLink,
+          payment_type: paymentLink.payment_type || "one_time",
+          player_email: paymentLink.player_email || "",
+          package_id: paymentLink.package_id,
+        };
+
+        setData(completePaymentLink);
       } catch (error: any) {
         console.error("Error fetching payment link:", error);
         toast({
@@ -198,7 +207,7 @@ const PaymentDetail = () => {
                 <div>
                   <div className="text-sm font-medium leading-none">Status</div>
                   <div className="text-muted-foreground">
-                    <PaymentStatusBadge status={data.status} showLabel={true} />
+                    <PaymentStatusBadge status={data.status || 'pending'} showLabel={true} />
                   </div>
                 </div>
                 <div>
@@ -212,11 +221,11 @@ const PaymentDetail = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <div className="text-sm font-medium leading-none">Payment Type</div>
-                  <div className="text-muted-foreground">{data.payment_type}</div>
+                  <div className="text-muted-foreground">{data.payment_type || "One-time"}</div>
                 </div>
                 <div>
                   <div className="text-sm font-medium leading-none">Description</div>
-                  <div className="text-muted-foreground">{data.description}</div>
+                  <div className="text-muted-foreground">{data.description || "N/A"}</div>
                 </div>
               </div>
 
@@ -230,7 +239,7 @@ const PaymentDetail = () => {
                 <div>
                   <div className="text-sm font-medium leading-none">Expires At</div>
                   <div className="text-muted-foreground">
-                    {format(new Date(data.expires_at), "PPP p")}
+                    {data.expires_at ? format(new Date(data.expires_at), "PPP p") : "N/A"}
                   </div>
                 </div>
               </div>
@@ -288,7 +297,7 @@ const PaymentDetail = () => {
               paymentLinkId={data.id}
               playerEmail={data.player_email}
               sessionDetails={data.session_details}
-              expiresAt={data.expires_at}
+              expiresAt={data.expires_at || undefined}
             />
           </CardFooter>
         </Card>
@@ -366,7 +375,7 @@ const PaymentDetail = () => {
                           <Tooltip>
                             <TooltipTrigger>
                               <a
-                                href={data.stripe_checkout_id}
+                                href={`https://dashboard.stripe.com/checkout/sessions/${data.stripe_checkout_id}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="underline underline-offset-4 hover:text-blue-500"
@@ -389,10 +398,15 @@ const PaymentDetail = () => {
             </CardContent>
             <CardFooter>
               <Button 
-                onClick={() => window.open(data.payment_url, '_blank', 'noopener')}
+                onClick={() => {
+                  if (data.stripe_checkout_id) {
+                    window.open(`https://dashboard.stripe.com/checkout/sessions/${data.stripe_checkout_id}`, '_blank', 'noopener');
+                  }
+                }}
                 size="sm" 
                 variant="outline"
                 className="text-xs"
+                disabled={!data.stripe_checkout_id}
               >
                 View Payment Link
               </Button>
