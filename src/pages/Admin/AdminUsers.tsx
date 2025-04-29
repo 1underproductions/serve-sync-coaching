@@ -14,6 +14,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/useAuth";
 
 // Mock user data for demonstration
 const mockUsers = [
@@ -24,10 +32,25 @@ const mockUsers = [
   { id: 5, name: "Admin User", email: "admin@example.com", role: "admin", status: "active", joinDate: "Jan 1, 2023" },
 ];
 
+// Form schema for creating new users
+const newUserSchema = z.object({
+  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
+  email: z.string().email({ message: "Please enter a valid email address" }),
+  role: z.enum(["user", "admin"], {
+    required_error: "Please select a role"
+  }),
+  password: z.string().min(8, { message: "Password must be at least 8 characters" }),
+});
+
+type NewUserFormValues = z.infer<typeof newUserSchema>;
+
 const AdminUsers = () => {
   const [users, setUsers] = useState(mockUsers);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isNewUserDialogOpen, setIsNewUserDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const { setUserAsAdmin } = useAuth();
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -65,6 +88,77 @@ const AdminUsers = () => {
     });
   };
 
+  const form = useForm<NewUserFormValues>({
+    resolver: zodResolver(newUserSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      role: "user",
+      password: "",
+    },
+  });
+
+  const onSubmitNewUser = async (data: NewUserFormValues) => {
+    setIsSubmitting(true);
+    
+    try {
+      // For admin users, we use a special function
+      if (data.role === "admin") {
+        await setUserAsAdmin(data.email);
+        toast({
+          title: "Admin user created",
+          description: "The admin account has been created successfully.",
+        });
+      } else {
+        // Regular user/coach creation
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: data.email,
+          password: data.password,
+          options: {
+            data: {
+              full_name: data.name,
+            },
+          },
+        });
+        
+        if (signUpError) throw new Error(signUpError.message);
+        
+        // Add to our local state for immediate UI update
+        if (signUpData.user) {
+          setUsers([
+            ...users,
+            {
+              id: users.length + 1, // This is a placeholder ID for the mock data
+              name: data.name,
+              email: data.email,
+              role: data.role,
+              status: "active",
+              joinDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            },
+          ]);
+          
+          toast({
+            title: "User created successfully",
+            description: `${data.name} has been added as a coach.`,
+          });
+        }
+      }
+      
+      // Close dialog and reset form
+      setIsNewUserDialogOpen(false);
+      form.reset();
+    } catch (error: any) {
+      console.error("Error creating user:", error);
+      toast({
+        variant: "destructive",
+        title: "Error creating user",
+        description: error.message || "There was a problem creating the user. Please try again.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <AdminLayout 
       title="User Management"
@@ -83,7 +177,7 @@ const AdminUsers = () => {
                 onChange={handleSearch}
               />
             </div>
-            <Button>
+            <Button onClick={() => setIsNewUserDialogOpen(true)}>
               <User className="h-4 w-4 mr-2" />
               Add New User
             </Button>
@@ -175,6 +269,106 @@ const AdminUsers = () => {
           </div>
         </CardContent>
       </Card>
+      
+      {/* New User Dialog */}
+      <Dialog open={isNewUserDialogOpen} onOpenChange={setIsNewUserDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add New User</DialogTitle>
+            <DialogDescription>
+              Create a new coach or admin account. All fields are required.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmitNewUser)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="John Doe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="john@example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Role</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="user">Coach</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="••••••••" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button 
+                  variant="outline" 
+                  type="button" 
+                  onClick={() => setIsNewUserDialogOpen(false)}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Creating..." : "Create User"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 };
