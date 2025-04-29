@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -31,6 +32,7 @@ import Analytics from "./pages/Analytics";
 import PlayerDetail from "./pages/PlayerDetail";
 import Contact from "./pages/Contact";
 import FAQ from "./pages/FAQ";
+import CookiesPolicy from "./pages/CookiesPolicy";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
 import NewPayment from "@/pages/NewPayment";
