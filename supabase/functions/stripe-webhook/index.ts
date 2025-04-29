@@ -54,8 +54,31 @@ serve(async (req) => {
         if (session.metadata?.payment_link_id) {
           await supabaseAdmin
             .from("payment_links")
-            .update({ status: "paid", updated_at: new Date().toISOString() })
+            .update({ 
+              status: "paid", 
+              updated_at: new Date().toISOString(),
+              stripe_payment_id: session.payment_intent || null
+            })
             .eq("id", session.metadata.payment_link_id);
+          
+          // Record the transaction in the transactions table
+          try {
+            await supabaseAdmin.from("transactions").insert({
+              coach_id: session.metadata.coach_id,
+              player_id: session.metadata.player_id || null,
+              session_id: session.metadata.session_id || null,
+              package_id: session.metadata.package_id || null,
+              amount: session.amount_total / 100,
+              currency: session.currency.toUpperCase(),
+              status: "succeeded",
+              payment_type: session.metadata.payment_type || "session",
+              stripe_payment_id: session.payment_intent,
+              payment_link_id: session.metadata.payment_link_id,
+              description: session.metadata.description || `${session.metadata.payment_type} payment`
+            });
+          } catch (transactionError) {
+            console.error("Failed to record transaction:", transactionError);
+          }
         }
         
         // If there's a session ID, update its payment status
@@ -83,6 +106,7 @@ serve(async (req) => {
                       amount: session.amount_total / 100,
                       currency: session.currency.toUpperCase(),
                       date: new Date().toISOString(),
+                      payment_type: session.metadata.payment_type,
                       session_id: session.metadata.session_id
                     }
                   }
@@ -91,6 +115,35 @@ serve(async (req) => {
                 console.error("Failed to send confirmation email:", emailError);
               }
             }
+          }
+        }
+        
+        // If there's a package ID, update package purchases
+        if (session.metadata?.package_id && session.metadata?.player_id) {
+          try {
+            // Get the package details
+            const { data: packageDetails } = await supabaseAdmin
+              .from("packages")
+              .select("sessions, name")
+              .eq("id", session.metadata.package_id)
+              .single();
+              
+            if (packageDetails) {
+              // Record the package purchase
+              await supabaseAdmin.from("player_packages").insert({
+                player_id: session.metadata.player_id,
+                coach_id: session.metadata.coach_id,
+                package_id: session.metadata.package_id,
+                sessions_total: packageDetails.sessions,
+                sessions_used: 0,
+                sessions_remaining: packageDetails.sessions,
+                payment_id: session.payment_intent,
+                amount_paid: session.amount_total / 100,
+                status: "active"
+              });
+            }
+          } catch (packageError) {
+            console.error("Failed to process package purchase:", packageError);
           }
         }
         
@@ -105,16 +158,43 @@ serve(async (req) => {
         if (!paymentIntentId) break;
         
         const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-        if (!paymentIntent?.metadata?.session_id) break;
         
-        // Update session payment status
+        // Update payment link status
+        const { data: paymentLinks } = await supabaseAdmin
+          .from("payment_links")
+          .select("id")
+          .eq("stripe_payment_id", paymentIntentId)
+          .limit(1);
+          
+        if (paymentLinks?.length > 0) {
+          await supabaseAdmin
+            .from("payment_links")
+            .update({ 
+              status: charge.refunded ? "refunded" : "partially_refunded",
+              updated_at: new Date().toISOString()
+            })
+            .eq("id", paymentLinks[0].id);
+        }
+        
+        // Update session payment status if associated
+        if (paymentIntent?.metadata?.session_id) {
+          await supabaseAdmin
+            .from("sessions")
+            .update({ 
+              payment_status: charge.refunded ? "refunded" : "partially_refunded",
+              updated_at: new Date().toISOString()
+            })
+            .eq("id", paymentIntent.metadata.session_id);
+        }
+        
+        // Update transaction status
         await supabaseAdmin
-          .from("sessions")
-          .update({ 
-            payment_status: charge.refunded ? "refunded" : "partially_refunded",
+          .from("transactions")
+          .update({
+            status: charge.refunded ? "refunded" : "partially_refunded",
             updated_at: new Date().toISOString()
           })
-          .eq("id", paymentIntent.metadata.session_id);
+          .eq("stripe_payment_id", paymentIntentId);
           
         break;
       }

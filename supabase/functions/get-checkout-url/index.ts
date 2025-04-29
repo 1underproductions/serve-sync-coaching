@@ -15,8 +15,15 @@ serve(async (req) => {
   }
 
   try {
+    // Get the payment link ID from the request - either from query params or body
     const url = new URL(req.url);
-    const paymentLinkId = url.searchParams.get("id");
+    let paymentLinkId = url.searchParams.get("id");
+    
+    // If not in query params, try to get from body
+    if (!paymentLinkId) {
+      const body = await req.json();
+      paymentLinkId = body.id;
+    }
 
     if (!paymentLinkId) {
       return new Response(JSON.stringify({ error: "Payment link ID is required" }), {

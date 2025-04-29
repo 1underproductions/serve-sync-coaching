@@ -22,6 +22,11 @@ serve(async (req) => {
       successPath = "/payment-success",
       cancelPath = "/payment-canceled",
       sessionId,
+      playerId,
+      playerEmail,
+      paymentType = "session", // Options: "session", "package", "deposit", "other"
+      sendEmail = false,
+      packageId,
       isDeposit = false,
       cancellationPolicy = "24_hours", // 24_hours, 48_hours, none
     } = await req.json();
@@ -67,10 +72,14 @@ serve(async (req) => {
       .from("payment_links")
       .insert({
         coach_id: user?.id || "00000000-0000-0000-0000-000000000000", // Anonymous coach ID if not authenticated
+        player_id: playerId || null,
+        player_email: playerEmail || null,
         amount,
         currency,
         description,
         session_id: sessionId || null,
+        package_id: packageId || null,
+        payment_type: paymentType,
         status: "active",
       })
       .select()
@@ -93,13 +102,26 @@ serve(async (req) => {
         price_data: {
           currency: currency.toLowerCase(),
           product_data: {
-            name: description || "Tennis Coaching",
+            name: description || `Tennis ${paymentType.charAt(0).toUpperCase() + paymentType.slice(1)} Payment`,
           },
           unit_amount: Math.round(amount * 100), // Convert to cents
         },
         quantity: 1,
       },
     ];
+    
+    // Add custom metadata based on payment type
+    const metadata = {
+      payment_link_id: paymentLink.id,
+      coach_id: user?.id || null,
+      is_deposit: isDeposit.toString(),
+      cancellation_policy: cancellationPolicy,
+      payment_type: paymentType,
+    };
+    
+    if (sessionId) metadata.session_id = sessionId;
+    if (playerId) metadata.player_id = playerId;
+    if (packageId) metadata.package_id = packageId;
 
     // Create Stripe checkout session
     const checkoutSession = await stripe.checkout.sessions.create({
@@ -108,14 +130,9 @@ serve(async (req) => {
       mode: "payment",
       success_url: `${origin}${successPath}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}${cancelPath}`,
-      metadata: {
-        payment_link_id: paymentLink.id,
-        session_id: sessionId || null,
-        coach_id: user?.id || null,
-        is_deposit: isDeposit.toString(),
-        cancellation_policy: cancellationPolicy,
-      },
+      metadata,
       allow_promotion_codes: true,
+      customer_email: playerEmail || undefined,
     });
 
     // Update payment link with Stripe checkout ID
@@ -123,6 +140,28 @@ serve(async (req) => {
       .from("payment_links")
       .update({ stripe_checkout_id: checkoutSession.id })
       .eq("id", paymentLink.id);
+
+    // If sendEmail is true and playerEmail is provided, send an email notification
+    if (sendEmail && playerEmail) {
+      try {
+        await supabaseClient.functions.invoke("custom-email", {
+          body: {
+            type: "payment-request",
+            email: playerEmail,
+            data: {
+              amount: amount,
+              currency: currency,
+              description: description,
+              payment_url: checkoutSession.url,
+              coach_name: user?.user_metadata?.full_name || "Your coach"
+            }
+          }
+        });
+      } catch (emailError) {
+        console.error("Failed to send payment request email:", emailError);
+        // Continue with the response even if email fails
+      }
+    }
 
     // Return the checkout URL
     return new Response(
