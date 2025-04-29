@@ -74,7 +74,8 @@ serve(async (req) => {
               payment_type: session.metadata.payment_type || "session",
               stripe_payment_id: session.payment_intent,
               payment_link_id: session.metadata.payment_link_id,
-              description: session.metadata.description || `${session.metadata.payment_type} payment`
+              description: session.metadata.description || `${session.metadata.payment_type} payment`,
+              is_deposit: session.metadata.is_deposit === "true"
             });
           } catch (transactionError) {
             console.error("Failed to record transaction:", transactionError);
@@ -85,7 +86,10 @@ serve(async (req) => {
         if (session.metadata?.session_id) {
           await supabaseAdmin
             .from("sessions")
-            .update({ payment_status: "paid" })
+            .update({ 
+              payment_status: "paid",
+              status: "confirmed"  // Now explicitly confirm the session
+            })
             .eq("id", session.metadata.session_id);
           
           // Send confirmation email to coach
@@ -116,6 +120,46 @@ serve(async (req) => {
               }
             }
           }
+          
+          // If there's a player email, send session confirmation to player
+          if (session.customer_details?.email) {
+            try {
+              // Get session details
+              const { data: sessionData } = await supabaseAdmin
+                .from("sessions")
+                .select("title, start_time, end_time, location")
+                .eq("id", session.metadata.session_id)
+                .single();
+                
+              if (sessionData) {
+                const formattedDate = new Date(sessionData.start_time).toLocaleString('en-US', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: 'numeric',
+                  minute: '2-digit'
+                });
+                
+                // Send session confirmation email
+                await supabaseAdmin.functions.invoke("custom-email", {
+                  body: {
+                    type: "session-reminder",
+                    email: session.customer_details.email,
+                    data: {
+                      player_name: session.customer_details.name || "Player",
+                      coach_name: "Your coach", // Would be better to get coach name
+                      session_details: sessionData.title,
+                      session_date: formattedDate,
+                      location: sessionData.location || "Tennis courts"
+                    }
+                  }
+                });
+              }
+            } catch (emailError) {
+              console.error("Failed to send session confirmation email:", emailError);
+            }
+          }
         }
         
         // If there's a package ID, update package purchases
@@ -141,9 +185,62 @@ serve(async (req) => {
                 amount_paid: session.amount_total / 100,
                 status: "active"
               });
+              
+              // Send package confirmation email to player
+              if (session.customer_details?.email) {
+                try {
+                  await supabaseAdmin.functions.invoke("custom-email", {
+                    body: {
+                      type: "package-confirmation",
+                      email: session.customer_details.email,
+                      data: {
+                        player_name: session.customer_details.name || "Player",
+                        package_name: packageDetails.name,
+                        sessions_count: packageDetails.sessions,
+                        amount: session.amount_total / 100,
+                        currency: session.currency.toUpperCase()
+                      }
+                    }
+                  });
+                } catch (emailError) {
+                  console.error("Failed to send package confirmation email:", emailError);
+                }
+              }
             }
           } catch (packageError) {
             console.error("Failed to process package purchase:", packageError);
+          }
+        }
+        
+        break;
+      }
+      
+      // Handle payment link expiration
+      case "checkout.session.expired": {
+        const session = event.data.object;
+        
+        // Update payment link status to expired
+        if (session.metadata?.payment_link_id) {
+          await supabaseAdmin
+            .from("payment_links")
+            .update({ 
+              status: "expired", 
+              updated_at: new Date().toISOString()
+            })
+            .eq("id", session.metadata.payment_link_id);
+          
+          // If there's a linked session, mark it as expired too
+          if (session.metadata.session_id) {
+            // Check if the session was a deposit (soft booking)
+            const isDeposit = session.metadata.is_deposit === "true";
+            
+            await supabaseAdmin
+              .from("sessions")
+              .update({
+                payment_status: "expired",
+                status: isDeposit ? "cancelled" : "scheduled" // If it was a deposit, cancel it; otherwise keep it scheduled
+              })
+              .eq("id", session.metadata.session_id);
           }
         }
         

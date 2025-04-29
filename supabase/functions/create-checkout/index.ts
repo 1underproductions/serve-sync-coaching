@@ -29,6 +29,7 @@ serve(async (req) => {
       packageId,
       isDeposit = false,
       cancellationPolicy = "24_hours", // 24_hours, 48_hours, none
+      expiresInHours = 48, // Default to 48 hours expiration
     } = await req.json();
 
     // Validate required fields
@@ -67,6 +68,10 @@ serve(async (req) => {
     // Origin for success and cancel URLs
     const origin = req.headers.get("origin") || "http://localhost:5173";
 
+    // Calculate expiration timestamp
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + expiresInHours);
+
     // Create a payment link in Supabase
     const { data: paymentLink, error } = await supabaseClient
       .from("payment_links")
@@ -81,6 +86,7 @@ serve(async (req) => {
         package_id: packageId || null,
         payment_type: paymentType,
         status: "active",
+        expires_at: expiresAt.toISOString(),
       })
       .select()
       .single();
@@ -103,6 +109,7 @@ serve(async (req) => {
           currency: currency.toLowerCase(),
           product_data: {
             name: description || `Tennis ${paymentType.charAt(0).toUpperCase() + paymentType.slice(1)} Payment`,
+            description: isDeposit ? "Deposit payment - non-refundable" : undefined,
           },
           unit_amount: Math.round(amount * 100), // Convert to cents
         },
@@ -111,28 +118,30 @@ serve(async (req) => {
     ];
     
     // Add custom metadata based on payment type
-    const metadata = {
+    const metadata: Record<string, string> = {
       payment_link_id: paymentLink.id,
-      coach_id: user?.id || null,
+      coach_id: user?.id || "",
       is_deposit: isDeposit.toString(),
       cancellation_policy: cancellationPolicy,
       payment_type: paymentType,
+      expires_at: expiresAt.toISOString(),
     };
     
     if (sessionId) metadata.session_id = sessionId;
     if (playerId) metadata.player_id = playerId;
     if (packageId) metadata.package_id = packageId;
 
-    // Create Stripe checkout session
+    // Create Stripe checkout session with expiration
     const checkoutSession = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: lineItems,
       mode: "payment",
       success_url: `${origin}${successPath}?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}${cancelPath}`,
+      cancel_url: `${origin}${cancelPath}?payment_link_id=${paymentLink.id}`,
       metadata,
       allow_promotion_codes: true,
       customer_email: playerEmail || undefined,
+      expires_at: Math.floor(expiresAt.getTime() / 1000), // Convert to Unix timestamp (seconds)
     });
 
     // Update payment link with Stripe checkout ID
@@ -146,14 +155,15 @@ serve(async (req) => {
       try {
         await supabaseClient.functions.invoke("custom-email", {
           body: {
-            type: "payment-request",
+            type: "payment-link",
             email: playerEmail,
             data: {
               amount: amount,
               currency: currency,
               description: description,
               payment_url: checkoutSession.url,
-              coach_name: user?.user_metadata?.full_name || "Your coach"
+              coach_name: user?.user_metadata?.full_name || "Your coach",
+              expires_in_hours: expiresInHours
             }
           }
         });
