@@ -19,9 +19,6 @@ import SessionEdit from "./pages/SessionEdit";
 import SessionDetail from "./pages/SessionDetail";
 import Players from "./pages/Players";
 import NewPlayer from "./pages/NewPlayer";
-import Messages from "./pages/Messages";
-import NewMessage from "./pages/NewMessage";
-import MessageDetail from "./pages/MessageDetail";
 import Payments from "./pages/Payments";
 import PaymentDetail from "./pages/PaymentDetail";
 import AccountBilling from "./pages/AccountBilling";
@@ -129,21 +126,6 @@ const App = () => {
               <Route path="/players/:playerId" element={
                 <RouteGuard>
                   <PlayerDetail />
-                </RouteGuard>
-              } />
-              <Route path="/messages" element={
-                <RouteGuard>
-                  <Messages />
-                </RouteGuard>
-              } />
-              <Route path="/messages/new" element={
-                <RouteGuard>
-                  <NewMessage />
-                </RouteGuard>
-              } />
-              <Route path="/message/:messageId" element={
-                <RouteGuard>
-                  <MessageDetail />
                 </RouteGuard>
               } />
               <Route path="/payments" element={

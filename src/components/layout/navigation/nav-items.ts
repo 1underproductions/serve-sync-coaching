@@ -2,7 +2,6 @@
 import { 
   CalendarClock, 
   Users, 
-  MessageSquare, 
   DollarSign, 
   BarChart, 
   Settings, 
@@ -18,7 +17,6 @@ export const navItems = [
   { name: "Dashboard", path: "/dashboard", icon: Home },
   { name: "Schedule", path: "/schedule", icon: CalendarClock },
   { name: "Players", path: "/players", icon: Users },
-  { name: "Messages", path: "/messages", icon: MessageSquare },
   { name: "Payments", path: "/payments", icon: DollarSign },
   { name: "Analytics", path: "/analytics", icon: BarChart },
   { name: "Settings", path: "/settings", icon: Settings },
