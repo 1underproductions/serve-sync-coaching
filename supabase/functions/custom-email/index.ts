@@ -118,17 +118,17 @@ serve(async (req) => {
       
       try {
         // Parse and validate the provided reset URL
-        let redirectUrl;
+        let resetUrl = "";
         
         // Ensure we have a properly formatted URL
         try {
           // Make sure reset_url is a complete URL with protocol, domain, etc.
-          redirectUrl = new URL(data.reset_url).toString();
-          console.log("Reset URL is valid:", redirectUrl);
+          resetUrl = new URL(data.reset_url).toString();
+          console.log("Reset URL is valid:", resetUrl);
         } catch (urlError) {
           console.error("Invalid reset URL format, constructing from origin:", urlError);
-          redirectUrl = origin + "/reset-password";
-          console.log("Constructed fallback reset URL:", redirectUrl);
+          resetUrl = origin + "/reset-password";
+          console.log("Constructed fallback reset URL:", resetUrl);
         }
         
         // Check if the user exists first
@@ -166,8 +166,8 @@ serve(async (req) => {
           type: "recovery",
           email: email,
           options: {
-            // Use the redirectUrl directly - no encoding needed as Supabase handles this
-            redirectTo: redirectUrl
+            // Important: Make sure this redirects to the app's reset password page
+            redirectTo: resetUrl
           }
         });
         
@@ -215,7 +215,7 @@ serve(async (req) => {
         }
         
         // Use the action link directly since it's already properly formatted by Supabase
-        const resetUrl = actionLink;
+        const passwordResetUrl = actionLink;
         
         try {
           const emailResponse = await resend.emails.send({
@@ -232,7 +232,7 @@ serve(async (req) => {
                 </p>
                 
                 <div style="text-align: center; margin: 30px 0;">
-                  <a href="${resetUrl}" style="display: inline-block; background-color: #3b82f6; color: white; font-weight: bold; padding: 12px 24px; text-decoration: none; border-radius: 4px;">
+                  <a href="${passwordResetUrl}" style="display: inline-block; background-color: #3b82f6; color: white; font-weight: bold; padding: 12px 24px; text-decoration: none; border-radius: 4px;">
                     Reset Password
                   </a>
                 </div>
@@ -242,7 +242,7 @@ serve(async (req) => {
                 </p>
                 
                 <p style="font-size: 14px; line-height: 1.5; margin-bottom: 30px; word-break: break-all; color: #4a5568;">
-                  ${resetUrl}
+                  ${passwordResetUrl}
                 </p>
                 
                 <p style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">

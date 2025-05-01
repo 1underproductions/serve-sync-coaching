@@ -45,11 +45,10 @@ const ForgotPassword = () => {
     setErrorMessage(null);
     
     try {
-      // Get the full application URL from the window location
+      // Get the current window location for the redirect
       const appUrl = window.location.origin;
       
-      // Create a direct path to the reset password page (not auth callback)
-      // This will be where the user lands after clicking the link in the email
+      // Create the direct path to the reset password page
       const resetPath = `${appUrl}/reset-password`;
       
       console.log(`Requesting password reset for ${data.email} with redirect to ${resetPath}`);
@@ -61,7 +60,6 @@ const ForgotPassword = () => {
       console.error("Password reset error:", error);
       setErrorMessage("There was a problem sending the reset email. Please verify your email address and try again later.");
       
-      // Still show a toast in case the alert is missed
       toast({
         variant: "destructive",
         title: "Error",

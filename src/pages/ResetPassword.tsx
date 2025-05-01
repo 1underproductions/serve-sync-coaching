@@ -101,40 +101,15 @@ const ResetPassword = () => {
         
         console.log("URL parameters found:", debugData.parsed);
         setDebugInfo(debugData);
-        
-        // First approach: Try to set session from URL (handles hash fragments from Supabase auth redirects)
+
+        // First approach: Set session from URL (handles Supabase auth redirects with hash fragments)
         try {
-          console.log("Attempting to get session from URL...");
-          const { data, error } = await supabase.auth.getSessionFromUrl();
-          
-          debugData.sessionFromUrl = { 
-            success: !!data?.session,
-            error: error ? error.message : null
-          };
-          
-          if (error) {
-            console.log("Error getting session from URL:", error.message);
-          }
-          
-          if (data?.session) {
-            console.log("Successfully got session from URL");
-            setTokenVerified(true);
-            setIsCheckingToken(false);
-            return;
-          }
-        } catch (urlError) {
-          console.error("Error getting session from URL:", urlError);
-          debugData.sessionFromUrlError = urlError;
-        }
-        
-        // Second approach: If there's an access_token in the hash
-        if (accessToken) {
-          console.log("Found access_token in URL hash, setting session");
-          
-          try {
+          if (location.hash) {
+            console.log("Hash fragment detected, attempting to process auth redirect");
+            // This is the correct method in newer Supabase versions
             const { data, error } = await supabase.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken || "",
+              access_token: accessToken || "",
+              refresh_token: refreshToken || ""
             });
             
             debugData.setSession = { 
@@ -143,26 +118,27 @@ const ResetPassword = () => {
             };
             
             if (error) {
-              console.error("Error setting session from hash:", error);
+              console.log("Error setting session from URL:", error.message);
             }
             
             if (data.session) {
-              console.log("Successfully set session from hash");
+              console.log("Successfully set session from URL hash");
               setTokenVerified(true);
               setIsCheckingToken(false);
               return;
             }
-          } catch (sessionError) {
-            console.error("Error setting session:", sessionError);
-            debugData.setSessionError = sessionError;
           }
+        } catch (urlError) {
+          console.error("Error setting session from URL:", urlError);
+          debugData.setSessionError = urlError;
         }
         
-        // Third approach: Exchange recovery code for session
+        // Second approach: If there's a token in query params (used in some recovery flows)
         if (token && (typeParam === 'recovery' || type === 'recovery')) {
-          console.log("Found recovery token, exchanging for session");
+          console.log("Found recovery token in query params, exchanging for session");
           
           try {
+            // In newer versions of Supabase, use exchangeCodeForSession
             const { data, error } = await supabase.auth.exchangeCodeForSession(token);
             
             debugData.exchangeCode = { 
@@ -186,7 +162,7 @@ const ResetPassword = () => {
           }
         }
         
-        // Fourth approach: Check if we already have an active session
+        // Third approach: Check if we already have an active session
         try {
           const { data, error } = await supabase.auth.getSession();
           
