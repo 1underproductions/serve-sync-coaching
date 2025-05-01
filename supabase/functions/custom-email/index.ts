@@ -102,7 +102,9 @@ serve(async (req) => {
         console.log("Password reset redirect URL:", redirectUrl);
         
         // Check if the user exists first
-        const { data: userData, error: userError } = await supabaseAdmin.auth.admin.listUsers();
+        const { data: userData, error: userError } = await supabaseAdmin.auth.admin.listUsers({
+          perPage: 1000 // Increase to handle more users if needed
+        });
         
         if (userError) {
           console.error("Error listing users:", userError);
@@ -115,7 +117,20 @@ serve(async (req) => {
           });
         }
         
-        const userExists = userData?.users.some(user => user.email === email);
+        // Explicitly check if userData exists and has users property
+        if (!userData || !Array.isArray(userData.users)) {
+          console.error("Invalid user data returned:", userData);
+          return new Response(JSON.stringify({ 
+            success: false, 
+            error: "Failed to retrieve user data" 
+          }), {
+            status: 500,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          });
+        }
+        
+        const userExists = userData.users.some(user => user.email === email);
+        console.log("User exists check:", userExists, "for email:", email);
         
         if (!userExists) {
           console.log("User doesn't exist, but we'll still respond as if succeeded for security");
@@ -127,7 +142,7 @@ serve(async (req) => {
         }
         
         // Generate a password recovery token using the admin API
-        const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.admin.generateLink({
+        const result = await supabaseAdmin.auth.admin.generateLink({
           type: "recovery",
           email: email,
           options: {
@@ -135,20 +150,33 @@ serve(async (req) => {
           }
         });
         
-        if (tokenError || !tokenData) {
-          console.error("Error generating recovery link or no data returned:", tokenError, tokenData);
+        // Detailed error logging
+        if (result.error) {
+          console.error("Error generating recovery link:", result.error);
           return new Response(JSON.stringify({ 
             success: false, 
-            error: tokenError?.message || "Failed to generate recovery link" 
+            error: result.error.message || "Failed to generate recovery link" 
           }), {
             status: 400,
             headers: { "Content-Type": "application/json", ...corsHeaders },
           });
         }
         
+        // Now check if data exists and has the expected structure
+        if (!result.data) {
+          console.error("No data returned from generateLink:", result);
+          return new Response(JSON.stringify({ 
+            success: false, 
+            error: "No token data returned" 
+          }), {
+            status: 500,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          });
+        }
+        
         // Verify we have all the required properties
-        if (!tokenData.properties || !tokenData.properties.action_link) {
-          console.error("Invalid tokenData structure:", tokenData);
+        if (!result.data.properties || !result.data.properties.action_link) {
+          console.error("Invalid token data structure:", result.data);
           return new Response(JSON.stringify({ 
             success: false, 
             error: "Invalid token data structure" 
@@ -159,7 +187,7 @@ serve(async (req) => {
         }
         
         // Extract the token from the action link
-        const actionLink = tokenData.properties.action_link;
+        const actionLink = result.data.properties.action_link;
         console.log("Generated action link:", actionLink);
         
         // Use the action link directly since it's already properly formatted by Supabase
