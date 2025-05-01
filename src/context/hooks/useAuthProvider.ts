@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, Profile, sendCustomEmail } from '@/lib/supabase';
@@ -386,22 +385,14 @@ export const useAuthProvider = (navigate?: (path: string, options?: {replace?: b
       // First create a reset token using Supabase but don't send an email
       const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: resetUrl,
-        // This option disables Supabase's default email
-        emailRedirectTo: resetUrl
+        // This option is for disabling Supabase's default email - fixed property name
       });
       
       if (error) throw error;
       
       try {
-        // Extract the token directly from the response
-        // Using a special property in the response
-        // This is a hack to get the token from the response
-        // @ts-ignore - this is not in the type definitions but may be available
-        const rawToken = (data as any)._rawToken || '';
-        
         // Send our custom email using sendCustomEmail
         await sendCustomEmail('password-reset', email, {
-          token: rawToken, // Pass the raw token if available
           reset_url: resetUrl,
           redirect_to: resetUrl
         });
