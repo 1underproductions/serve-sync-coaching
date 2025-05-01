@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,6 +17,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Lock } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const resetPasswordSchema = z.object({
   password: z.string().min(8, {
@@ -36,9 +37,12 @@ const ResetPassword = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [tokenVerified, setTokenVerified] = useState<boolean | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
-  
+
   const form = useForm<ResetPasswordFormValues>({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: {
@@ -47,9 +51,35 @@ const ResetPassword = () => {
     },
   });
 
+  // Check if the access token is present when the page loads
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error("Error checking session:", error);
+        setTokenVerified(false);
+        setErrorMessage("Your password reset link has expired or is invalid. Please request a new one.");
+        return;
+      }
+      
+      if (!data.session) {
+        setTokenVerified(false);
+        setErrorMessage("Your password reset link has expired or is invalid. Please request a new one.");
+        return;
+      }
+      
+      setTokenVerified(true);
+    };
+    
+    checkSession();
+  }, []);
+
   const onSubmit = async (data: ResetPasswordFormValues) => {
     try {
       setIsSubmitting(true);
+      setErrorMessage(null);
+      
       const { error } = await supabase.auth.updateUser({
         password: data.password,
       });
@@ -61,10 +91,14 @@ const ResetPassword = () => {
         description: "Your password has been successfully updated.",
       });
       
+      // Sign the user out to ensure they log in with the new password
+      await supabase.auth.signOut();
+      
       setTimeout(() => {
         navigate("/login");
       }, 1500);
     } catch (error: any) {
+      setErrorMessage(error.message || "There was a problem updating your password. Please try again.");
       toast({
         variant: "destructive",
         title: "Update failed",
@@ -91,94 +125,113 @@ const ResetPassword = () => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>New Password</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                        <Input
-                          className="pl-10 pr-10"
-                          type={showPassword ? "text" : "password"}
-                          placeholder="••••••••"
-                          {...field}
-                        />
-                        <button
-                          type="button"
-                          className="absolute right-3 top-3"
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
-                          {showPassword ? (
-                            <EyeOff className="h-4 w-4 text-gray-400" />
-                          ) : (
-                            <Eye className="h-4 w-4 text-gray-400" />
-                          )}
-                        </button>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          {errorMessage && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertDescription>{errorMessage}</AlertDescription>
+            </Alert>
+          )}
 
-              <FormField
-                control={form.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                        <Input
-                          className="pl-10 pr-10"
-                          type={showConfirmPassword ? "text" : "password"}
-                          placeholder="••••••••"
-                          {...field}
-                        />
-                        <button
-                          type="button"
-                          className="absolute right-3 top-3"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        >
-                          {showConfirmPassword ? (
-                            <EyeOff className="h-4 w-4 text-gray-400" />
-                          ) : (
-                            <Eye className="h-4 w-4 text-gray-400" />
-                          )}
-                        </button>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          {tokenVerified === false && (
+            <div className="text-center">
+              <Button
+                onClick={() => navigate("/forgot-password")}
+                className="mt-4"
+              >
+                Request a new password reset link
+              </Button>
+            </div>
+          )}
 
-              <div>
-                <Button 
-                  type="submit" 
-                  className="w-full"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Updating..." : "Reset Password"}
-                </Button>
-              </div>
+          {tokenVerified && (
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>New Password</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                          <Input
+                            className="pl-10 pr-10"
+                            type={showPassword ? "text" : "password"}
+                            placeholder="••••••••"
+                            {...field}
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-3 top-3"
+                            onClick={() => setShowPassword(!showPassword)}
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-4 w-4 text-gray-400" />
+                            ) : (
+                              <Eye className="h-4 w-4 text-gray-400" />
+                            )}
+                          </button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <div className="text-center mt-4">
-                <Link
-                  to="/login"
-                  className="text-sm font-medium text-tennis-green-600 hover:text-tennis-green-500"
-                >
-                  Return to login
-                </Link>
-              </div>
-            </form>
-          </Form>
+                <FormField
+                  control={form.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Confirm Password</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                          <Input
+                            className="pl-10 pr-10"
+                            type={showConfirmPassword ? "text" : "password"}
+                            placeholder="••••••••"
+                            {...field}
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-3 top-3"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          >
+                            {showConfirmPassword ? (
+                              <EyeOff className="h-4 w-4 text-gray-400" />
+                            ) : (
+                              <Eye className="h-4 w-4 text-gray-400" />
+                            )}
+                          </button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div>
+                  <Button 
+                    type="submit" 
+                    className="w-full"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? "Updating..." : "Reset Password"}
+                  </Button>
+                </div>
+
+                <div className="text-center mt-4">
+                  <Link
+                    to="/login"
+                    className="text-sm font-medium text-tennis-green-600 hover:text-tennis-green-500"
+                  >
+                    Return to login
+                  </Link>
+                </div>
+              </form>
+            </Form>
+          )}
         </div>
       </div>
     </div>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, Profile, sendCustomEmail } from '@/lib/supabase';
@@ -379,22 +378,40 @@ export const useAuthProvider = () => {
   const resetPassword = async (email: string) => {
     try {
       setIsLoading(true);
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      
+      // Generate reset link using Supabase's built-in function
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
       
       if (error) throw error;
-
-      toast({
-        title: "Reset email sent",
-        description: "Check your inbox for instructions to reset your password.",
-      });
+      
+      // Instead of relying on Supabase's email, send our own custom email
+      try {
+        await sendCustomEmail('password-reset', email, {
+          reset_url: `${window.location.origin}/reset-password`, 
+          redirect_to: `${window.location.origin}/login`,
+        });
+        
+        toast({
+          title: "Reset email sent",
+          description: "Check your inbox for instructions to reset your password.",
+        });
+      } catch (emailError: any) {
+        console.error("Error sending custom reset email:", emailError);
+        // Fall back to Supabase's default email if our custom one fails
+        toast({
+          title: "Reset email sent",
+          description: "Check your inbox for instructions to reset your password.",
+        });
+      }
     } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Error",
         description: error.message || "Failed to send reset email",
       });
+      throw error;
     } finally {
       setIsLoading(false);
     }

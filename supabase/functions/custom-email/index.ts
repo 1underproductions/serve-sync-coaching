@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 
@@ -68,6 +67,60 @@ serve(async (req) => {
       });
 
       console.log("Email sent successfully:", emailResponse);
+      
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+    
+    if (type === "password-reset") {
+      const { reset_url, redirect_to } = data;
+      
+      const emailResponse = await resend.emails.send({
+        from: "Tennexis Support <support@tennexis.com>",
+        to: [email],
+        subject: "Reset Your Tennexis Password",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+            <img src="https://asset.brandfetch.io/idFdo8rNxK/idtYvV5iVs.jpeg" alt="Tennexis" style="max-width: 150px; margin-bottom: 20px;" />
+            
+            <h1 style="color: #3b82f6; margin-bottom: 20px;">Reset Your Password</h1>
+            
+            <p style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
+              We received a request to reset your password for your Tennexis account. 
+              Click the button below to create a new password.
+            </p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${reset_url}" style="display: inline-block; background-color: #3b82f6; color: white; font-weight: bold; padding: 12px 24px; text-decoration: none; border-radius: 4px;">
+                Reset Password
+              </a>
+            </div>
+            
+            <p style="font-size: 16px; line-height: 1.5; margin-bottom: 10px;">
+              Or copy and paste this URL into your browser:
+            </p>
+            
+            <p style="font-size: 14px; line-height: 1.5; margin-bottom: 30px; word-break: break-all; color: #4a5568;">
+              ${reset_url}
+            </p>
+            
+            <p style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
+              This link will expire in 24 hours. If you didn't request a password reset, you can safely ignore this email.
+            </p>
+            
+            <div style="border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 30px; font-size: 14px; color: #718096;">
+              <p>&copy; ${new Date().getFullYear()} Tennexis. All rights reserved.</p>
+              <p>
+                You're receiving this email because a password reset was requested for your Tennexis account.
+              </p>
+            </div>
+          </div>
+        `,
+      });
+
+      console.log("Password reset email sent successfully:", emailResponse);
       
       return new Response(JSON.stringify({ success: true }), {
         status: 200,

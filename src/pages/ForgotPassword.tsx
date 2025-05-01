@@ -15,7 +15,9 @@ import {
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { Mail } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/useAuth";
+import { useState } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const forgotPasswordSchema = z.object({
   email: z.string().email({
@@ -28,6 +30,8 @@ type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 const ForgotPassword = () => {
   const { toast } = useToast();
   const { resetPassword, isLoading } = useAuth();
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
   const form = useForm<ForgotPasswordFormValues>({
     resolver: zodResolver(forgotPasswordSchema),
@@ -37,12 +41,16 @@ const ForgotPassword = () => {
   });
 
   const onSubmit = async (data: ForgotPasswordFormValues) => {
+    setSuccessMessage(null);
+    setErrorMessage(null);
+    
     try {
       await resetPassword(data.email);
-      // The success notification is handled in the resetPassword function
-    } catch (error) {
-      // Error is handled in the resetPassword function
+      setSuccessMessage("Password reset email sent. Please check your inbox.");
+      form.reset();
+    } catch (error: any) {
       console.error("Password reset error:", error);
+      setErrorMessage(error.message || "Failed to send reset email. Please try again.");
     }
   };
 
@@ -62,6 +70,18 @@ const ForgotPassword = () => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          {successMessage && (
+            <Alert className="mb-6 bg-green-50 border-green-200">
+              <AlertDescription className="text-green-800">{successMessage}</AlertDescription>
+            </Alert>
+          )}
+          
+          {errorMessage && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertDescription>{errorMessage}</AlertDescription>
+            </Alert>
+          )}
+          
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
