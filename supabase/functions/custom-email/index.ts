@@ -98,23 +98,22 @@ serve(async (req) => {
       console.log("Processing password reset request for:", email);
       
       try {
-        // Parse and ensure we have a proper reset URL
         let redirectToUrl;
-        try {
-          // Convert to proper URL object and back to string to ensure it's well-formed
-          redirectToUrl = new URL(data.reset_url).toString();
-          console.log("Redirect URL is valid:", redirectToUrl);
-        } catch (urlError) {
-          console.error("Invalid redirect URL format, using fallback:", urlError);
-          // If the URL is invalid, construct one from origin
-          redirectToUrl = new URL("/reset-password", origin).toString();
-        }
         
-        console.log("Password reset will redirect to:", redirectToUrl);
+        // Ensure we have a properly formatted URL
+        try {
+          // Make sure reset_url is a complete URL with protocol, domain, etc.
+          redirectToUrl = new URL(data.reset_url).toString();
+          console.log("Reset URL is valid:", redirectToUrl);
+        } catch (urlError) {
+          console.error("Invalid reset URL format, constructing from origin:", urlError);
+          redirectToUrl = new URL("/reset-password", origin).toString();
+          console.log("Constructed fallback reset URL:", redirectToUrl);
+        }
         
         // Check if the user exists first
         const { data: userData, error: userError } = await supabaseAdmin.auth.admin.listUsers({
-          perPage: 1000, // Adjust as needed
+          perPage: 1000,
           page: 1,
         });
         
@@ -147,12 +146,11 @@ serve(async (req) => {
           type: "recovery",
           email: email,
           options: {
-            // Use encoded URI for the redirectTo to ensure it's properly formatted
+            // Ensure the redirectTo URL is properly encoded
             redirectTo: encodeURI(redirectToUrl)
           }
         });
         
-        // Enhanced error handling
         if (result.error || !result.data) {
           console.error("Error generating recovery link:", result.error);
           return new Response(JSON.stringify({ 
@@ -180,14 +178,16 @@ serve(async (req) => {
         const actionLink = result.data.properties.action_link;
         console.log("Generated action link:", actionLink);
         
-        // Test the action link to make sure it's valid
+        // Debug the action link components
         try {
-          const testUrl = new URL(actionLink);
-          console.log("Action link appears valid with components:", {
-            protocol: testUrl.protocol,
-            hostname: testUrl.hostname,
-            pathname: testUrl.pathname,
-            search: testUrl.search
+          const linkUrl = new URL(actionLink);
+          console.log("Action link components:", {
+            protocol: linkUrl.protocol,
+            hostname: linkUrl.hostname,
+            pathname: linkUrl.pathname,
+            search: linkUrl.search,
+            hash: linkUrl.hash,
+            href: linkUrl.href
           });
         } catch (urlError) {
           console.error("Action link is invalid URL:", urlError);
