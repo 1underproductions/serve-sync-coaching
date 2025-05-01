@@ -45,12 +45,21 @@ const ForgotPassword = () => {
     setErrorMessage(null);
     
     try {
+      console.log(`Requesting password reset for ${data.email}`);
       await resetPassword(data.email);
-      setSuccessMessage("Password reset email sent. Please check your inbox for instructions from Tennexis.");
+      
+      setSuccessMessage("Password reset email sent! Please check your inbox and spam/junk folders for instructions. If you don't receive an email within a few minutes, try again or contact support.");
       form.reset();
     } catch (error: any) {
       console.error("Password reset error:", error);
-      setErrorMessage(error.message || "Failed to send reset email. Please try again.");
+      setErrorMessage("There was a problem sending the reset email. Please verify your email address and try again later.");
+      
+      // Still show a toast in case the alert is missed
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to send reset email. Please try again later.",
+      });
     }
   };
 

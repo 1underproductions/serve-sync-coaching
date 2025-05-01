@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 import { createClient } from "npm:@supabase/supabase-js";
@@ -16,6 +15,8 @@ const supabaseAdmin = createClient(
 );
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+
+// Use the environment variable or fall back to the Supabase URL
 const projectUrl = Deno.env.get("PROJECT_URL") || "https://cugwtwpgccpcjeumrkxf.supabase.co";
 
 const corsHeaders = {
@@ -32,6 +33,11 @@ serve(async (req) => {
 
   try {
     const { type, email, data } = await req.json();
+    console.log(`Processing ${type} email for: ${email} with data:`, data);
+    
+    // Get the request origin to use as base URL for redirects
+    const origin = req.headers.get("origin") || projectUrl;
+    console.log("Request origin:", origin);
     
     // Handle various email types
     if (type === "signup") {
@@ -91,20 +97,33 @@ serve(async (req) => {
       console.log("Processing password reset request for:", email);
       
       try {
-        // Extract the redirect URL from the request data
-        const redirectUrl = data.redirect_to || data.reset_url;
+        // Using origin to dynamically set reset URL
+        let appDomain = origin;
         
-        if (!redirectUrl) {
-          console.error("Missing redirect URL for password reset");
-          throw new Error("Missing redirect URL for password reset");
+        // If the request is coming from a Lovable preview, use that domain
+        if (appDomain.includes("lovableproject.com") || appDomain.includes("lovable.app")) {
+          console.log("Using Lovable preview domain:", appDomain);
+        } else if (data.redirect_to) {
+          // If a specific redirect URL was provided, extract its domain
+          try {
+            const redirectUrl = new URL(data.redirect_to);
+            appDomain = `${redirectUrl.protocol}//${redirectUrl.host}`;
+            console.log("Using redirect domain:", appDomain);
+          } catch (urlError) {
+            console.error("Invalid redirect URL, using origin instead:", urlError);
+          }
+        } else {
+          console.log("Using default domain:", appDomain);
         }
         
-        console.log("Password reset redirect URL:", redirectUrl);
+        // Construct the reset link path, maintaining consistency
+        const resetPath = "/reset-password";
+        const redirectToUrl = `${appDomain}${resetPath}`;
+        
+        console.log("Password reset will redirect to:", redirectToUrl);
         
         // Check if the user exists first
-        const { data: userData, error: userError } = await supabaseAdmin.auth.admin.listUsers({
-          perPage: 1000 // Increase to handle more users if needed
-        });
+        const { data: userData, error: userError } = await supabaseAdmin.auth.admin.listUsers();
         
         if (userError) {
           console.error("Error listing users:", userError);
@@ -117,19 +136,8 @@ serve(async (req) => {
           });
         }
         
-        // Explicitly check if userData exists and has users property
-        if (!userData || !Array.isArray(userData.users)) {
-          console.error("Invalid user data returned:", userData);
-          return new Response(JSON.stringify({ 
-            success: false, 
-            error: "Failed to retrieve user data" 
-          }), {
-            status: 500,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-          });
-        }
-        
-        const userExists = userData.users.some(user => user.email === email);
+        // Check if user exists
+        const userExists = userData?.users?.some(user => user.email === email);
         console.log("User exists check:", userExists, "for email:", email);
         
         if (!userExists) {
@@ -146,11 +154,11 @@ serve(async (req) => {
           type: "recovery",
           email: email,
           options: {
-            redirectTo: redirectUrl
+            redirectTo: redirectToUrl
           }
         });
         
-        // Detailed error logging
+        // Enhanced error handling
         if (result.error) {
           console.error("Error generating recovery link:", result.error);
           return new Response(JSON.stringify({ 
@@ -162,24 +170,11 @@ serve(async (req) => {
           });
         }
         
-        // Now check if data exists and has the expected structure
-        if (!result.data) {
-          console.error("No data returned from generateLink:", result);
+        if (!result.data || !result.data.properties || !result.data.properties.action_link) {
+          console.error("Invalid token data returned:", JSON.stringify(result.data, null, 2));
           return new Response(JSON.stringify({ 
             success: false, 
-            error: "No token data returned" 
-          }), {
-            status: 500,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-          });
-        }
-        
-        // Verify we have all the required properties
-        if (!result.data.properties || !result.data.properties.action_link) {
-          console.error("Invalid token data structure:", result.data);
-          return new Response(JSON.stringify({ 
-            success: false, 
-            error: "Invalid token data structure" 
+            error: "Invalid token data structure returned from Supabase" 
           }), {
             status: 500,
             headers: { "Content-Type": "application/json", ...corsHeaders },

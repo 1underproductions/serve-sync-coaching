@@ -20,6 +20,13 @@ const App = () => {
         <Route path="/signup" element={<SignUp />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        
+        {/* Special route to handle hash fragment URLs from Supabase auth */}
+        <Route 
+          path="/reset-password/*" 
+          element={<ResetPassword />} 
+        />
+        
         {/* Catch-all route to handle direct links with hash parameters */}
         <Route 
           path="*" 

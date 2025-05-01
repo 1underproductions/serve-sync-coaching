@@ -18,6 +18,13 @@ import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Lock } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription
+} from "@/components/ui/dialog";
 
 const resetPasswordSchema = z.object({
   password: z.string().min(8, {
@@ -40,6 +47,9 @@ const ResetPassword = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [tokenVerified, setTokenVerified] = useState<boolean | null>(null);
   const [isCheckingToken, setIsCheckingToken] = useState(true);
+  const [showDebugInfo, setShowDebugInfo] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<any>({});
+  
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -60,6 +70,14 @@ const ResetPassword = () => {
       
       try {
         console.log("Checking for auth session...");
+        const debugData: any = {
+          location: {
+            hash: location.hash,
+            search: location.search,
+            pathname: location.pathname
+          },
+          parsed: {}
+        };
         
         // Parse URL parameters 
         // 1. Check URL hash fragments (for SPA redirects with access token)
@@ -72,14 +90,15 @@ const ResetPassword = () => {
         const token = searchParams.get('token');
         const typeParam = searchParams.get('type');
         
-        console.log("URL parameters found:", {
+        debugData.parsed = {
           accessToken: accessToken ? "present" : "not present",
           refreshToken: refreshToken ? "present" : "not present",
           token: token ? "present" : "not present", 
           type: typeParam || "not present"
-        });
+        };
         
-        // Try both possible auth methods:
+        console.log("URL parameters found:", debugData.parsed);
+        setDebugInfo(debugData);
         
         // Method 1: Using access token from URL hash (modern Supabase flow)
         if (accessToken) {
@@ -89,6 +108,8 @@ const ResetPassword = () => {
             access_token: accessToken,
             refresh_token: refreshToken || "",
           });
+          
+          debugData.method1 = { data: data ? "present" : "null", error: error || null };
           
           if (error) {
             console.error("Error setting session from hash:", error);
@@ -110,6 +131,8 @@ const ResetPassword = () => {
           // For Supabase recovery tokens, we need to exchange them for a session
           const { data, error } = await supabase.auth.exchangeCodeForSession(token);
           
+          debugData.method2 = { data: data ? "present" : "null", error: error || null };
+          
           if (error) {
             console.error("Error exchanging code for session:", error);
             throw error;
@@ -125,6 +148,8 @@ const ResetPassword = () => {
         
         // Method 3: Check if we already have an active session
         const { data, error } = await supabase.auth.getSession();
+        
+        debugData.method3 = { data: data ? "present" : "null", error: error || null };
         
         if (error) {
           console.error("Error checking session:", error);
@@ -146,7 +171,7 @@ const ResetPassword = () => {
       } catch (error: any) {
         console.error("Session verification error:", error);
         setTokenVerified(false);
-        setErrorMessage("Your password reset link has expired or is invalid. Please request a new one.");
+        setErrorMessage(`Your password reset link is invalid or has expired. Please request a new one. (${error.message})`);
       } finally {
         setIsCheckingToken(false);
       }
@@ -228,6 +253,16 @@ const ResetPassword = () => {
               >
                 Request a new password reset link
               </Button>
+              
+              <div className="mt-6 text-xs text-gray-500">
+                <Button 
+                  variant="link" 
+                  onClick={() => setShowDebugInfo(true)}
+                  className="text-xs p-0 h-auto"
+                >
+                  Show technical details
+                </Button>
+              </div>
             </div>
           )}
 
@@ -323,6 +358,25 @@ const ResetPassword = () => {
           )}
         </div>
       </div>
+
+      <Dialog open={showDebugInfo} onOpenChange={setShowDebugInfo}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Debug Information</DialogTitle>
+            <DialogDescription>
+              Technical details about the password reset link
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-96 overflow-auto">
+            <pre className="text-xs bg-gray-100 p-4 rounded whitespace-pre-wrap">
+              {JSON.stringify(debugInfo, null, 2)}
+            </pre>
+          </div>
+          <div className="text-right">
+            <Button variant="outline" onClick={() => setShowDebugInfo(false)}>Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

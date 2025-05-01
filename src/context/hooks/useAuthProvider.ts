@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, Profile, sendCustomEmail } from '@/lib/supabase';
@@ -377,7 +378,7 @@ export const useAuthProvider = (navigate?: (path: string, options?: {replace?: b
     try {
       setIsLoading(true);
       
-      // Generate the full reset URL using window.location.origin to get the current domain
+      // Get the current domain for consistent URL generation
       const currentOrigin = window.location.origin;
       const resetUrl = `${currentOrigin}/reset-password`;
       
