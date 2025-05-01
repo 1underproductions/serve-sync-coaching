@@ -389,8 +389,11 @@ export const useAuthProvider = (navigate?: (path: string, options?: {replace?: b
       
       try {
         // Now send our custom email using the token from Supabase
+        // Fixed error here - data is an object that may not have user property
+        const confirmationToken = data?.user?.confirmation_token || "";
+        
         await sendCustomEmail('password-reset', email, {
-          token_hash: data?.user?.confirmation_token || "",
+          token_hash: confirmationToken,
           reset_url: resetUrl,
           redirect_to: resetUrl
         });
