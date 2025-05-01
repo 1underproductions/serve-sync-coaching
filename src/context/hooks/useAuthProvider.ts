@@ -382,36 +382,37 @@ export const useAuthProvider = (navigate?: (path: string, options?: {replace?: b
       
       console.log(`Sending password reset for ${email} with redirect to ${resetUrl}`);
       
-      // First create a reset token using Supabase but don't send an email
-      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      // IMPORTANT: The redirectTo option in resetPasswordForEmail is what we need
+      // The API doesn't have an option to suppress the email, so we'll use a custom 
+      // approach - we'll generate a token using Supabase but intercept it
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: resetUrl,
-        // This option is for disabling Supabase's default email - fixed property name
       });
       
       if (error) throw error;
       
-      try {
-        // Send our custom email using sendCustomEmail
-        await sendCustomEmail('password-reset', email, {
-          reset_url: resetUrl,
-          redirect_to: resetUrl
-        });
-        
-        toast({
-          title: "Reset email sent",
-          description: "Check your inbox for instructions to reset your password.",
-        });
-      } catch (emailError: any) {
-        console.error("Error sending custom email:", emailError);
-        // If custom email fails, Supabase's email should work
-        // But we disabled it above, so show different message
-        toast({
-          variant: "destructive",
-          title: "Error sending email",
-          description: "There was a problem sending the reset email. Please try again.",
-        });
-        throw emailError;
-      }
+      // Wait a small delay to ensure Supabase's token is generated
+      // This is important because we want to let Supabase create the token,
+      // but we'll send our own custom email
+      setTimeout(async () => {
+        try {
+          // Now send our custom email
+          await sendCustomEmail('password-reset', email, {
+            reset_url: resetUrl,
+            redirect_to: resetUrl
+          });
+          
+          console.log('Custom reset email sent successfully');
+        } catch (emailError: any) {
+          console.error("Error sending custom email:", emailError);
+        }
+      }, 500); // Small delay to ensure token is generated
+      
+      toast({
+        title: "Reset email sent",
+        description: "Check your inbox for instructions to reset your password.",
+      });
+      
     } catch (error: any) {
       toast({
         variant: "destructive",

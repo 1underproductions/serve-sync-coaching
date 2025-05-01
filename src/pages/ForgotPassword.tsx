@@ -46,7 +46,7 @@ const ForgotPassword = () => {
     
     try {
       await resetPassword(data.email);
-      setSuccessMessage("Password reset email sent. Please check your inbox.");
+      setSuccessMessage("Password reset email sent. Please check your inbox for instructions from Tennexis.");
       form.reset();
     } catch (error: any) {
       console.error("Password reset error:", error);

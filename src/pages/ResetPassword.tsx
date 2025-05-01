@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { z } from "zod";
@@ -51,7 +52,7 @@ const ResetPassword = () => {
     },
   });
 
-  // More robust token verification
+  // Enhanced token verification
   useEffect(() => {
     const verifySession = async () => {
       setIsCheckingToken(true);
@@ -60,63 +61,82 @@ const ResetPassword = () => {
       try {
         console.log("Checking for auth session...");
         
-        // First check the URL hash params (from direct Supabase redirects)
-        const hash = window.location.hash.substring(1);
-        const params = new URLSearchParams(hash);
-        const accessToken = params.get('access_token');
-        const refreshToken = params.get('refresh_token');
-        const type = params.get('type');
-        
-        // Also check URL search params (in case tokens are there)
-        const searchParams = new URLSearchParams(window.location.search);
+        // 1. First check for URL parameters in the location search (query params)
+        const searchParams = new URLSearchParams(location.search);
         const urlToken = searchParams.get('token');
+        const codeVerifier = searchParams.get('code_verifier');
+        const typeParam = searchParams.get('type');
         
-        // Log found tokens (without revealing full values)
-        if (accessToken) console.log("Found access_token in URL hash");
-        if (urlToken) console.log("Found token in URL search params");
+        // 2. Also check URL hash fragments (for SPA redirects)
+        const hashParams = new URLSearchParams(location.hash.substring(1));
+        const hashToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+        const type = hashParams.get('type');
         
-        // Try setting session from hash params
-        if (accessToken && type === 'recovery') {
-          console.log("Setting session from hash params");
-          const { data, error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken || '',
-          });
-          
-          if (error) {
-            console.error("Error setting session from URL:", error);
-            throw error;
-          }
-          
-          if (data.session) {
-            console.log("Successfully set session from URL hash");
-            setTokenVerified(true);
-            setIsCheckingToken(false);
-            return;
+        console.log("URL parameters found:", {
+          urlToken: urlToken ? "present" : "not present",
+          codeVerifier: codeVerifier ? "present" : "not present",
+          hashToken: hashToken ? "present" : "not present",
+          type: type || typeParam || "not present"
+        });
+        
+        // 3. Try to handle each possible case:
+        
+        // Case 1: We have a fragment with access_token (Supabase redirect)
+        if (hashToken) {
+          console.log("Found access_token in URL hash");
+          try {
+            const { data, error } = await supabase.auth.setSession({
+              access_token: hashToken,
+              refresh_token: refreshToken || "",
+            });
+            
+            if (error) {
+              console.error("Error setting session from hash:", error);
+              throw error;
+            }
+            
+            if (data.session) {
+              console.log("Successfully set session from hash");
+              setTokenVerified(true);
+              setIsCheckingToken(false);
+              return;
+            }
+          } catch (err) {
+            console.error("Error processing hash token:", err);
           }
         }
         
-        // If we have a token in the URL, try to verify it
+        // Case 2: We have a token in search params (custom redirect or Supabase)
         if (urlToken) {
-          console.log("Verifying token from URL parameter");
-          // This only works for certain token types, but worth trying
-          const { error } = await supabase.auth.verifyOtp({
-            token_hash: urlToken,
-            type: 'recovery',
-          });
-          
-          if (error) {
-            console.error("Error verifying token:", error);
-            // Don't throw here, continue to try other methods
-          } else {
-            console.log("Successfully verified token from URL");
-            setTokenVerified(true);
-            setIsCheckingToken(false);
-            return;
+          console.log("Found token in URL search params");
+          try {
+            let verificationMethod = 'recovery';
+            if (typeParam) {
+              verificationMethod = typeParam as 'email' | 'recovery' | 'invite' | 'signup';
+            }
+            
+            // Try to verify with the proper method
+            const { data, error } = await supabase.auth.verifyOtp({
+              token_hash: urlToken,
+              type: verificationMethod,
+            });
+            
+            if (error) {
+              console.error("Error verifying OTP:", error);
+              // Continue to try other methods
+            } else {
+              console.log("Successfully verified token");
+              setTokenVerified(true);
+              setIsCheckingToken(false);
+              return;
+            }
+          } catch (err) {
+            console.error("Error processing URL token:", err);
           }
         }
         
-        // As a fallback, check if we already have a valid session
+        // Case 3: As a fallback, check if we already have an active session
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -125,13 +145,17 @@ const ResetPassword = () => {
         }
         
         if (data.session) {
-          console.log("Valid session found");
+          console.log("Valid session found:", data.session.user.id);
           setTokenVerified(true);
-        } else {
-          console.error("No valid session found");
-          setTokenVerified(false);
-          setErrorMessage("Your password reset link has expired or is invalid. Please request a new one.");
+          setIsCheckingToken(false);
+          return;
         }
+        
+        // If we got here, no valid session was found
+        console.error("No valid recovery session found");
+        setTokenVerified(false);
+        setErrorMessage("Your password reset link has expired or is invalid. Please request a new one.");
+        
       } catch (error: any) {
         console.error("Session verification error:", error);
         setTokenVerified(false);
@@ -142,7 +166,7 @@ const ResetPassword = () => {
     };
     
     verifySession();
-  }, []);
+  }, [location]);
 
   const onSubmit = async (data: ResetPasswordFormValues) => {
     try {

@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 
@@ -74,7 +75,8 @@ serve(async (req) => {
     }
     
     if (type === "password-reset") {
-      // For password reset, create a URL that Supabase will recognize
+      // For password reset, we need to create a URL that will work with the verification endpoint
+      // Use the direct route that our app will handle
       const resetUrl = `${data.reset_url}`;
       
       console.log("Sending password reset email with URL:", resetUrl);
