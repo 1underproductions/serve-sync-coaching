@@ -111,10 +111,8 @@ const ResetPassword = () => {
         if (urlToken) {
           console.log("Found token in URL search params");
           try {
-            let verificationMethod = 'recovery';
-            if (typeParam) {
-              verificationMethod = typeParam as 'email' | 'recovery' | 'invite' | 'signup';
-            }
+            // Fix: Use the correct type required by Supabase
+            const verificationMethod = (typeParam || 'recovery') as 'email' | 'recovery' | 'invite' | 'signup' | 'phone_change' | 'email_change';
             
             // Try to verify with the proper method
             const { data, error } = await supabase.auth.verifyOtp({

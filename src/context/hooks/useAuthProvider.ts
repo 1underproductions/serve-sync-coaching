@@ -383,8 +383,6 @@ export const useAuthProvider = (navigate?: (path: string, options?: {replace?: b
       console.log(`Sending password reset for ${email} with redirect to ${resetUrl}`);
       
       // IMPORTANT: The redirectTo option in resetPasswordForEmail is what we need
-      // The API doesn't have an option to suppress the email, so we'll use a custom 
-      // approach - we'll generate a token using Supabase but intercept it
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: resetUrl,
       });
