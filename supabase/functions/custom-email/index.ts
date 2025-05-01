@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 import { createClient } from "npm:@supabase/supabase-js";
@@ -163,20 +162,18 @@ serve(async (req) => {
         }
         
         // Ensure the data structure is valid
-        if (!result.data.properties || !result.data.properties.action_link) {
-          console.error("Invalid token data returned:", JSON.stringify(result.data, null, 2));
+        if (!result.data.action_link) {
+          console.error("No action link returned:", JSON.stringify(result.data, null, 2));
           return new Response(JSON.stringify({ 
             success: false, 
-            error: "Invalid token data structure returned from Supabase" 
+            error: "No recovery link returned from Supabase" 
           }), {
             status: 500,
             headers: { "Content-Type": "application/json", ...corsHeaders },
           });
         }
         
-        // Extract the token from the action link
-        const actionLink = result.data.properties.action_link;
-        console.log("Generated action link:", actionLink);
+        const actionLink = result.data.action_link;
         
         // Debug the action link components
         try {
