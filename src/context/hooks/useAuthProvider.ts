@@ -1,11 +1,11 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, Profile, sendCustomEmail } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
 import { confirmAdminEmail } from '@/utils/adminUtils';
 
-export const useAuthProvider = () => {
+export const useAuthProvider = (navigate?: (path: string, options?: {replace?: boolean}) => void) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -13,7 +13,6 @@ export const useAuthProvider = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   const fetchUserProfile = useCallback(async (userId?: string) => {
     try {
@@ -220,7 +219,7 @@ export const useAuthProvider = () => {
             description: "Welcome to Tennexis. Please check your email to confirm your account.",
           });
           
-          navigate('/login');
+          if (navigate) navigate('/login');
         } catch (emailError) {
           console.error("Error sending custom email:", emailError);
           toast({
@@ -298,7 +297,7 @@ export const useAuthProvider = () => {
       // Special handling for admin users - directly navigate to admin dashboard
       if (email === "admin@tennexis.com" || profile?.role === "tennexis_admin") {
         console.log("Admin login detected, navigating to admin dashboard");
-        navigate('/admin', { replace: true });
+        if (navigate) navigate('/admin', { replace: true });
       }
       
     } catch (error: any) {
@@ -358,7 +357,7 @@ export const useAuthProvider = () => {
       setProfile(null);
       setIsAdmin(false);
       
-      navigate('/login');
+      if (navigate) navigate('/login');
       
       toast({
         title: "Logged out",

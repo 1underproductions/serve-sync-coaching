@@ -78,7 +78,7 @@ serve(async (req) => {
       const { reset_url, redirect_to } = data;
       
       const emailResponse = await resend.emails.send({
-        from: "Tennexis Support <support@tennexis.com>",
+        from: "Tennexis Support <onboarding@resend.dev>",
         to: [email],
         subject: "Reset Your Tennexis Password",
         html: `
