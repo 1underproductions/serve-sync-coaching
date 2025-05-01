@@ -48,7 +48,8 @@ const ForgotPassword = () => {
       // Get the current full domain for absolute URL generation
       const origin = window.location.origin;
       const resetPath = "/reset-password";
-      const resetUrl = `${origin}${resetPath}`;
+      // Create a fully qualified absolute URL using origin
+      const resetUrl = new URL(resetPath, origin).toString();
       
       console.log(`Requesting password reset for ${data.email} with redirect to ${resetUrl}`);
       await resetPassword(data.email, resetUrl);

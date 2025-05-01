@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 import { createClient } from "npm:@supabase/supabase-js";
@@ -97,17 +98,16 @@ serve(async (req) => {
       console.log("Processing password reset request for:", email);
       
       try {
-        // Ensure we have a proper reset URL
-        let redirectToUrl = data.redirect_to;
-        
-        // Validate the URL to ensure it's a complete URL
+        // Parse and ensure we have a proper reset URL
+        let redirectToUrl;
         try {
-          new URL(redirectToUrl);
+          // Convert to proper URL object and back to string to ensure it's well-formed
+          redirectToUrl = new URL(data.reset_url).toString();
           console.log("Redirect URL is valid:", redirectToUrl);
         } catch (urlError) {
           console.error("Invalid redirect URL format, using fallback:", urlError);
           // If the URL is invalid, construct one from origin
-          redirectToUrl = `${origin}/reset-password`;
+          redirectToUrl = new URL("/reset-password", origin).toString();
         }
         
         console.log("Password reset will redirect to:", redirectToUrl);
@@ -147,7 +147,8 @@ serve(async (req) => {
           type: "recovery",
           email: email,
           options: {
-            redirectTo: redirectToUrl
+            // Use encoded URI for the redirectTo to ensure it's properly formatted
+            redirectTo: encodeURI(redirectToUrl)
           }
         });
         
@@ -179,6 +180,19 @@ serve(async (req) => {
         const actionLink = result.data.properties.action_link;
         console.log("Generated action link:", actionLink);
         
+        // Test the action link to make sure it's valid
+        try {
+          const testUrl = new URL(actionLink);
+          console.log("Action link appears valid with components:", {
+            protocol: testUrl.protocol,
+            hostname: testUrl.hostname,
+            pathname: testUrl.pathname,
+            search: testUrl.search
+          });
+        } catch (urlError) {
+          console.error("Action link is invalid URL:", urlError);
+        }
+        
         // Use the action link directly since it's already properly formatted by Supabase
         const resetUrl = actionLink;
         
@@ -202,7 +216,7 @@ serve(async (req) => {
               </div>
               
               <p style="font-size: 16px; line-height: 1.5; margin-bottom: 10px;">
-                Or copy and paste this URL into your browser:
+                If the button doesn't work, please copy and paste this URL into your browser:
               </p>
               
               <p style="font-size: 14px; line-height: 1.5; margin-bottom: 30px; word-break: break-all; color: #4a5568;">
