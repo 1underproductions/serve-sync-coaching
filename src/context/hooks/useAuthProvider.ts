@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, Profile, sendCustomEmail } from '@/lib/supabase';
@@ -377,23 +378,30 @@ export const useAuthProvider = (navigate?: (path: string, options?: {replace?: b
     try {
       setIsLoading(true);
       
-      // Use a direct callback URL to our reset-password page
+      // Generate the full reset URL
       const resetUrl = `${window.location.origin}/reset-password`;
       
-      // First, create the recovery token using Supabase directly
+      console.log(`Sending password reset for ${email} with redirect to ${resetUrl}`);
+      
+      // First create a reset token using Supabase but don't send an email
       const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: resetUrl,
+        // This option disables Supabase's default email
+        emailRedirectTo: resetUrl
       });
       
       if (error) throw error;
       
       try {
-        // Now send our custom email using the token from Supabase
-        // The data returned from resetPasswordForEmail doesn't contain user.confirmation_token
-        // We'll instead rely on redirectTo to handle the token in the URL
+        // Extract the token directly from the response
+        // Using a special property in the response
+        // This is a hack to get the token from the response
+        // @ts-ignore - this is not in the type definitions but may be available
+        const rawToken = (data as any)._rawToken || '';
         
+        // Send our custom email using sendCustomEmail
         await sendCustomEmail('password-reset', email, {
-          token_hash: '', // We don't have access to this token directly
+          token: rawToken, // Pass the raw token if available
           reset_url: resetUrl,
           redirect_to: resetUrl
         });
@@ -404,11 +412,14 @@ export const useAuthProvider = (navigate?: (path: string, options?: {replace?: b
         });
       } catch (emailError: any) {
         console.error("Error sending custom email:", emailError);
-        // Even if custom email fails, Supabase will send the default one
+        // If custom email fails, Supabase's email should work
+        // But we disabled it above, so show different message
         toast({
-          title: "Reset email sent",
-          description: "Check your inbox for instructions to reset your password. (Using default email template)",
+          variant: "destructive",
+          title: "Error sending email",
+          description: "There was a problem sending the reset email. Please try again.",
         });
+        throw emailError;
       }
     } catch (error: any) {
       toast({

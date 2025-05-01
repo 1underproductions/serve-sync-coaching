@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { z } from "zod";
@@ -39,6 +38,7 @@ const ResetPassword = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [tokenVerified, setTokenVerified] = useState<boolean | null>(null);
+  const [isCheckingToken, setIsCheckingToken] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -51,19 +51,33 @@ const ResetPassword = () => {
     },
   });
 
-  // Check if the access token is present when the page loads
+  // More robust token verification
   useEffect(() => {
-    const checkSession = async () => {
+    const verifySession = async () => {
+      setIsCheckingToken(true);
+      setErrorMessage(null);
+      
       try {
-        // Parse the URL hash for Supabase auth parameters
+        console.log("Checking for auth session...");
+        
+        // First check the URL hash params (from direct Supabase redirects)
         const hash = window.location.hash.substring(1);
         const params = new URLSearchParams(hash);
         const accessToken = params.get('access_token');
         const refreshToken = params.get('refresh_token');
         const type = params.get('type');
         
-        // If hash params are present, set session with them
+        // Also check URL search params (in case tokens are there)
+        const searchParams = new URLSearchParams(window.location.search);
+        const urlToken = searchParams.get('token');
+        
+        // Log found tokens (without revealing full values)
+        if (accessToken) console.log("Found access_token in URL hash");
+        if (urlToken) console.log("Found token in URL search params");
+        
+        // Try setting session from hash params
         if (accessToken && type === 'recovery') {
+          console.log("Setting session from hash params");
           const { data, error } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken || '',
@@ -71,42 +85,63 @@ const ResetPassword = () => {
           
           if (error) {
             console.error("Error setting session from URL:", error);
-            setTokenVerified(false);
-            setErrorMessage("Your password reset link has expired or is invalid. Please request a new one.");
-            return;
+            throw error;
           }
           
           if (data.session) {
+            console.log("Successfully set session from URL hash");
             setTokenVerified(true);
+            setIsCheckingToken(false);
             return;
           }
         }
         
-        // If no hash params, try to get existing session
+        // If we have a token in the URL, try to verify it
+        if (urlToken) {
+          console.log("Verifying token from URL parameter");
+          // This only works for certain token types, but worth trying
+          const { error } = await supabase.auth.verifyOtp({
+            token_hash: urlToken,
+            type: 'recovery',
+          });
+          
+          if (error) {
+            console.error("Error verifying token:", error);
+            // Don't throw here, continue to try other methods
+          } else {
+            console.log("Successfully verified token from URL");
+            setTokenVerified(true);
+            setIsCheckingToken(false);
+            return;
+          }
+        }
+        
+        // As a fallback, check if we already have a valid session
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error("Error checking session:", error);
-          setTokenVerified(false);
-          setErrorMessage("Your password reset link has expired or is invalid. Please request a new one.");
-          return;
+          throw error;
         }
         
-        if (!data.session) {
+        if (data.session) {
+          console.log("Valid session found");
+          setTokenVerified(true);
+        } else {
+          console.error("No valid session found");
           setTokenVerified(false);
           setErrorMessage("Your password reset link has expired or is invalid. Please request a new one.");
-          return;
         }
-        
-        setTokenVerified(true);
-      } catch (error) {
-        console.error("Error in session check:", error);
+      } catch (error: any) {
+        console.error("Session verification error:", error);
         setTokenVerified(false);
-        setErrorMessage("An error occurred while verifying your reset link. Please try requesting a new one.");
+        setErrorMessage("Your password reset link has expired or is invalid. Please request a new one.");
+      } finally {
+        setIsCheckingToken(false);
       }
     };
     
-    checkSession();
+    verifySession();
   }, []);
 
   const onSubmit = async (data: ResetPasswordFormValues) => {
@@ -159,14 +194,23 @@ const ResetPassword = () => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          {isCheckingToken && (
+            <div className="text-center py-4">
+              <div className="animate-pulse">Verifying your reset link...</div>
+            </div>
+          )}
+          
           {errorMessage && (
             <Alert variant="destructive" className="mb-6">
               <AlertDescription>{errorMessage}</AlertDescription>
             </Alert>
           )}
 
-          {tokenVerified === false && (
+          {tokenVerified === false && !isCheckingToken && (
             <div className="text-center">
+              <div className="mb-4 text-red-600">
+                Your password reset link has expired or is invalid.
+              </div>
               <Button
                 onClick={() => navigate("/forgot-password")}
                 className="mt-4"
@@ -176,7 +220,7 @@ const ResetPassword = () => {
             </div>
           )}
 
-          {tokenVerified && (
+          {tokenVerified && !isCheckingToken && (
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField

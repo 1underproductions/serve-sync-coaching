@@ -74,8 +74,23 @@ serve(async (req) => {
     }
     
     if (type === "password-reset") {
-      // Pass the token directly through to Supabase auth verification
-      const resetUrl = data.reset_url || `${projectUrl}/auth/v1/verify?token=${data.token_hash}&type=recovery&redirect_to=${data.redirect_to}`;
+      // For password reset, we need to preserve the full token in the URL
+      // Use the provided token if available, otherwise fallback to other parameters
+      let resetUrl;
+      
+      if (data.token) {
+        // If we have a raw token, use it to construct the proper URL
+        resetUrl = `${projectUrl}/auth/v1/verify?token=${data.token}&type=recovery&redirect_to=${data.redirect_to}`;
+        console.log("Using raw token for password reset URL");
+      } else if (data.token_hash) {
+        // If we have a token_hash, use it instead
+        resetUrl = `${projectUrl}/auth/v1/verify?token=${data.token_hash}&type=recovery&redirect_to=${data.redirect_to}`;
+        console.log("Using token_hash for password reset URL");
+      } else {
+        // Otherwise, use the provided reset_url or fallback to a basic URL
+        resetUrl = data.reset_url || `${data.redirect_to}`;
+        console.log("Using fallback URL for password reset");
+      }
       
       console.log("Sending password reset email with URL:", resetUrl);
       

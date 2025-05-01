@@ -1,5 +1,6 @@
+
 import React, { useEffect } from "react";
-import { Routes, Route, useNavigate } from "react-router-dom";
+import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthProvider";
 import { Toaster } from "./components/ui/toaster";
 
@@ -19,7 +20,13 @@ const App = () => {
         <Route path="/signup" element={<SignUp />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        {/* Add your other routes here */}
+        {/* Catch-all route to handle direct links with hash parameters */}
+        <Route 
+          path="*" 
+          element={
+            <Navigate to="/login" replace />
+          }
+        />
       </Routes>
       <Toaster />
     </AuthProvider>
