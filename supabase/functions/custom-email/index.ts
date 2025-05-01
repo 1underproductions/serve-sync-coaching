@@ -174,6 +174,7 @@ serve(async (req) => {
         }
         
         const actionLink = result.data.action_link;
+        console.log("Generated action link:", actionLink);
         
         // Debug the action link components
         try {
