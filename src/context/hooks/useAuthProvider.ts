@@ -373,17 +373,24 @@ export const useAuthProvider = (navigate?: (path: string, options?: {replace?: b
     }
   };
 
-  const resetPassword = async (email: string, resetUrl: string) => {
+  const resetPassword = async (email: string, redirectUrl: string) => {
     try {
       setIsLoading(true);
       
-      console.log(`Sending password reset for ${email} with redirect to ${resetUrl}`);
+      console.log(`Sending password reset for ${email} with redirect to ${redirectUrl}`);
       
       try {
+        // Ensure the redirect URL is fully qualified
+        const fullRedirectUrl = redirectUrl.startsWith('http') 
+          ? redirectUrl 
+          : `${window.location.origin}${redirectUrl}`;
+          
+        console.log("Full redirect URL:", fullRedirectUrl);
+        
         // Send our custom email with the reset link
         const response = await sendCustomEmail('password-reset', email, {
-          reset_url: resetUrl,
-          redirect_to: resetUrl
+          reset_url: fullRedirectUrl,
+          redirect_to: fullRedirectUrl
         });
         
         if (response.error) {

@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 import { createClient } from "npm:@supabase/supabase-js";
@@ -117,17 +118,18 @@ serve(async (req) => {
       console.log("Processing password reset request for:", email);
       
       try {
-        let redirectToUrl;
+        // Parse and validate the provided reset URL
+        let redirectUrl;
         
         // Ensure we have a properly formatted URL
         try {
           // Make sure reset_url is a complete URL with protocol, domain, etc.
-          redirectToUrl = new URL(data.reset_url).toString();
-          console.log("Reset URL is valid:", redirectToUrl);
+          redirectUrl = new URL(data.reset_url).toString();
+          console.log("Reset URL is valid:", redirectUrl);
         } catch (urlError) {
           console.error("Invalid reset URL format, constructing from origin:", urlError);
-          redirectToUrl = new URL("/reset-password", origin).toString();
-          console.log("Constructed fallback reset URL:", redirectToUrl);
+          redirectUrl = origin + "/reset-password";
+          console.log("Constructed fallback reset URL:", redirectUrl);
         }
         
         // Check if the user exists first
@@ -165,10 +167,12 @@ serve(async (req) => {
           type: "recovery",
           email: email,
           options: {
-            // Ensure the redirectTo URL is properly encoded
-            redirectTo: encodeURI(redirectToUrl)
+            // Ensure redirectTo matches the origin of the request (fix localhost issue)
+            redirectTo: redirectUrl
           }
         });
+        
+        console.log("Recovery link generation response:", JSON.stringify(result.data, null, 2));
         
         if (result.error || !result.data) {
           console.error("Error generating recovery link:", result.error);
@@ -182,8 +186,6 @@ serve(async (req) => {
         }
         
         // Ensure the data structure is valid and extract the action link
-        console.log("Recovery link generation response:", JSON.stringify(result.data, null, 2));
-        
         if (!result.data.properties || !result.data.properties.action_link) {
           console.error("No action link returned:", JSON.stringify(result.data, null, 2));
           return new Response(JSON.stringify({ 
