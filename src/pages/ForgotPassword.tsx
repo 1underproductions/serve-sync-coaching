@@ -45,8 +45,13 @@ const ForgotPassword = () => {
     setErrorMessage(null);
     
     try {
-      console.log(`Requesting password reset for ${data.email}`);
-      await resetPassword(data.email);
+      // Get the current full domain for absolute URL generation
+      const origin = window.location.origin;
+      const resetPath = "/reset-password";
+      const resetUrl = `${origin}${resetPath}`;
+      
+      console.log(`Requesting password reset for ${data.email} with redirect to ${resetUrl}`);
+      await resetPassword(data.email, resetUrl);
       
       setSuccessMessage("Password reset email sent! Please check your inbox and spam/junk folders for instructions. If you don't receive an email within a few minutes, try again or contact support.");
       form.reset();

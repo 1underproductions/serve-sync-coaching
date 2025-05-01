@@ -97,33 +97,26 @@ serve(async (req) => {
       console.log("Processing password reset request for:", email);
       
       try {
-        // Using origin to dynamically set reset URL
-        let appDomain = origin;
+        // Ensure we have a proper reset URL
+        let redirectToUrl = data.redirect_to;
         
-        // If the request is coming from a Lovable preview, use that domain
-        if (appDomain.includes("lovableproject.com") || appDomain.includes("lovable.app")) {
-          console.log("Using Lovable preview domain:", appDomain);
-        } else if (data.redirect_to) {
-          // If a specific redirect URL was provided, extract its domain
-          try {
-            const redirectUrl = new URL(data.redirect_to);
-            appDomain = `${redirectUrl.protocol}//${redirectUrl.host}`;
-            console.log("Using redirect domain:", appDomain);
-          } catch (urlError) {
-            console.error("Invalid redirect URL, using origin instead:", urlError);
-          }
-        } else {
-          console.log("Using default domain:", appDomain);
+        // Validate the URL to ensure it's a complete URL
+        try {
+          new URL(redirectToUrl);
+          console.log("Redirect URL is valid:", redirectToUrl);
+        } catch (urlError) {
+          console.error("Invalid redirect URL format, using fallback:", urlError);
+          // If the URL is invalid, construct one from origin
+          redirectToUrl = `${origin}/reset-password`;
         }
-        
-        // Construct the reset link path, maintaining consistency
-        const resetPath = "/reset-password";
-        const redirectToUrl = `${appDomain}${resetPath}`;
         
         console.log("Password reset will redirect to:", redirectToUrl);
         
         // Check if the user exists first
-        const { data: userData, error: userError } = await supabaseAdmin.auth.admin.listUsers();
+        const { data: userData, error: userError } = await supabaseAdmin.auth.admin.listUsers({
+          perPage: 1000, // Adjust as needed
+          page: 1,
+        });
         
         if (userError) {
           console.error("Error listing users:", userError);
@@ -159,18 +152,19 @@ serve(async (req) => {
         });
         
         // Enhanced error handling
-        if (result.error) {
+        if (result.error || !result.data) {
           console.error("Error generating recovery link:", result.error);
           return new Response(JSON.stringify({ 
             success: false, 
-            error: result.error.message || "Failed to generate recovery link" 
+            error: result.error?.message || "Failed to generate recovery link" 
           }), {
             status: 400,
             headers: { "Content-Type": "application/json", ...corsHeaders },
           });
         }
         
-        if (!result.data || !result.data.properties || !result.data.properties.action_link) {
+        // Ensure the data structure is valid
+        if (!result.data.properties || !result.data.properties.action_link) {
           console.error("Invalid token data returned:", JSON.stringify(result.data, null, 2));
           return new Response(JSON.stringify({ 
             success: false, 
