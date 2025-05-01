@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { z } from "zod";
@@ -51,7 +52,7 @@ const ResetPassword = () => {
     },
   });
 
-  // Enhanced token verification
+  // Simplified token verification
   useEffect(() => {
     const verifySession = async () => {
       setIsCheckingToken(true);
@@ -60,80 +61,45 @@ const ResetPassword = () => {
       try {
         console.log("Checking for auth session...");
         
-        // 1. First check for URL parameters in the location search (query params)
+        // Parse URL for recovery parameters
+        // 1. Check URL hash fragments (for SPA redirects with access token)
+        const hashParams = new URLSearchParams(location.hash.substring(1));
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+        
+        // 2. Check query parameters (for recovery links)
         const searchParams = new URLSearchParams(location.search);
-        const urlToken = searchParams.get('token');
-        const codeVerifier = searchParams.get('code_verifier');
         const typeParam = searchParams.get('type');
         
-        // 2. Also check URL hash fragments (for SPA redirects)
-        const hashParams = new URLSearchParams(location.hash.substring(1));
-        const hashToken = hashParams.get('access_token');
-        const refreshToken = hashParams.get('refresh_token');
-        const type = hashParams.get('type');
-        
         console.log("URL parameters found:", {
-          urlToken: urlToken ? "present" : "not present",
-          codeVerifier: codeVerifier ? "present" : "not present",
-          hashToken: hashToken ? "present" : "not present",
-          type: type || typeParam || "not present"
+          accessToken: accessToken ? "present" : "not present",
+          refreshToken: refreshToken ? "present" : "not present", 
+          type: typeParam || "not present"
         });
         
-        // 3. Try to handle each possible case:
-        
-        // Case 1: We have a fragment with access_token (Supabase redirect)
-        if (hashToken) {
-          console.log("Found access_token in URL hash");
-          try {
-            const { data, error } = await supabase.auth.setSession({
-              access_token: hashToken,
-              refresh_token: refreshToken || "",
-            });
-            
-            if (error) {
-              console.error("Error setting session from hash:", error);
-              throw error;
-            }
-            
-            if (data.session) {
-              console.log("Successfully set session from hash");
-              setTokenVerified(true);
-              setIsCheckingToken(false);
-              return;
-            }
-          } catch (err) {
-            console.error("Error processing hash token:", err);
+        // First, try to set session from hash params (modern Supabase flow)
+        if (accessToken) {
+          console.log("Found access_token in URL hash, setting session");
+          
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken || "",
+          });
+          
+          if (error) {
+            console.error("Error setting session from hash:", error);
+            throw error;
+          }
+          
+          if (data.session) {
+            console.log("Successfully set session from hash");
+            setTokenVerified(true);
+            setIsCheckingToken(false);
+            return;
           }
         }
         
-        // Case 2: We have a token in search params (custom redirect or Supabase)
-        if (urlToken) {
-          console.log("Found token in URL search params");
-          try {
-            // Fix: Use a more limited type based on Supabase's actual accepted values
-            const verificationMethod = (typeParam || 'recovery') as 'recovery' | 'signup' | 'invite' | 'email';
-            
-            // Try to verify with the proper method
-            const { data, error } = await supabase.auth.verifyOtp({
-              token_hash: urlToken,
-              type: verificationMethod,
-            });
-            
-            if (error) {
-              console.error("Error verifying OTP:", error);
-              // Continue to try other methods
-            } else {
-              console.log("Successfully verified token");
-              setTokenVerified(true);
-              setIsCheckingToken(false);
-              return;
-            }
-          } catch (err) {
-            console.error("Error processing URL token:", err);
-          }
-        }
-        
-        // Case 3: As a fallback, check if we already have an active session
+        // As a fallback, check if we already have an active session
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {

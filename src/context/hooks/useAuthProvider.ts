@@ -382,34 +382,31 @@ export const useAuthProvider = (navigate?: (path: string, options?: {replace?: b
       
       console.log(`Sending password reset for ${email} with redirect to ${resetUrl}`);
       
-      // IMPORTANT: The redirectTo option in resetPasswordForEmail is what we need
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: resetUrl,
-      });
+      // IMPORTANT FIX: Don't call Supabase's resetPasswordForEmail since it triggers their default email
+      // Instead, we'll only send our custom email with a reset link
       
-      if (error) throw error;
-      
-      // Wait a small delay to ensure Supabase's token is generated
-      // This is important because we want to let Supabase create the token,
-      // but we'll send our own custom email
-      setTimeout(async () => {
-        try {
-          // Now send our custom email
-          await sendCustomEmail('password-reset', email, {
-            reset_url: resetUrl,
-            redirect_to: resetUrl
-          });
-          
-          console.log('Custom reset email sent successfully');
-        } catch (emailError: any) {
-          console.error("Error sending custom email:", emailError);
-        }
-      }, 500); // Small delay to ensure token is generated
-      
-      toast({
-        title: "Reset email sent",
-        description: "Check your inbox for instructions to reset your password.",
-      });
+      try {
+        // Only send our custom email
+        await sendCustomEmail('password-reset', email, {
+          reset_url: resetUrl,
+          redirect_to: resetUrl
+        });
+        
+        console.log('Custom reset email sent successfully');
+        
+        toast({
+          title: "Reset email sent",
+          description: "Check your inbox for instructions to reset your password.",
+        });
+      } catch (emailError: any) {
+        console.error("Error sending custom email:", emailError);
+        toast({
+          variant: "destructive",
+          title: "Error sending reset email",
+          description: "Failed to send reset email. Please try again later.",
+        });
+        throw emailError;
+      }
       
     } catch (error: any) {
       toast({
@@ -485,3 +482,5 @@ export const useAuthProvider = (navigate?: (path: string, options?: {replace?: b
     setUserAsAdmin,
   };
 };
+
+export default useAuthProvider;
