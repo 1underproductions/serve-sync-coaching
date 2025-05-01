@@ -91,11 +91,39 @@ serve(async (req) => {
       console.log("Processing password reset request for:", email);
       
       try {
-        // Extract the redirect URL from the request data, or use what's explicitly provided
+        // Extract the redirect URL from the request data
         const redirectUrl = data.redirect_to || data.reset_url;
         
         if (!redirectUrl) {
+          console.error("Missing redirect URL for password reset");
           throw new Error("Missing redirect URL for password reset");
+        }
+        
+        console.log("Password reset redirect URL:", redirectUrl);
+        
+        // Check if the user exists first
+        const { data: userData, error: userError } = await supabaseAdmin.auth.admin.listUsers();
+        
+        if (userError) {
+          console.error("Error listing users:", userError);
+          return new Response(JSON.stringify({ 
+            success: false, 
+            error: userError.message 
+          }), {
+            status: 400,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          });
+        }
+        
+        const userExists = userData?.users.some(user => user.email === email);
+        
+        if (!userExists) {
+          console.log("User doesn't exist, but we'll still respond as if succeeded for security");
+          // We still return success to prevent user enumeration
+          return new Response(JSON.stringify({ success: true }), {
+            status: 200,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          });
         }
         
         // Generate a password recovery token using the admin API
@@ -107,13 +135,27 @@ serve(async (req) => {
           }
         });
         
-        if (tokenError) {
-          console.error("Error generating recovery link:", tokenError);
-          throw tokenError;
+        if (tokenError || !tokenData) {
+          console.error("Error generating recovery link or no data returned:", tokenError, tokenData);
+          return new Response(JSON.stringify({ 
+            success: false, 
+            error: tokenError?.message || "Failed to generate recovery link" 
+          }), {
+            status: 400,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          });
         }
         
-        if (!tokenData || !tokenData.properties || !tokenData.properties.action_link) {
-          throw new Error("Failed to generate recovery link");
+        // Verify we have all the required properties
+        if (!tokenData.properties || !tokenData.properties.action_link) {
+          console.error("Invalid tokenData structure:", tokenData);
+          return new Response(JSON.stringify({ 
+            success: false, 
+            error: "Invalid token data structure" 
+          }), {
+            status: 500,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          });
         }
         
         // Extract the token from the action link
@@ -172,7 +214,13 @@ serve(async (req) => {
         });
       } catch (err) {
         console.error("Error in password reset flow:", err);
-        throw err;
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: err.message || "Error processing password reset" 
+        }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
       }
     }
     

@@ -50,11 +50,20 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
 // Custom email function to handle our enhanced email templates
 export const sendCustomEmail = async (type: string, email: string, data: any) => {
   try {
+    console.log(`Sending ${type} email to ${email} with data:`, data);
     const response = await supabase.functions.invoke('custom-email', {
       body: { type, email, data }
     });
     
-    if (response.error) throw response.error;
+    if (response.error) {
+      console.error("Error from Edge Function:", response.error);
+      throw new Error(response.error.message || "Error sending email");
+    }
+    
+    if (response.data && response.data.error) {
+      console.error("Error from custom email service:", response.data.error);
+      throw new Error(response.data.error || "Error in email service");
+    }
     
     return response.data;
   } catch (error) {

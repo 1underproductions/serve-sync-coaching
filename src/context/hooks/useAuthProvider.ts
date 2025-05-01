@@ -387,10 +387,15 @@ export const useAuthProvider = (navigate?: (path: string, options?: {replace?: b
       
       try {
         // Send our custom email with the reset link
-        await sendCustomEmail('password-reset', email, {
+        const response = await sendCustomEmail('password-reset', email, {
           reset_url: resetUrl,
           redirect_to: resetUrl
         });
+        
+        if (!response.success && response.error) {
+          console.error("Error from custom email service:", response.error);
+          throw new Error(response.error || "Failed to send reset email");
+        }
         
         console.log('Custom reset email sent successfully');
         
@@ -403,7 +408,7 @@ export const useAuthProvider = (navigate?: (path: string, options?: {replace?: b
         toast({
           variant: "destructive",
           title: "Error sending reset email",
-          description: "Failed to send reset email. Please try again later.",
+          description: emailError.message || "Failed to send reset email. Please try again later.",
         });
         throw emailError;
       }

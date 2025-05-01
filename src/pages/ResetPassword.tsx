@@ -105,13 +105,22 @@ const ResetPassword = () => {
         
         // Method 2: Using recovery token from URL parameters
         if (token && typeParam === 'recovery') {
-          console.log("Found recovery token in URL parameters, updating password");
+          console.log("Found recovery token in URL parameters");
           
-          // For recovery tokens, we verify by checking if we have an active session
-          // No need to do anything special here - just proceed if we have a token
-          setTokenVerified(true);
-          setIsCheckingToken(false);
-          return;
+          // For Supabase recovery tokens, we need to exchange them for a session
+          const { data, error } = await supabase.auth.exchangeCodeForSession(token);
+          
+          if (error) {
+            console.error("Error exchanging code for session:", error);
+            throw error;
+          }
+          
+          if (data.session) {
+            console.log("Successfully exchanged token for session");
+            setTokenVerified(true);
+            setIsCheckingToken(false);
+            return;
+          }
         }
         
         // Method 3: Check if we already have an active session
