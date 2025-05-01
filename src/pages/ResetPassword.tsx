@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { z } from "zod";
@@ -111,8 +110,8 @@ const ResetPassword = () => {
         if (urlToken) {
           console.log("Found token in URL search params");
           try {
-            // Fix: Use the correct type required by Supabase
-            const verificationMethod = (typeParam || 'recovery') as 'email' | 'recovery' | 'invite' | 'signup' | 'phone_change' | 'email_change';
+            // Fix: Use a more limited type based on Supabase's actual accepted values
+            const verificationMethod = (typeParam || 'recovery') as 'recovery' | 'signup' | 'invite' | 'email';
             
             // Try to verify with the proper method
             const { data, error } = await supabase.auth.verifyOtp({
