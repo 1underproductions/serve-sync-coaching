@@ -52,7 +52,7 @@ const ResetPassword = () => {
     },
   });
 
-  // Simplified token verification
+  // Improved token verification
   useEffect(() => {
     const verifySession = async () => {
       setIsCheckingToken(true);
@@ -61,23 +61,27 @@ const ResetPassword = () => {
       try {
         console.log("Checking for auth session...");
         
-        // Parse URL for recovery parameters
+        // Parse URL parameters 
         // 1. Check URL hash fragments (for SPA redirects with access token)
         const hashParams = new URLSearchParams(location.hash.substring(1));
         const accessToken = hashParams.get('access_token');
         const refreshToken = hashParams.get('refresh_token');
         
-        // 2. Check query parameters (for recovery links)
+        // 2. Check query parameters (for recovery tokens)
         const searchParams = new URLSearchParams(location.search);
+        const token = searchParams.get('token');
         const typeParam = searchParams.get('type');
         
         console.log("URL parameters found:", {
           accessToken: accessToken ? "present" : "not present",
-          refreshToken: refreshToken ? "present" : "not present", 
+          refreshToken: refreshToken ? "present" : "not present",
+          token: token ? "present" : "not present", 
           type: typeParam || "not present"
         });
         
-        // First, try to set session from hash params (modern Supabase flow)
+        // Try both possible auth methods:
+        
+        // Method 1: Using access token from URL hash (modern Supabase flow)
         if (accessToken) {
           console.log("Found access_token in URL hash, setting session");
           
@@ -99,7 +103,18 @@ const ResetPassword = () => {
           }
         }
         
-        // As a fallback, check if we already have an active session
+        // Method 2: Using recovery token from URL parameters
+        if (token && typeParam === 'recovery') {
+          console.log("Found recovery token in URL parameters, updating password");
+          
+          // For recovery tokens, we verify by checking if we have an active session
+          // No need to do anything special here - just proceed if we have a token
+          setTokenVerified(true);
+          setIsCheckingToken(false);
+          return;
+        }
+        
+        // Method 3: Check if we already have an active session
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {

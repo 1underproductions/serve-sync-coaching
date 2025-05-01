@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 import { createClient } from "npm:@supabase/supabase-js";
@@ -90,12 +91,19 @@ serve(async (req) => {
       console.log("Processing password reset request for:", email);
       
       try {
+        // Extract the redirect URL from the request data, or use what's explicitly provided
+        const redirectUrl = data.redirect_to || data.reset_url;
+        
+        if (!redirectUrl) {
+          throw new Error("Missing redirect URL for password reset");
+        }
+        
         // Generate a password recovery token using the admin API
         const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.admin.generateLink({
           type: "recovery",
           email: email,
           options: {
-            redirectTo: data.redirect_to
+            redirectTo: redirectUrl
           }
         });
         

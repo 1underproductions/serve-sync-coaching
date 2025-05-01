@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, Profile, sendCustomEmail } from '@/lib/supabase';
@@ -377,16 +378,15 @@ export const useAuthProvider = (navigate?: (path: string, options?: {replace?: b
     try {
       setIsLoading(true);
       
-      // Generate the full reset URL
-      const resetUrl = `${window.location.origin}/reset-password`;
+      // Generate the full reset URL - use window.location.origin to get the current domain
+      // This will work in both development and production environments
+      const currentOrigin = window.location.origin;
+      const resetUrl = `${currentOrigin}/reset-password`;
       
       console.log(`Sending password reset for ${email} with redirect to ${resetUrl}`);
       
-      // IMPORTANT FIX: Don't call Supabase's resetPasswordForEmail since it triggers their default email
-      // Instead, we'll only send our custom email with a reset link
-      
       try {
-        // Only send our custom email
+        // Send our custom email with the reset link
         await sendCustomEmail('password-reset', email, {
           reset_url: resetUrl,
           redirect_to: resetUrl
