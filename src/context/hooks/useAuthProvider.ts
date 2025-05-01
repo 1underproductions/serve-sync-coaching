@@ -387,12 +387,26 @@ export const useAuthProvider = (navigate?: (path: string, options?: {replace?: b
       
       if (error) throw error;
       
-      // Don't send a custom email - we'll disable Supabase emails and use their built-in flow
-      // This ensures the token actually works
-      toast({
-        title: "Reset email sent",
-        description: "Check your inbox for instructions to reset your password.",
-      });
+      try {
+        // Now send our custom email using the token from Supabase
+        await sendCustomEmail('password-reset', email, {
+          token_hash: data?.user?.confirmation_token || "",
+          reset_url: resetUrl,
+          redirect_to: resetUrl
+        });
+        
+        toast({
+          title: "Reset email sent",
+          description: "Check your inbox for instructions to reset your password.",
+        });
+      } catch (emailError: any) {
+        console.error("Error sending custom email:", emailError);
+        // Even if custom email fails, Supabase will send the default one
+        toast({
+          title: "Reset email sent",
+          description: "Check your inbox for instructions to reset your password. (Using default email template)",
+        });
+      }
     } catch (error: any) {
       toast({
         variant: "destructive",

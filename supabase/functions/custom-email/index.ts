@@ -21,6 +21,7 @@ serve(async (req) => {
     
     // Handle various email types
     if (type === "signup") {
+      // Pass the token directly through to Supabase auth verification
       const confirmUrl = `${projectUrl}/auth/v1/verify?token=${data.token_hash}&type=signup&redirect_to=${data.redirect_to}`;
       
       const emailResponse = await resend.emails.send({
@@ -73,9 +74,10 @@ serve(async (req) => {
     }
     
     if (type === "password-reset") {
-      // IMPORTANT: Use the Supabase token directly without modification
-      // to ensure the reset link works properly
+      // Pass the token directly through to Supabase auth verification
       const resetUrl = data.reset_url || `${projectUrl}/auth/v1/verify?token=${data.token_hash}&type=recovery&redirect_to=${data.redirect_to}`;
+      
+      console.log("Sending password reset email with URL:", resetUrl);
       
       const emailResponse = await resend.emails.send({
         from: "Tennexis Support <onboarding@resend.dev>",
