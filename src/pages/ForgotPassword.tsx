@@ -45,10 +45,12 @@ const ForgotPassword = () => {
     setErrorMessage(null);
     
     try {
-      // Get the current domain from the window location for absolute URL generation
-      const currentDomain = window.location.origin;
-      // Create the reset path, ensuring it doesn't include localhost
-      const resetPath = `${currentDomain}/reset-password`;
+      // Get the full application URL from the window location
+      const appUrl = window.location.origin;
+      
+      // Create a direct path to the reset password page (not auth callback)
+      // This will be where the user lands after clicking the link in the email
+      const resetPath = `${appUrl}/reset-password`;
       
       console.log(`Requesting password reset for ${data.email} with redirect to ${resetPath}`);
       await resetPassword(data.email, resetPath);

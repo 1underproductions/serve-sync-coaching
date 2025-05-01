@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 import { createClient } from "npm:@supabase/supabase-js";
@@ -167,7 +166,7 @@ serve(async (req) => {
           type: "recovery",
           email: email,
           options: {
-            // Ensure redirectTo matches the origin of the request (fix localhost issue)
+            // Use the redirectUrl directly - no encoding needed as Supabase handles this
             redirectTo: redirectUrl
           }
         });

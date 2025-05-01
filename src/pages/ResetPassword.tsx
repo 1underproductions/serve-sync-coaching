@@ -62,14 +62,14 @@ const ResetPassword = () => {
     },
   });
 
-  // Improved token verification
+  // Enhanced token verification
   useEffect(() => {
     const verifySession = async () => {
       setIsCheckingToken(true);
       setErrorMessage(null);
       
       try {
-        console.log("Checking for auth session...");
+        console.log("Checking for auth session or reset token...");
         const debugData: any = {
           location: {
             hash: location.hash,
@@ -79,13 +79,14 @@ const ResetPassword = () => {
           parsed: {}
         };
         
-        // Parse URL parameters 
-        // 1. Check URL hash fragments (for SPA redirects with access token)
+        // Parse URL parameters from multiple possible formats
+        // 1. Check URL hash fragments (typical of Supabase auth redirects)
         const hashParams = new URLSearchParams(location.hash.substring(1));
         const accessToken = hashParams.get('access_token');
         const refreshToken = hashParams.get('refresh_token');
+        const type = hashParams.get('type');
         
-        // 2. Check query parameters (for recovery tokens)
+        // 2. Check query parameters (sometimes used in recovery flows)
         const searchParams = new URLSearchParams(location.search);
         const token = searchParams.get('token');
         const typeParam = searchParams.get('type');
@@ -93,74 +94,120 @@ const ResetPassword = () => {
         debugData.parsed = {
           accessToken: accessToken ? "present" : "not present",
           refreshToken: refreshToken ? "present" : "not present",
+          type: type || "not present",
           token: token ? "present" : "not present", 
-          type: typeParam || "not present"
+          typeParam: typeParam || "not present"
         };
         
         console.log("URL parameters found:", debugData.parsed);
         setDebugInfo(debugData);
         
-        // Method 1: Using access token from URL hash (modern Supabase flow)
+        // First approach: Try to set session from URL (handles hash fragments from Supabase auth redirects)
+        try {
+          console.log("Attempting to get session from URL...");
+          const { data, error } = await supabase.auth.getSessionFromUrl();
+          
+          debugData.sessionFromUrl = { 
+            success: !!data?.session,
+            error: error ? error.message : null
+          };
+          
+          if (error) {
+            console.log("Error getting session from URL:", error.message);
+          }
+          
+          if (data?.session) {
+            console.log("Successfully got session from URL");
+            setTokenVerified(true);
+            setIsCheckingToken(false);
+            return;
+          }
+        } catch (urlError) {
+          console.error("Error getting session from URL:", urlError);
+          debugData.sessionFromUrlError = urlError;
+        }
+        
+        // Second approach: If there's an access_token in the hash
         if (accessToken) {
           console.log("Found access_token in URL hash, setting session");
           
-          const { data, error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken || "",
-          });
+          try {
+            const { data, error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken || "",
+            });
+            
+            debugData.setSession = { 
+              success: !!data.session,
+              error: error ? error.message : null
+            };
+            
+            if (error) {
+              console.error("Error setting session from hash:", error);
+            }
+            
+            if (data.session) {
+              console.log("Successfully set session from hash");
+              setTokenVerified(true);
+              setIsCheckingToken(false);
+              return;
+            }
+          } catch (sessionError) {
+            console.error("Error setting session:", sessionError);
+            debugData.setSessionError = sessionError;
+          }
+        }
+        
+        // Third approach: Exchange recovery code for session
+        if (token && (typeParam === 'recovery' || type === 'recovery')) {
+          console.log("Found recovery token, exchanging for session");
           
-          debugData.method1 = { data: data ? "present" : "null", error: error || null };
+          try {
+            const { data, error } = await supabase.auth.exchangeCodeForSession(token);
+            
+            debugData.exchangeCode = { 
+              success: !!data.session,
+              error: error ? error.message : null
+            };
+            
+            if (error) {
+              console.error("Error exchanging code for session:", error);
+            }
+            
+            if (data.session) {
+              console.log("Successfully exchanged token for session");
+              setTokenVerified(true);
+              setIsCheckingToken(false);
+              return;
+            }
+          } catch (exchangeError) {
+            console.error("Error exchanging code:", exchangeError);
+            debugData.exchangeCodeError = exchangeError;
+          }
+        }
+        
+        // Fourth approach: Check if we already have an active session
+        try {
+          const { data, error } = await supabase.auth.getSession();
+          
+          debugData.getSession = { 
+            success: !!data.session,
+            error: error ? error.message : null
+          };
           
           if (error) {
-            console.error("Error setting session from hash:", error);
-            throw error;
+            console.error("Error checking session:", error);
           }
           
           if (data.session) {
-            console.log("Successfully set session from hash");
+            console.log("Valid session found:", data.session.user.id);
             setTokenVerified(true);
             setIsCheckingToken(false);
             return;
           }
-        }
-        
-        // Method 2: Using recovery token from URL parameters
-        if (token && typeParam === 'recovery') {
-          console.log("Found recovery token in URL parameters");
-          
-          // For Supabase recovery tokens, we need to exchange them for a session
-          const { data, error } = await supabase.auth.exchangeCodeForSession(token);
-          
-          debugData.method2 = { data: data ? "present" : "null", error: error || null };
-          
-          if (error) {
-            console.error("Error exchanging code for session:", error);
-            throw error;
-          }
-          
-          if (data.session) {
-            console.log("Successfully exchanged token for session");
-            setTokenVerified(true);
-            setIsCheckingToken(false);
-            return;
-          }
-        }
-        
-        // Method 3: Check if we already have an active session
-        const { data, error } = await supabase.auth.getSession();
-        
-        debugData.method3 = { data: data ? "present" : "null", error: error || null };
-        
-        if (error) {
-          console.error("Error checking session:", error);
-          throw error;
-        }
-        
-        if (data.session) {
-          console.log("Valid session found:", data.session.user.id);
-          setTokenVerified(true);
-          setIsCheckingToken(false);
-          return;
+        } catch (getSessionError) {
+          console.error("Error getting session:", getSessionError);
+          debugData.getSessionError = getSessionError;
         }
         
         // If we got here, no valid session was found
@@ -174,6 +221,7 @@ const ResetPassword = () => {
         setErrorMessage(`Your password reset link is invalid or has expired. Please request a new one. (${error.message})`);
       } finally {
         setIsCheckingToken(false);
+        setDebugInfo(prevState => ({ ...prevState, finalState: { tokenVerified, errorMessage }}));
       }
     };
     
