@@ -54,22 +54,56 @@ const ResetPassword = () => {
   // Check if the access token is present when the page loads
   useEffect(() => {
     const checkSession = async () => {
-      const { data, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error("Error checking session:", error);
+      try {
+        // Parse the URL hash for Supabase auth parameters
+        const hash = window.location.hash.substring(1);
+        const params = new URLSearchParams(hash);
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+        const type = params.get('type');
+        
+        // If hash params are present, set session with them
+        if (accessToken && type === 'recovery') {
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken || '',
+          });
+          
+          if (error) {
+            console.error("Error setting session from URL:", error);
+            setTokenVerified(false);
+            setErrorMessage("Your password reset link has expired or is invalid. Please request a new one.");
+            return;
+          }
+          
+          if (data.session) {
+            setTokenVerified(true);
+            return;
+          }
+        }
+        
+        // If no hash params, try to get existing session
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Error checking session:", error);
+          setTokenVerified(false);
+          setErrorMessage("Your password reset link has expired or is invalid. Please request a new one.");
+          return;
+        }
+        
+        if (!data.session) {
+          setTokenVerified(false);
+          setErrorMessage("Your password reset link has expired or is invalid. Please request a new one.");
+          return;
+        }
+        
+        setTokenVerified(true);
+      } catch (error) {
+        console.error("Error in session check:", error);
         setTokenVerified(false);
-        setErrorMessage("Your password reset link has expired or is invalid. Please request a new one.");
-        return;
+        setErrorMessage("An error occurred while verifying your reset link. Please try requesting a new one.");
       }
-      
-      if (!data.session) {
-        setTokenVerified(false);
-        setErrorMessage("Your password reset link has expired or is invalid. Please request a new one.");
-        return;
-      }
-      
-      setTokenVerified(true);
     };
     
     checkSession();
@@ -113,7 +147,7 @@ const ResetPassword = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <Link to="/" className="flex justify-center mb-4">
-          <span className="text-2xl font-bold text-tennis-green-600">ServeSync</span>
+          <span className="text-2xl font-bold text-tennis-green-600">Tennexis</span>
         </Link>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
           Reset your password

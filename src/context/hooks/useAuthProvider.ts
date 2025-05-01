@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, Profile, sendCustomEmail } from '@/lib/supabase';
@@ -378,32 +377,22 @@ export const useAuthProvider = (navigate?: (path: string, options?: {replace?: b
     try {
       setIsLoading(true);
       
-      // Generate reset link using Supabase's built-in function
+      // Use a direct callback URL to our reset-password page
+      const resetUrl = `${window.location.origin}/reset-password`;
+      
+      // First, create the recovery token using Supabase directly
       const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: resetUrl,
       });
       
       if (error) throw error;
       
-      // Instead of relying on Supabase's email, send our own custom email
-      try {
-        await sendCustomEmail('password-reset', email, {
-          reset_url: `${window.location.origin}/reset-password`, 
-          redirect_to: `${window.location.origin}/login`,
-        });
-        
-        toast({
-          title: "Reset email sent",
-          description: "Check your inbox for instructions to reset your password.",
-        });
-      } catch (emailError: any) {
-        console.error("Error sending custom reset email:", emailError);
-        // Fall back to Supabase's default email if our custom one fails
-        toast({
-          title: "Reset email sent",
-          description: "Check your inbox for instructions to reset your password.",
-        });
-      }
+      // Don't send a custom email - we'll disable Supabase emails and use their built-in flow
+      // This ensures the token actually works
+      toast({
+        title: "Reset email sent",
+        description: "Check your inbox for instructions to reset your password.",
+      });
     } catch (error: any) {
       toast({
         variant: "destructive",
