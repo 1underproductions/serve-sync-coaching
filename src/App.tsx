@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthProvider";
 import RouteGuard from "./components/shared/RouteGuard";
 import Index from "./pages/Index";
+import About from "./pages/About";
 import SignUp from "./pages/SignUp";
 import Login from "./pages/Login";
 import AdminLogin from "./pages/AdminLogin";
@@ -76,6 +77,7 @@ const App = () => {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/contact" element={<Contact />} />
+              <Route path="/about" element={<About />} />
               <Route path="/faq" element={<FAQ />} />
               <Route path="/cookies-policy" element={<CookiesPolicy />} />
               <Route path="/helpdesk" element={

@@ -19,7 +19,7 @@ const Footer = () => {
           <div>
             <h3 className="text-sm font-semibold mb-4">Links</h3>
             <ul className="space-y-2 text-sm">
-              <li><Link to="#" className="text-muted-foreground hover:text-tennis-green-600">About Us</Link></li>
+              <li><Link to="/about" className="text-muted-foreground hover:text-tennis-green-600">About Us</Link></li>
               <li><Link to="/contact" className="text-muted-foreground hover:text-tennis-green-600">Contact</Link></li>
               <li><Link to="/faq" className="text-muted-foreground hover:text-tennis-green-600">FAQ</Link></li>
               {user && (
