@@ -1,22 +1,8 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
-import { createClient } from "npm:@supabase/supabase-js";
-
-// Initialize Supabase Admin client with service role key
-const supabaseAdmin = createClient(
-  Deno.env.get("SUPABASE_URL") || "https://cugwtwpgccpcjeumrkxf.supabase.co",
-  Deno.env.get("SERVICE_ROLE_KEY") || "",
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  }
-);
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-
-// Use the environment variable or fall back to the Supabase URL
 const projectUrl = Deno.env.get("PROJECT_URL") || "https://cugwtwpgccpcjeumrkxf.supabase.co";
 
 const corsHeaders = {
@@ -33,15 +19,9 @@ serve(async (req) => {
 
   try {
     const { type, email, data } = await req.json();
-    console.log(`Processing ${type} email for: ${email} with data:`, data);
-    
-    // Get the request origin to use as base URL for redirects
-    const origin = req.headers.get("origin") || projectUrl;
-    console.log("Request origin:", origin);
     
     // Handle various email types
     if (type === "signup") {
-      // Pass the token directly through to Supabase auth verification
       const confirmUrl = `${projectUrl}/auth/v1/verify?token=${data.token_hash}&type=signup&redirect_to=${data.redirect_to}`;
       
       const emailResponse = await resend.emails.send({
@@ -50,6 +30,8 @@ serve(async (req) => {
         subject: "Welcome to Tennexis - Please Confirm Your Account",
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+            <img src="https://asset.brandfetch.io/idFdo8rNxK/idtYvV5iVs.jpeg" alt="Tennexis" style="max-width: 150px; margin-bottom: 20px;" />
+            
             <h1 style="color: #3b82f6; margin-bottom: 20px;">Welcome to Tennexis!</h1>
             
             <p style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
@@ -76,7 +58,7 @@ serve(async (req) => {
             </p>
             
             <div style="border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 30px; font-size: 14px; color: #718096;">
-              <p>&copy; ${new Date().getFullYear()} Tennexis. All rights reserved.</p>
+              <p>&copy; 2023 Tennexis. All rights reserved.</p>
               <p>
                 You're receiving this email because you signed up for Tennexis, the tennis coaching platform that helps you manage your coaching business.
               </p>
@@ -91,160 +73,6 @@ serve(async (req) => {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
-    }
-    
-    if (type === "password-reset") {
-      console.log("Processing password reset request for:", email);
-      
-      try {
-        // Using origin to dynamically set reset URL
-        let appDomain = origin;
-        
-        // If the request is coming from a Lovable preview, use that domain
-        if (appDomain.includes("lovableproject.com") || appDomain.includes("lovable.app")) {
-          console.log("Using Lovable preview domain:", appDomain);
-        } else if (data.redirect_to) {
-          // If a specific redirect URL was provided, extract its domain
-          try {
-            const redirectUrl = new URL(data.redirect_to);
-            appDomain = `${redirectUrl.protocol}//${redirectUrl.host}`;
-            console.log("Using redirect domain:", appDomain);
-          } catch (urlError) {
-            console.error("Invalid redirect URL, using origin instead:", urlError);
-          }
-        } else {
-          console.log("Using default domain:", appDomain);
-        }
-        
-        // Construct the reset link path, maintaining consistency
-        const resetPath = "/reset-password";
-        const redirectToUrl = `${appDomain}${resetPath}`;
-        
-        console.log("Password reset will redirect to:", redirectToUrl);
-        
-        // Check if the user exists first
-        const { data: userData, error: userError } = await supabaseAdmin.auth.admin.listUsers();
-        
-        if (userError) {
-          console.error("Error listing users:", userError);
-          return new Response(JSON.stringify({ 
-            success: false, 
-            error: userError.message 
-          }), {
-            status: 400,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-          });
-        }
-        
-        // Check if user exists
-        const userExists = userData?.users?.some(user => user.email === email);
-        console.log("User exists check:", userExists, "for email:", email);
-        
-        if (!userExists) {
-          console.log("User doesn't exist, but we'll still respond as if succeeded for security");
-          // We still return success to prevent user enumeration
-          return new Response(JSON.stringify({ success: true }), {
-            status: 200,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-          });
-        }
-        
-        // Generate a password recovery token using the admin API
-        const result = await supabaseAdmin.auth.admin.generateLink({
-          type: "recovery",
-          email: email,
-          options: {
-            redirectTo: redirectToUrl
-          }
-        });
-        
-        // Enhanced error handling
-        if (result.error) {
-          console.error("Error generating recovery link:", result.error);
-          return new Response(JSON.stringify({ 
-            success: false, 
-            error: result.error.message || "Failed to generate recovery link" 
-          }), {
-            status: 400,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-          });
-        }
-        
-        if (!result.data || !result.data.properties || !result.data.properties.action_link) {
-          console.error("Invalid token data returned:", JSON.stringify(result.data, null, 2));
-          return new Response(JSON.stringify({ 
-            success: false, 
-            error: "Invalid token data structure returned from Supabase" 
-          }), {
-            status: 500,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-          });
-        }
-        
-        // Extract the token from the action link
-        const actionLink = result.data.properties.action_link;
-        console.log("Generated action link:", actionLink);
-        
-        // Use the action link directly since it's already properly formatted by Supabase
-        const resetUrl = actionLink;
-        
-        const emailResponse = await resend.emails.send({
-          from: "Tennexis Support <onboarding@resend.dev>",
-          to: [email],
-          subject: "Reset Your Tennexis Password",
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
-              <h1 style="color: #3b82f6; margin-bottom: 20px;">Reset Your Password</h1>
-              
-              <p style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
-                We received a request to reset your password for your Tennexis account. 
-                Click the button below to create a new password.
-              </p>
-              
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${resetUrl}" style="display: inline-block; background-color: #3b82f6; color: white; font-weight: bold; padding: 12px 24px; text-decoration: none; border-radius: 4px;">
-                  Reset Password
-                </a>
-              </div>
-              
-              <p style="font-size: 16px; line-height: 1.5; margin-bottom: 10px;">
-                Or copy and paste this URL into your browser:
-              </p>
-              
-              <p style="font-size: 14px; line-height: 1.5; margin-bottom: 30px; word-break: break-all; color: #4a5568;">
-                ${resetUrl}
-              </p>
-              
-              <p style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
-                This link will expire in 24 hours. If you didn't request a password reset, you can safely ignore this email.
-              </p>
-              
-              <div style="border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 30px; font-size: 14px; color: #718096;">
-                <p>&copy; ${new Date().getFullYear()} Tennexis. All rights reserved.</p>
-                <p>
-                  You're receiving this email because a password reset was requested for your Tennexis account.
-                </p>
-              </div>
-            </div>
-          `,
-        });
-
-        console.log("Password reset email sent successfully:", emailResponse);
-        
-        return new Response(JSON.stringify({ success: true }), {
-          status: 200,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        });
-      } catch (err) {
-        console.error("Error in password reset flow:", err);
-        return new Response(JSON.stringify({ 
-          success: false, 
-          error: err.message || "Error processing password reset" 
-        }), {
-          status: 500,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        });
-      }
     }
     
     if (type === "payment-link") {

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { format } from 'date-fns';
@@ -101,11 +102,12 @@ const PaymentDetail = () => {
           return;
         }
 
-        // Cast the paymentLink to the correct type and add any missing optional fields
+        // Add the missing required fields to match our PaymentLink interface
         const completePaymentLink: PaymentLink = {
-          ...paymentLink as unknown as PaymentLink,
-          payment_type: (paymentLink as any).payment_type || "one_time",
-          player_email: (paymentLink as any).player_email || "",
+          ...paymentLink,
+          payment_type: paymentLink.payment_type || "one_time",
+          player_email: paymentLink.player_email || "",
+          package_id: paymentLink.package_id,
         };
 
         setData(completePaymentLink);

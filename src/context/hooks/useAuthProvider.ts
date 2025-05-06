@@ -3,9 +3,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, Profile, sendCustomEmail } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 import { confirmAdminEmail } from '@/utils/adminUtils';
 
-export const useAuthProvider = (navigate?: (path: string, options?: {replace?: boolean}) => void) => {
+export const useAuthProvider = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -13,6 +14,7 @@ export const useAuthProvider = (navigate?: (path: string, options?: {replace?: b
   const [isAdmin, setIsAdmin] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const fetchUserProfile = useCallback(async (userId?: string) => {
     try {
@@ -219,7 +221,7 @@ export const useAuthProvider = (navigate?: (path: string, options?: {replace?: b
             description: "Welcome to Tennexis. Please check your email to confirm your account.",
           });
           
-          if (navigate) navigate('/login');
+          navigate('/login');
         } catch (emailError) {
           console.error("Error sending custom email:", emailError);
           toast({
@@ -297,7 +299,7 @@ export const useAuthProvider = (navigate?: (path: string, options?: {replace?: b
       // Special handling for admin users - directly navigate to admin dashboard
       if (email === "admin@tennexis.com" || profile?.role === "tennexis_admin") {
         console.log("Admin login detected, navigating to admin dashboard");
-        if (navigate) navigate('/admin', { replace: true });
+        navigate('/admin', { replace: true });
       }
       
     } catch (error: any) {
@@ -357,7 +359,7 @@ export const useAuthProvider = (navigate?: (path: string, options?: {replace?: b
       setProfile(null);
       setIsAdmin(false);
       
-      if (navigate) navigate('/login');
+      navigate('/login');
       
       toast({
         title: "Logged out",
@@ -377,48 +379,22 @@ export const useAuthProvider = (navigate?: (path: string, options?: {replace?: b
   const resetPassword = async (email: string) => {
     try {
       setIsLoading(true);
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
       
-      // Get the current domain for consistent URL generation
-      const currentOrigin = window.location.origin;
-      const resetUrl = `${currentOrigin}/reset-password`;
-      
-      console.log(`Sending password reset for ${email} with redirect to ${resetUrl}`);
-      
-      try {
-        // Send our custom email with the reset link
-        const response = await sendCustomEmail('password-reset', email, {
-          reset_url: resetUrl,
-          redirect_to: resetUrl
-        });
-        
-        if (response.error) {
-          console.error("Error from custom email service:", response.error);
-          throw new Error(response.error || "Failed to send reset email");
-        }
-        
-        console.log('Custom reset email sent successfully');
-        
-        toast({
-          title: "Reset email sent",
-          description: "Check your inbox for instructions to reset your password.",
-        });
-      } catch (emailError: any) {
-        console.error("Error sending custom email:", emailError);
-        toast({
-          variant: "destructive",
-          title: "Error sending reset email",
-          description: emailError.message || "Failed to send reset email. Please try again later.",
-        });
-        throw emailError;
-      }
-      
+      if (error) throw error;
+
+      toast({
+        title: "Reset email sent",
+        description: "Check your inbox for instructions to reset your password.",
+      });
     } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Error",
         description: error.message || "Failed to send reset email",
       });
-      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -486,5 +462,3 @@ export const useAuthProvider = (navigate?: (path: string, options?: {replace?: b
     setUserAsAdmin,
   };
 };
-
-export default useAuthProvider;
