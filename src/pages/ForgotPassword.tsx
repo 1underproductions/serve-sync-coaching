@@ -45,14 +45,8 @@ const ForgotPassword = () => {
     setErrorMessage(null);
     
     try {
-      // Build the reset URL based on the current origin
-      const origin = window.location.origin;
-      
-      // Create the full URL path to the reset password page
-      const resetUrl = `${origin}/reset-password`;
-      
-      console.log(`Requesting password reset for ${data.email} with redirect to ${resetUrl}`);
-      await resetPassword(data.email, resetUrl);
+      console.log(`Requesting password reset for ${data.email}`);
+      await resetPassword(data.email);
       
       setSuccessMessage("Password reset email sent! Please check your inbox and spam/junk folders for instructions. If you don't receive an email within a few minutes, try again or contact support.");
       form.reset();
@@ -60,6 +54,7 @@ const ForgotPassword = () => {
       console.error("Password reset error:", error);
       setErrorMessage("There was a problem sending the reset email. Please verify your email address and try again later.");
       
+      // Still show a toast in case the alert is missed
       toast({
         variant: "destructive",
         title: "Error",

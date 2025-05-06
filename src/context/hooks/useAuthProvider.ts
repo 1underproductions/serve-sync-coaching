@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, Profile, sendCustomEmail } from '@/lib/supabase';
@@ -373,24 +374,21 @@ export const useAuthProvider = (navigate?: (path: string, options?: {replace?: b
     }
   };
 
-  const resetPassword = async (email: string, redirectUrl: string) => {
+  const resetPassword = async (email: string) => {
     try {
       setIsLoading(true);
       
-      console.log(`Sending password reset for ${email} with redirect to ${redirectUrl}`);
+      // Get the current domain for consistent URL generation
+      const currentOrigin = window.location.origin;
+      const resetUrl = `${currentOrigin}/reset-password`;
+      
+      console.log(`Sending password reset for ${email} with redirect to ${resetUrl}`);
       
       try {
-        // Ensure the redirect URL is fully qualified
-        const fullRedirectUrl = redirectUrl.startsWith('http') 
-          ? redirectUrl 
-          : `${window.location.origin}${redirectUrl}`;
-          
-        console.log("Full redirect URL:", fullRedirectUrl);
-        
         // Send our custom email with the reset link
         const response = await sendCustomEmail('password-reset', email, {
-          reset_url: fullRedirectUrl,
-          redirect_to: fullRedirectUrl
+          reset_url: resetUrl,
+          redirect_to: resetUrl
         });
         
         if (response.error) {
