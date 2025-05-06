@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 import { createClient } from "npm:@supabase/supabase-js";
@@ -55,7 +56,7 @@ serve(async (req) => {
       
       try {
         const emailResponse = await resend.emails.send({
-          from: "Tennexis <onboarding@resend.dev>", // Consider using a verified domain
+          from: "Tennexis <onboarding@resend.dev>",
           to: [email],
           subject: "Welcome to Tennexis - Please Confirm Your Account",
           html: `
@@ -219,12 +220,12 @@ serve(async (req) => {
         
         try {
           const emailResponse = await resend.emails.send({
-            from: "Tennexis Support <onboarding@resend.dev>", // Consider using a verified domain
+            from: "Tennexis Support <onboarding@resend.dev>", 
             to: [email],
             subject: "Reset Your Tennexis Password",
             html: `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
-                <h1 style="color: #3b82f6; margin-bottom: 20px;">Reset Your Password</h1>
+                <h1 style="color: #3b82f6; margin-bottom: 20px;">Reset Your Tennexis Password</h1>
                 
                 <p style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
                   We received a request to reset your password for your Tennexis account. 
