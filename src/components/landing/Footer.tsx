@@ -6,6 +6,11 @@ import { Instagram } from "lucide-react";
 
 const Footer = () => {
   const { isAdmin } = useAuth();
+  
+  // Function to scroll to top when clicking on links
+  const scrollToTop = () => {
+    window.scrollTo(0, 0);
+  };
 
   return (
     <footer className="bg-gray-900 text-white py-12">
@@ -37,16 +42,16 @@ const Footer = () => {
                   </li>
                 ))}
                 <li>
-                  <Link to="/faq" className="text-gray-400 hover:text-white transition-colors">FAQ</Link>
+                  <Link to="/faq" onClick={scrollToTop} className="text-gray-400 hover:text-white transition-colors">FAQ</Link>
                 </li>
               </ul>
             </div>
             <div>
               <h3 className="text-lg font-semibold mb-4">Company</h3>
               <ul className="space-y-2">
-                <li><Link to="/about" className="text-gray-400 hover:text-white transition-colors">About</Link></li>
-                <li><Link to="/blog" className="text-gray-400 hover:text-white transition-colors">Blog</Link></li>
-                <li><Link to="/contact" className="text-gray-400 hover:text-white transition-colors">Contact</Link></li>
+                <li><Link to="/about" onClick={scrollToTop} className="text-gray-400 hover:text-white transition-colors">About</Link></li>
+                <li><Link to="/blog" onClick={scrollToTop} className="text-gray-400 hover:text-white transition-colors">Blog</Link></li>
+                <li><Link to="/contact" onClick={scrollToTop} className="text-gray-400 hover:text-white transition-colors">Contact</Link></li>
               </ul>
             </div>
             <div>
@@ -54,10 +59,11 @@ const Footer = () => {
               <ul className="space-y-2">
                 <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Terms</a></li>
                 <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Privacy</a></li>
-                <li><Link to="/cookies-policy" className="text-gray-400 hover:text-white transition-colors">Cookies</Link></li>
+                <li><Link to="/cookies-policy" onClick={scrollToTop} className="text-gray-400 hover:text-white transition-colors">Cookies</Link></li>
                 <li>
                   <Link 
                     to="/admin-login" 
+                    onClick={scrollToTop}
                     className="text-tennis-green-500 hover:text-tennis-green-400 transition-colors font-semibold"
                   >
                     Admin Portal

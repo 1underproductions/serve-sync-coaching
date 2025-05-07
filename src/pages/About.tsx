@@ -1,13 +1,20 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import Footer from '@/components/landing/Footer';
 import Header from '@/components/landing/Header';
 import { ArrowRight, Award, Clock, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 const About = () => {
+  const location = useLocation();
+  
+  // Scroll to top when the component mounts or the route changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location]);
+  
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -46,8 +53,8 @@ const About = () => {
               </div>
               <div className="rounded-lg overflow-hidden shadow-lg">
                 <img 
-                  src="/placeholder.svg" 
-                  alt="Tennis coach teaching" 
+                  src="/lovable-uploads/588c576e-fa19-4aea-acf1-57a928aa4ac8.png" 
+                  alt="Tennis coach teaching a student" 
                   className="w-full h-80 object-cover"
                 />
               </div>
