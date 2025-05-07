@@ -48,7 +48,7 @@ interface PaymentLink {
   currency: string;
   description: string | null;
   session_id: string | null;
-  package_id: string | null;
+  package_id?: string | null;
   payment_type?: string;
   status: string | null;
   expires_at: string | null;
