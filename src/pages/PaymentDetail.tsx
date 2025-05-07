@@ -102,12 +102,12 @@ const PaymentDetail = () => {
           return;
         }
 
-        // Add the missing fields to match our PaymentLink interface
+        // Create a new object with our interface structure, providing defaults for missing fields
         const completePaymentLink: PaymentLink = {
           ...paymentLink,
-          payment_type: paymentLink.payment_type || "one_time",
-          player_email: paymentLink.player_email || "",
-          package_id: paymentLink.package_id || null,
+          payment_type: "one_time", // Default value
+          player_email: "", // Default value
+          package_id: null, // Default value
         };
 
         setData(completePaymentLink);
