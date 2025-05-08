@@ -67,7 +67,8 @@ const SignUp = () => {
         fullName: data.fullName,
       });
       
-      // The navigation is handled in the signUp function after successful registration
+      // Redirect to the email confirmation page instead of relying on navigation in signUp function
+      navigate('/email-confirmation');
     } catch (error) {
       // Error is handled in the signUp function
       console.error("Signup error:", error);
