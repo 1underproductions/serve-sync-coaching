@@ -1,5 +1,6 @@
 
 import React, { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import Header from '@/components/landing/Header';
 import HeroSection from '@/components/landing/HeroSection';
 import FeaturesSection from '@/components/landing/FeaturesSection';
@@ -9,8 +10,10 @@ import CTASection from '@/components/landing/CTASection';
 import Footer from '@/components/landing/Footer';
 
 const Index = () => {
-  // Check if we should scroll to pricing section
+  const location = useLocation();
+  
   useEffect(() => {
+    // Check if we should scroll to pricing section using sessionStorage
     const shouldScrollToPricing = sessionStorage.getItem('scrollToPricing');
     
     if (shouldScrollToPricing) {
@@ -25,7 +28,19 @@ const Index = () => {
         }
       }, 100);
     }
-  }, []);
+    
+    // Handle hash navigation from other pages
+    const hash = location.hash.replace('#', '');
+    if (hash) {
+      // Wait for the page to render
+      setTimeout(() => {
+        const section = document.getElementById(hash);
+        if (section) {
+          section.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    }
+  }, [location]);
 
   return (
     <div className="min-h-screen flex flex-col">

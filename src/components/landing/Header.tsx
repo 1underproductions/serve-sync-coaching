@@ -1,14 +1,22 @@
 
 import React from 'react';
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 const Header = () => {
-  // Function to handle smooth scrolling to sections
+  const location = useLocation();
+  
+  // Function to handle smooth scrolling to sections when on homepage
   const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+    if (location.pathname === '/') {
+      // If already on homepage, scroll to the section
+      const element = document.getElementById(sectionId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      // If on another page, navigate to homepage with section in hash
+      window.location.href = `/#${sectionId}`;
     }
   };
 
