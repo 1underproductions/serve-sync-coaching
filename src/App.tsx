@@ -46,6 +46,8 @@ import AdminCoachVerifications from "@/pages/Admin/AdminCoachVerifications";
 import Helpdesk from "@/pages/Helpdesk";
 import AdminTickets from "@/pages/Admin/AdminTickets";
 import { setupStorage } from "./utils/setupStorage";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsAndConditions from "./pages/TermsAndConditions";
 
 const queryClient = new QueryClient({
   defaultOptions: {
