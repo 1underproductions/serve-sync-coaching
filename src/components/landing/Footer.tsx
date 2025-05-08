@@ -11,6 +11,22 @@ const Footer = () => {
   const scrollToTop = () => {
     window.scrollTo(0, 0);
   };
+  
+  // Function to scroll to pricing section on homepage
+  const scrollToPricing = () => {
+    // If we're already on the homepage, scroll to pricing section
+    if (window.location.pathname === '/') {
+      const pricingSection = document.getElementById('pricing');
+      if (pricingSection) {
+        pricingSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      // If we're on another page, go to homepage and then scroll to pricing
+      // We use sessionStorage to remember to scroll to pricing after navigation
+      sessionStorage.setItem('scrollToPricing', 'true');
+      window.location.href = '/#pricing';
+    }
+  };
 
   return (
     <footer className="bg-gray-900 text-white py-12">
@@ -36,11 +52,12 @@ const Footer = () => {
             <div>
               <h3 className="text-lg font-semibold mb-4">Product</h3>
               <ul className="space-y-2">
-                {["Features", "Pricing"].map((item, index) => (
-                  <li key={index}>
-                    <a href="#" className="text-gray-400 hover:text-white transition-colors">{item}</a>
-                  </li>
-                ))}
+                <li>
+                  <Link to="/#features" onClick={scrollToTop} className="text-gray-400 hover:text-white transition-colors">Features</Link>
+                </li>
+                <li>
+                  <button onClick={scrollToPricing} className="text-gray-400 hover:text-white transition-colors text-left">Pricing</button>
+                </li>
                 <li>
                   <Link to="/faq" onClick={scrollToTop} className="text-gray-400 hover:text-white transition-colors">FAQ</Link>
                 </li>

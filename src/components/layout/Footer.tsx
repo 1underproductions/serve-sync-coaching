@@ -6,6 +6,22 @@ const Footer = () => {
   const year = new Date().getFullYear();
   const { user, isAdmin, profile } = useAuth();
   
+  // Function to scroll to pricing section on homepage
+  const scrollToPricing = () => {
+    // If we're already on the homepage, scroll to pricing section
+    if (window.location.pathname === '/') {
+      const pricingSection = document.getElementById('pricing');
+      if (pricingSection) {
+        pricingSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      // If we're on another page, go to homepage and then scroll to pricing
+      // We use sessionStorage to remember to scroll to pricing after navigation
+      sessionStorage.setItem('scrollToPricing', 'true');
+      window.location.href = '/#pricing';
+    }
+  };
+  
   return (
     <footer className="bg-white border-t py-6">
       <div className="container">
@@ -22,6 +38,7 @@ const Footer = () => {
               <li><Link to="/about" className="text-muted-foreground hover:text-tennis-green-600">About Us</Link></li>
               <li><Link to="/contact" className="text-muted-foreground hover:text-tennis-green-600">Contact</Link></li>
               <li><Link to="/faq" className="text-muted-foreground hover:text-tennis-green-600">FAQ</Link></li>
+              <li><button onClick={scrollToPricing} className="text-muted-foreground hover:text-tennis-green-600 text-left">Pricing</button></li>
               {user && (
                 <li>
                   <Link to="/helpdesk" className="text-muted-foreground hover:text-tennis-green-600 font-semibold">
