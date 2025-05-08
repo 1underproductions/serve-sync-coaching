@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -80,6 +79,8 @@ const App = () => {
               <Route path="/about" element={<About />} />
               <Route path="/faq" element={<FAQ />} />
               <Route path="/cookies-policy" element={<CookiesPolicy />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/terms" element={<TermsAndConditions />} />
               <Route path="/helpdesk" element={
                 <RouteGuard requireAuth={false}>
                   <Helpdesk />

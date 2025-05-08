@@ -46,8 +46,8 @@ const Footer = () => {
                   </Link>
                 </li>
               )}
-              <li><Link to="#" className="text-muted-foreground hover:text-tennis-green-600">Terms & Conditions</Link></li>
-              <li><Link to="#" className="text-muted-foreground hover:text-tennis-green-600">Privacy Policy</Link></li>
+              <li><Link to="/terms" className="text-muted-foreground hover:text-tennis-green-600">Terms & Conditions</Link></li>
+              <li><Link to="/privacy-policy" className="text-muted-foreground hover:text-tennis-green-600">Privacy Policy</Link></li>
               <li><Link to="/cookies-policy" className="text-muted-foreground hover:text-tennis-green-600">Cookies Policy</Link></li>
               {isAdmin && (
                 <li>
