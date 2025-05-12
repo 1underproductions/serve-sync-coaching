@@ -14,8 +14,8 @@ const AuthCallback = () => {
       try {
         console.log("Auth callback page loaded, processing redirect...");
 
-        // Correct usage: no argument needed
-        const { data, error } = await supabase.auth.exchangeCodeForSession();
+        // Get the current URL to extract the auth code
+        const { data, error } = await supabase.auth.exchangeCodeForSession(window.location.href);
 
         if (error) {
           console.error("Error processing auth callback:", error);
