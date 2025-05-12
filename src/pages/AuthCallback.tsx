@@ -1,21 +1,29 @@
 
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
 const AuthCallback = () => {
   const [isProcessing, setIsProcessing] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
         console.log("Auth callback page loaded, processing redirect...");
-
-        // Get the current URL to extract the auth code
-        const { data, error } = await supabase.auth.exchangeCodeForSession(window.location.href);
+        
+        const params = new URLSearchParams(location.search);
+        const code = params.get('code');
+        
+        if (!code) {
+          throw new Error('Authorization code not found in URL parameters.');
+        }
+        
+        console.log("Found authorization code, exchanging for session...");
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
         if (error) {
           console.error("Error processing auth callback:", error);
@@ -28,7 +36,7 @@ const AuthCallback = () => {
           return;
         }
 
-        console.log("Session exchanged:", data?.session);
+        console.log("Session exchanged successfully:", data?.session);
         toast({
           title: "Email verified",
           description: "Your email has been verified successfully"
@@ -39,7 +47,7 @@ const AuthCallback = () => {
         toast({
           variant: "destructive",
           title: "Authentication error",
-          description: "An unexpected error occurred during verification"
+          description: err instanceof Error ? err.message : "An unexpected error occurred during verification"
         });
         navigate('/login');
       } finally {
@@ -48,7 +56,7 @@ const AuthCallback = () => {
     };
 
     handleAuthCallback();
-  }, [navigate, toast]);
+  }, [navigate, toast, location]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
