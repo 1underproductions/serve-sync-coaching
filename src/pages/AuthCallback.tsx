@@ -15,7 +15,8 @@ const AuthCallback = () => {
         console.log("Auth callback page loaded, processing redirect...");
         
         // Process the auth callback from URL
-        const { data, error } = await supabase.auth.getSessionFromUrl();
+        // Using the recommended pattern from Supabase docs for latest client version
+        const { error } = await supabase.auth.getSession();
         
         if (error) {
           console.error("Error processing auth callback:", error);
@@ -28,7 +29,10 @@ const AuthCallback = () => {
           return;
         }
         
-        if (data?.session) {
+        // Get current session - if we have a valid session after URL processing, auth was successful
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session) {
           console.log("Auth callback successful, session established");
           toast({
             title: "Email verified",
