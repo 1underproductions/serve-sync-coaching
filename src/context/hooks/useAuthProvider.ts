@@ -73,7 +73,7 @@ export const useAuthProvider = () => {
     // First set up auth listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, updatedSession) => {
-        console.log("Auth state changed:", event);
+        console.log("Auth state changed:", event, updatedSession?.user?.email);
         setAuthError(null); // Reset auth error on state change
         
         // Always set session and user first (synchronously)
@@ -94,17 +94,67 @@ export const useAuthProvider = () => {
               await fetchUserProfile(updatedSession.user.id);
             } catch (err) {
               console.error("Error fetching profile during auth change:", err);
+            } finally {
+              // Check for verification confirmation events
+              if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+                if (updatedSession.user.email_confirmed_at) {
+                  console.log("Email confirmed at:", updatedSession.user.email_confirmed_at);
+                  toast({
+                    title: "Email verified successfully",
+                    description: "Your email has been verified and you are now signed in.",
+                  });
+                  navigate('/dashboard');
+                } else {
+                  console.log("User signed in but email not confirmed");
+                }
+              }
             }
           }, 0);
         }
-
-        // Handle navigation after email confirmation
-        if (event === 'SIGNED_IN' && updatedSession) {
-          console.log("Sign in detected, navigating to dashboard");
-          navigate('/dashboard');
-        }
       }
     );
+
+    // Handle hash parameters (verification link redirects)
+    const handleEmailConfirmation = async () => {
+      const hasHash = window.location.hash;
+      
+      // If there's a hash in the URL that looks like a Supabase auth callback
+      if (hasHash && (hasHash.includes('access_token=') || hasHash.includes('type='))) {
+        console.log('Processing auth hash parameters', hasHash);
+        setIsLoading(true);
+        
+        try {
+          // Let Supabase handle the hash parameters
+          const { data, error } = await supabase.auth.getSession();
+          
+          if (error) {
+            console.error('Error processing auth callback:', error);
+            toast({
+              variant: "destructive",
+              title: "Authentication error",
+              description: error.message || "There was a problem with your authentication link",
+            });
+          } else if (data.session) {
+            console.log('Successfully processed auth callback, user:', data.session.user);
+            toast({
+              title: "Authentication successful",
+              description: "Your email has been verified and you are now signed in.",
+            });
+            
+            // Use setTimeout to avoid state update race conditions
+            setTimeout(() => {
+              navigate('/dashboard');
+            }, 500);
+          }
+        } catch (err) {
+          console.error('Exception in auth hash handling:', err);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+    
+    handleEmailConfirmation();
 
     // Then check for existing session
     const initializeAuth = async () => {
@@ -147,7 +197,7 @@ export const useAuthProvider = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [fetchUserProfile, navigate]);
+  }, [fetchUserProfile, navigate, toast]);
 
   const updateProfile = async (profileData: Partial<Profile>): Promise<Profile | null> => {
     if (!user) {
@@ -201,6 +251,11 @@ export const useAuthProvider = () => {
     try {
       setIsLoading(true);
       setAuthError(null);
+      
+      // Prepare the redirect URL using the current origin instead of hardcoding localhost
+      const redirectTo = `${window.location.origin}/dashboard`;
+      console.log("Sign up with redirect URL:", redirectTo);
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -208,7 +263,7 @@ export const useAuthProvider = () => {
           data: {
             full_name: metadata.fullName,
           },
-          emailRedirectTo: `${window.location.origin}/dashboard`,
+          emailRedirectTo: redirectTo,
         },
       });
 
@@ -218,7 +273,7 @@ export const useAuthProvider = () => {
         try {
           await sendCustomEmail('signup', email, {
             token_hash: data.session?.access_token,
-            redirect_to: `${window.location.origin}/dashboard`,
+            redirect_to: redirectTo,
           });
           
           toast({

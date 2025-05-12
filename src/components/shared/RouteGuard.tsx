@@ -33,7 +33,8 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
     '/contact',
     '/faq',
     '/blog',
-    '/helpdesk'
+    '/helpdesk',
+    '/verify' // Add this to handle Supabase email verification routes
   ];
 
   // Use effect to prevent redirect loops and ensure auth state is stable
@@ -62,9 +63,20 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
     isAuthenticated: !!user,
     adminOnly,
     requireAuth,
-    profile
+    profile,
+    search: location.search, // Add this to log query parameters for debugging
+    hash: location.hash     // Add this to log hash for debugging
   });
   
+  // Handle Supabase email verification redirection
+  // This special case checks if we're handling a verification callback
+  if (location.hash && location.hash.includes("type=signup") || 
+      location.hash && location.hash.includes("type=recovery") ||
+      location.pathname.includes("/verify")) {
+    console.log("Processing auth confirmation/verification flow");
+    return <>{children}</>;
+  }
+
   // If the current path is public, render it without restrictions
   if (publicPaths.includes(location.pathname) || location.pathname.startsWith('/blog/')) {
     return <>{children}</>;

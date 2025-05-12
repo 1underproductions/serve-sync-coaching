@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -50,11 +51,23 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
 // Custom email function to handle our enhanced email templates
 export const sendCustomEmail = async (type: string, email: string, data: any) => {
   try {
-    // Modify the redirect_to parameter to ensure it works properly
+    // Get the current app URL - use the actual window location rather than localhost
+    const appUrl = window.location.origin;
+    console.log(`Current app URL: ${appUrl}`);
+    
+    // Ensure we're using the application URL for redirects, not localhost
     if (data.redirect_to) {
-      // Make sure we're using an absolute URL and proper handling for dashboard path
-      if (!data.redirect_to.startsWith('http')) {
-        data.redirect_to = window.location.origin + data.redirect_to;
+      // If it's a relative path, make it absolute using the current app URL
+      if (data.redirect_to.startsWith('/')) {
+        data.redirect_to = `${appUrl}${data.redirect_to}`;
+      } 
+      // If it includes localhost, replace with the current origin
+      else if (data.redirect_to.includes('localhost')) {
+        data.redirect_to = data.redirect_to.replace(/https?:\/\/localhost:[0-9]+/g, appUrl);
+      }
+      // Make sure we're using an absolute URL
+      else if (!data.redirect_to.startsWith('http')) {
+        data.redirect_to = `${appUrl}${data.redirect_to.startsWith('/') ? '' : '/'}${data.redirect_to}`;
       }
     }
     
