@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, Profile, sendCustomEmail } from '@/lib/supabase';
@@ -98,6 +97,12 @@ export const useAuthProvider = () => {
             }
           }, 0);
         }
+
+        // Handle navigation after email confirmation
+        if (event === 'SIGNED_IN' && updatedSession) {
+          console.log("Sign in detected, navigating to dashboard");
+          navigate('/dashboard');
+        }
       }
     );
 
@@ -142,7 +147,7 @@ export const useAuthProvider = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [fetchUserProfile]);
+  }, [fetchUserProfile, navigate]);
 
   const updateProfile = async (profileData: Partial<Profile>): Promise<Profile | null> => {
     if (!user) {
@@ -221,7 +226,7 @@ export const useAuthProvider = () => {
             description: "Welcome to Tennexis. Please check your email to confirm your account.",
           });
           
-          navigate('/login');
+          // No navigation here - handled by the SignUp component
         } catch (emailError) {
           console.error("Error sending custom email:", emailError);
           toast({
@@ -300,6 +305,10 @@ export const useAuthProvider = () => {
       if (email === "admin@tennexis.com" || profile?.role === "tennexis_admin") {
         console.log("Admin login detected, navigating to admin dashboard");
         navigate('/admin', { replace: true });
+      } else {
+        // For regular users, navigate to dashboard
+        console.log("User login detected, navigating to dashboard");
+        navigate('/dashboard', { replace: true });
       }
       
     } catch (error: any) {

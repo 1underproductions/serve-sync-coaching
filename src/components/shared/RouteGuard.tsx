@@ -29,6 +29,7 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
     '/sign-up',
     '/forgot-password',
     '/reset-password',
+    '/email-confirmation',
     '/contact',
     '/faq',
     '/blog',
@@ -41,7 +42,7 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
       // Add a small delay to ensure auth state is fully processed
       const timer = setTimeout(() => {
         setHasCheckedAuth(true);
-      }, 200); // Increased delay for more stable auth checking
+      }, 500); // Increased delay for more stable auth checking
       
       return () => clearTimeout(timer);
     }

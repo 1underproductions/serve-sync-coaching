@@ -50,6 +50,16 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
 // Custom email function to handle our enhanced email templates
 export const sendCustomEmail = async (type: string, email: string, data: any) => {
   try {
+    // Modify the redirect_to parameter to ensure it works properly
+    if (data.redirect_to) {
+      // Make sure we're using an absolute URL and proper handling for dashboard path
+      if (!data.redirect_to.startsWith('http')) {
+        data.redirect_to = window.location.origin + data.redirect_to;
+      }
+    }
+    
+    console.log(`Sending ${type} email with redirect to:`, data.redirect_to);
+    
     const response = await supabase.functions.invoke('custom-email', {
       body: { type, email, data }
     });

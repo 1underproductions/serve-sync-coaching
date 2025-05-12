@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -36,7 +36,14 @@ const Login = () => {
   const [loginError, setLoginError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signIn, isLoading } = useAuth();
+  const { signIn, isLoading, user } = useAuth();
+  
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
   
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -51,7 +58,7 @@ const Login = () => {
     
     try {
       await signIn(data.email, data.password);
-      // Redirect is handled in the Auth context
+      // Navigation is now handled directly in the signIn function
     } catch (error: any) {
       console.error("Login error details:", error);
       setLoginError(error.message || "Login failed. Please check your credentials.");
