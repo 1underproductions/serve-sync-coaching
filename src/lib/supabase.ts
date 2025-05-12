@@ -55,8 +55,10 @@ export const sendCustomEmail = async (type: string, email: string, data: any) =>
     const appUrl = window.location.origin;
     console.log(`Current app URL: ${appUrl}`);
     
-    // Ensure we're using the application URL for redirects, not localhost
-    if (data.redirect_to) {
+    // Update the redirect URL to point to our auth callback handler
+    if (type === 'signup' || type === 'confirmation') {
+      data.redirect_to = `${appUrl}/auth/callback`;
+    } else if (data.redirect_to) {
       // If it's a relative path, make it absolute using the current app URL
       if (data.redirect_to.startsWith('/')) {
         data.redirect_to = `${appUrl}${data.redirect_to}`;

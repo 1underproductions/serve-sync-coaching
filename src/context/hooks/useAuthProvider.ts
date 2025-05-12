@@ -70,6 +70,7 @@ export const useAuthProvider = () => {
   }, [user?.id, session?.access_token]);
 
   useEffect(() => {
+    console.log("Setting up auth state listener");
     // First set up auth listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, updatedSession) => {
@@ -99,13 +100,7 @@ export const useAuthProvider = () => {
               if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
                 if (updatedSession.user.email_confirmed_at) {
                   console.log("Email confirmed at:", updatedSession.user.email_confirmed_at);
-                  toast({
-                    title: "Email verified successfully",
-                    description: "Your email has been verified and you are now signed in.",
-                  });
-                  navigate('/dashboard');
-                } else {
-                  console.log("User signed in but email not confirmed");
+                  // Don't show a toast here since the auth callback will handle it
                 }
               }
             }
@@ -114,51 +109,10 @@ export const useAuthProvider = () => {
       }
     );
 
-    // Handle hash parameters (verification link redirects)
-    const handleEmailConfirmation = async () => {
-      const hasHash = window.location.hash;
-      
-      // If there's a hash in the URL that looks like a Supabase auth callback
-      if (hasHash && (hasHash.includes('access_token=') || hasHash.includes('type='))) {
-        console.log('Processing auth hash parameters', hasHash);
-        setIsLoading(true);
-        
-        try {
-          // Let Supabase handle the hash parameters
-          const { data, error } = await supabase.auth.getSession();
-          
-          if (error) {
-            console.error('Error processing auth callback:', error);
-            toast({
-              variant: "destructive",
-              title: "Authentication error",
-              description: error.message || "There was a problem with your authentication link",
-            });
-          } else if (data.session) {
-            console.log('Successfully processed auth callback, user:', data.session.user);
-            toast({
-              title: "Authentication successful",
-              description: "Your email has been verified and you are now signed in.",
-            });
-            
-            // Use setTimeout to avoid state update race conditions
-            setTimeout(() => {
-              navigate('/dashboard');
-            }, 500);
-          }
-        } catch (err) {
-          console.error('Exception in auth hash handling:', err);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
-    
-    handleEmailConfirmation();
-
-    // Then check for existing session
+    // Initialize auth state
     const initializeAuth = async () => {
       try {
+        console.log("Initializing auth state");
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -252,8 +206,8 @@ export const useAuthProvider = () => {
       setIsLoading(true);
       setAuthError(null);
       
-      // Prepare the redirect URL using the current origin instead of hardcoding localhost
-      const redirectTo = `${window.location.origin}/dashboard`;
+      // Set up redirection to our auth callback handler
+      const redirectTo = `${window.location.origin}/auth/callback`;
       console.log("Sign up with redirect URL:", redirectTo);
       
       const { data, error } = await supabase.auth.signUp({

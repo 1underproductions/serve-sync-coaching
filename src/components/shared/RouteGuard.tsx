@@ -34,6 +34,7 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
     '/faq',
     '/blog',
     '/helpdesk',
+    '/auth/callback', // Add auth callback route as public
     '/verify' // Add this to handle Supabase email verification routes
   ];
 
@@ -64,9 +65,15 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
     adminOnly,
     requireAuth,
     profile,
-    search: location.search, // Add this to log query parameters for debugging
-    hash: location.hash     // Add this to log hash for debugging
+    search: location.search,
+    hash: location.hash
   });
+  
+  // Special case for auth callback - always allow access
+  if (location.pathname === '/auth/callback') {
+    console.log("Processing auth callback route");
+    return <>{children}</>;
+  }
   
   // Handle Supabase email verification redirection
   // This special case checks if we're handling a verification callback
