@@ -25,30 +25,17 @@ const EmailConfirmation = () => {
     try {
       setIsResending(true);
       
-      // First get a new session token for this user - not a full login but just to get the token
+      // Use OTP flow which is simpler and more reliable
       const { data, error } = await supabase.auth.signInWithOtp({
         email,
         options: {
           shouldCreateUser: false,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         }
       });
       
       if (error) throw error;
       
-      // Use the sendCustomEmail function with the token
-      const redirectTo = `${window.location.origin}/auth/callback`;
-      await supabase.functions.invoke('custom-email', {
-        body: { 
-          type: 'signup', 
-          email, 
-          data: {
-            // We don't have a session token here, but the OTP will work for verification
-            // Supabase will handle redirecting with the proper token
-            redirect_to: redirectTo
-          } 
-        }
-      });
-
       toast({
         title: "Email sent",
         description: "A new verification email has been sent to your inbox."

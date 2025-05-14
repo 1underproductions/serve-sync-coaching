@@ -27,27 +27,85 @@ serve(async (req) => {
 
   try {
     const { type, email, data } = await req.json();
+    console.log(`Processing ${type} email request for ${email}`, data);
     
     // Handle various email types
     if (type === "signup") {
-      // Log all data for debugging
       console.log("Signup email request received:", { email, data });
       
       if (!data || typeof data !== 'object') {
         throw new Error("Invalid data provided for email");
       }
       
-      // Check and extract the token
+      // Get the token - trying multiple possible locations
       let token = '';
       if (data.token) {
-        token = data.token;
         console.log("Using provided token");
+        token = data.token;
       } else if (data.access_token) {
-        token = data.access_token;
         console.log("Using access_token");
-      } else {
-        console.log("No token found in data payload:", data);
-        throw new Error("No authentication token provided");
+        token = data.access_token;
+      } else if (data.otp) {
+        console.log("Using OTP");
+        token = data.otp;
+      } else if (req.headers.get('authorization')) {
+        // Try to extract token from authorization header
+        const authHeader = req.headers.get('authorization');
+        console.log("Using authorization header", authHeader);
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          token = authHeader.slice(7);
+        }
+      }
+      
+      if (!token) {
+        console.log("No token found in any location. Creating OTP flow instead.");
+        // Generate a sign in url directly using email
+        const signInUrl = `${projectUrl}/auth/v1/otp?email=${encodeURIComponent(email)}&redirect_to=${encodeURIComponent(data.redirect_to || `${projectUrl}/auth/callback`)}`;
+        
+        const emailResponse = await resend.emails.send({
+          from: "Tennexis <no-reply@resend.dev>",
+          to: [email],
+          subject: "Welcome to Tennexis - Please Confirm Your Account",
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+              <h1 style="color: #3b82f6; margin-bottom: 20px;">Welcome to Tennexis!</h1>
+              
+              <p style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
+                Thank you for signing up! We're excited to have you join our coaching platform. 
+                To get started, please confirm your email address by clicking the button below.
+              </p>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${signInUrl}" style="display: inline-block; background-color: #3b82f6; color: white; font-weight: bold; padding: 12px 24px; text-decoration: none; border-radius: 4px;">
+                  Confirm My Account
+                </a>
+              </div>
+              
+              <p style="font-size: 16px; line-height: 1.5; margin-bottom: 10px;">
+                Or copy and paste this URL into your browser:
+              </p>
+              
+              <p style="font-size: 14px; line-height: 1.5; margin-bottom: 30px; word-break: break-all; color: #4a5568;">
+                ${signInUrl}
+              </p>
+              
+              <p style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
+                This link will expire in 24 hours. If you didn't sign up for Tennexis, you can safely ignore this email.
+              </p>
+              
+              <div style="border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 30px; font-size: 14px; color: #718096;">
+                <p>&copy; 2025 Tennexis. All rights reserved.</p>
+              </div>
+            </div>
+          `,
+        });
+
+        console.log("Email sent successfully with OTP flow:", emailResponse);
+        
+        return new Response(JSON.stringify({ success: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
       }
       
       // Get the redirect URL

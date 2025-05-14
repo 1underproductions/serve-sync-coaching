@@ -223,33 +223,15 @@ export const useAuthProvider = () => {
 
       if (error) throw error;
 
-      if (data.user) {
-        try {
-          // Make sure to pass the session access token for verification
-          await sendCustomEmail('signup', email, {
-            token: data.session?.access_token,
-            redirect_to: redirectTo,
-          });
-          
-          toast({
-            title: "Account created successfully!",
-            description: "Welcome to Tennexis. Please check your email to confirm your account.",
-          });
-          
-          // Navigate to email confirmation page with the email address
-          navigate('/email-confirmation', { state: { email } });
-        } catch (emailError) {
-          console.error("Error sending custom email:", emailError);
-          toast({
-            variant: "destructive",
-            title: "Error sending confirmation email",
-            description: "Your account was created, but we couldn't send a confirmation email. Please try again or contact support.",
-          });
-          
-          // Still navigate to email confirmation page
-          navigate('/email-confirmation', { state: { email } });
-        }
-      }
+      // Navigate to email confirmation page even without custom email
+      toast({
+        title: "Account created successfully!",
+        description: "Welcome to Tennexis. Please check your email to confirm your account.",
+      });
+      
+      // Navigate to email confirmation page with the email address
+      navigate('/email-confirmation', { state: { email } });
+      
     } catch (error: any) {
       setAuthError(error.message);
       toast({
