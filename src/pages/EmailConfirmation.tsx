@@ -1,10 +1,51 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Mail, ArrowRight } from 'lucide-react';
+import { Mail, ArrowRight, RefreshCw } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/lib/supabase';
 
 const EmailConfirmation = () => {
+  const location = useLocation();
+  const { toast } = useToast();
+  const email = location.state?.email || '';
+
+  const handleResendEmail = async () => {
+    if (!email) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please go back to sign up to get a new verification email."
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: {
+          emailRedirectTo: window.location.origin + '/auth/callback'
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Email sent",
+        description: "A new verification email has been sent to your inbox."
+      });
+    } catch (error) {
+      console.error("Error resending email:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to resend verification email. Please try again."
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -23,7 +64,7 @@ const EmailConfirmation = () => {
             </h2>
             
             <p className="mt-2 text-center text-sm text-gray-600 max-w-sm mx-auto">
-              We've sent a confirmation email to your inbox. Please click the link in that email to verify your account.
+              We've sent a confirmation email to {email ? <span className="font-medium">{email}</span> : "your inbox"}. Please click the link in that email to verify your account.
             </p>
             
             <div className="mt-8 space-y-4">
@@ -38,6 +79,17 @@ const EmailConfirmation = () => {
               </div>
               
               <div className="flex flex-col space-y-3">
+                {email && (
+                  <Button 
+                    variant="outline" 
+                    onClick={handleResendEmail} 
+                    className="w-full flex items-center justify-center"
+                  >
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Resend verification email
+                  </Button>
+                )}
+                
                 <Button asChild>
                   <Link to="/login" className="w-full flex items-center justify-center">
                     Go to sign in

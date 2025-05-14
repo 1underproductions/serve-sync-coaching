@@ -1,2 +1,5 @@
 
 project_id = "cugwtwpgccpcjeumrkxf"
+
+[functions.custom-email.env]
+PROJECT_URL = "https://cugwtwpgccpcjeumrkxf.supabase.co"

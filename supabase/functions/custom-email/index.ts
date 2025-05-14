@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 
@@ -22,11 +21,24 @@ serve(async (req) => {
     
     // Handle various email types
     if (type === "signup") {
-      // Ensure we're using the correct format for the verification URL
-      // The token_hash should be properly encoded and not double-encoded
-      const token_hash = data.token_hash;
-      // Use the /auth/v1/verify endpoint directly with clean parameters
-      const confirmUrl = `${projectUrl}/auth/v1/verify?token=${token_hash}&type=signup&redirect_to=${encodeURIComponent(data.redirect_to)}`;
+      // Extract the token and ensure it's properly formatted
+      const token_hash = data.token_hash || '';
+      let redirect_to = encodeURIComponent(data.redirect_to || `${projectUrl}/auth/callback`);
+      
+      // Ensure the redirect URL is properly encoded
+      if (!redirect_to.startsWith('http')) {
+        const appUrl = new URL(req.url).origin;
+        redirect_to = encodeURIComponent(`${appUrl}/auth/callback`);
+      }
+      
+      // Check if the token_hash is properly formatted
+      if (!token_hash) {
+        console.error("Missing token_hash in verification request");
+        throw new Error("Invalid verification token");
+      }
+      
+      // Format the verification URL correctly
+      const confirmUrl = `${projectUrl}/auth/v1/verify?token=${token_hash}&type=signup&redirect_to=${redirect_to}`;
       console.log("Generated verification URL:", confirmUrl);
       
       const emailResponse = await resend.emails.send({

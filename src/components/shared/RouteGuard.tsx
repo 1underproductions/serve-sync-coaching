@@ -69,6 +69,15 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
     hash: location.hash
   });
   
+  // Handle error parameters in the URL and redirect to callback
+  const params = new URLSearchParams(location.search);
+  const hasErrorParams = params.has('error') || params.has('error_description') || params.has('error_code');
+  
+  if (hasErrorParams) {
+    console.log("Detected error in URL parameters:", location.search);
+    return <Navigate to={`/auth/callback${location.search}`} replace />;
+  }
+  
   // Special handling for errors in auth flow
   if (location.pathname === '/' && location.search && location.search.includes('error=')) {
     console.log("Detected error in auth redirect", location.search);
@@ -89,7 +98,7 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
       location.pathname.includes("/verify") ||
       (location.search && location.search.includes("error="))) {
     console.log("Processing auth confirmation/verification flow");
-    return <Navigate to={`/auth/callback${location.search}`} replace />;
+    return <Navigate to={`/auth/callback${location.search}${location.hash}`} replace />;
   }
 
   // If the current path is public, render it without restrictions
