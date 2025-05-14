@@ -8,7 +8,7 @@ import { useAuth } from '@/context/useAuth';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { EyeIcon, EyeOffIcon } from 'lucide-react';
+import { EyeIcon, EyeOffIcon, Check } from 'lucide-react';
 
 const signUpSchema = z.object({
   fullName: z.string().min(1, 'Full name is required'),
@@ -178,11 +178,52 @@ const SignUp = () => {
                 )}
               />
 
+              {/* Payment plan section */}
+              <div className="border rounded-md p-4 bg-gray-50">
+                <h3 className="font-semibold text-gray-800 mb-3">Start your free trial</h3>
+                
+                <div className="flex items-start gap-3 p-3 bg-white rounded border border-tennis-green-200 mb-3">
+                  <div className="flex-shrink-0 rounded-full bg-tennis-green-100 p-1">
+                    <Check className="h-4 w-4 text-tennis-green-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-800">30-day free trial</p>
+                    <p className="text-sm text-gray-600">No credit card required</p>
+                  </div>
+                </div>
+                
+                <ul className="space-y-2 text-sm mb-3">
+                  <li className="flex items-center">
+                    <Check className="h-4 w-4 text-tennis-green-600 mr-2" />
+                    <span>Unlimited coaching sessions</span>
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="h-4 w-4 text-tennis-green-600 mr-2" />
+                    <span>Player management</span>
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="h-4 w-4 text-tennis-green-600 mr-2" />
+                    <span>Payment tracking</span>
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="h-4 w-4 text-tennis-green-600 mr-2" />
+                    <span>Cancel anytime</span>
+                  </li>
+                </ul>
+              </div>
+
               <div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? 'Creating account...' : 'Create account'}
+                  {isLoading ? 'Creating account...' : 'Create account & Start free trial'}
                 </Button>
               </div>
+              
+              <p className="text-xs text-gray-500 text-center mt-4">
+                By creating an account, you agree to our{" "}
+                <Link to="/terms" className="underline">Terms of Service</Link>{" "}
+                and{" "}
+                <Link to="/privacy-policy" className="underline">Privacy Policy</Link>.
+              </p>
             </form>
           </Form>
         </div>

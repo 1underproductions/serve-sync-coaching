@@ -76,8 +76,9 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
   const errorDescription = params.get('error_description');
   
   // Special handling for errors in auth flow - redirect to AuthCallback to handle them
-  if (location.pathname === '/' && (error === 'access_denied' || errorCode === 'otp_expired')) {
-    console.log("Detected auth error, redirecting to AuthCallback:", {error, errorCode, errorDescription});
+  if ((location.pathname === '/' || location.pathname === '') && 
+      (error === 'access_denied' || errorCode === 'otp_expired')) {
+    console.log("Detected auth error at root path, redirecting to AuthCallback:", {error, errorCode, errorDescription});
     return <Navigate to={{
       pathname: '/auth/callback',
       search: location.search

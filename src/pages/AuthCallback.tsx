@@ -25,31 +25,19 @@ const AuthCallback = () => {
         console.log("Current location:", location.pathname, location.search, location.hash);
         
         // Check for error parameters first - in either search params or hash
-        let error, errorDescription, errorCode, code;
         const params = new URLSearchParams(location.search);
         
         // Get error info from search params
-        error = params.get('error');
-        errorDescription = params.get('error_description');
-        errorCode = params.get('error_code');
-        code = params.get('code');
+        const error = params.get('error');
+        const errorDescription = params.get('error_description');
+        const errorCode = params.get('error_code');
+        const code = params.get('code');
         
-        // If no error info in search params, try to get from hash (common in OAuth flows)
-        if (!error && location.hash) {
-          const hashParams = new URLSearchParams(location.hash.substring(1));
-          error = error || hashParams.get('error');
-          errorDescription = errorDescription || hashParams.get('error_description');
-          errorCode = errorCode || hashParams.get('error_code'); 
-          code = code || hashParams.get('code');
-        }
+        console.log("Auth callback parameters:", { error, errorCode, errorDescription, code });
         
-        // Handle specific errors
-        if (error || errorCode) {
-          console.error("Error in auth callback parameters:", {
-            error,
-            errorCode,
-            errorDescription
-          });
+        // If we have error parameters but no code, handle the error
+        if ((error || errorCode) && !code) {
+          console.log("Handling error in auth callback:", { error, errorCode, errorDescription });
           
           // Handle expired link specifically
           if (errorCode === 'otp_expired' || error === 'access_denied') {
