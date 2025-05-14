@@ -92,13 +92,50 @@ export const sendCustomEmail = async (type: string, email: string, data: any) =>
       redirect_to: data.redirect_to
     });
     
+    // Use direct OTP for signup email to improve deliverability
+    if (type === 'signup') {
+      try {
+        console.log("Using direct Supabase OTP for signup verification");
+        const otpResponse = await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            shouldCreateUser: false,
+            emailRedirectTo: data.redirect_to || `${appUrl}/auth/callback`,
+          }
+        });
+        
+        console.log("Direct OTP response:", otpResponse);
+        
+        if (otpResponse.error) {
+          // If OTP fails, fall back to custom email function
+          console.warn("OTP failed, falling back to custom email function:", otpResponse.error);
+        } else {
+          // OTP request successful
+          console.log("OTP verification email sent successfully");
+          return { success: true, message: "Verification email sent via OTP" };
+        }
+      } catch (otpError) {
+        console.error("Error with OTP flow:", otpError);
+        // Continue to custom email as fallback
+      }
+    }
+    
+    // Fall back to custom email function
     const response = await supabase.functions.invoke('custom-email', {
-      body: { type, email, data }
+      body: { type, email, data },
+      headers: {
+        'Content-Type': 'application/json',
+      },
     });
     
-    if (response.error) throw response.error;
+    console.log("Custom email function complete response:", response);
     
-    console.log("Custom email function response:", response.data);
+    if (response.error) {
+      console.error("Error from custom-email function:", response.error);
+      throw response.error;
+    }
+    
+    console.log("Custom email function response data:", response.data);
     return response.data;
   } catch (error) {
     console.error("Error sending custom email:", error);

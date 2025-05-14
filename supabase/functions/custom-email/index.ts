@@ -4,9 +4,12 @@ import { Resend } from "npm:resend@2.0.0";
 // Initialize Resend with the API key from environment variables
 const resendApiKey = Deno.env.get("RESEND_API_KEY");
 if (!resendApiKey) {
-  console.error("RESEND_API_KEY is not set in environment variables");
+  console.error("CRITICAL ERROR: RESEND_API_KEY is not set in environment variables");
 }
 const resend = new Resend(resendApiKey);
+
+// Log API key status (safely)
+console.log(`Resend API key status: ${resendApiKey ? 'Provided' : 'MISSING!'}`);
 
 // Get the Supabase project URL from environment variables or use the default
 const projectUrl = Deno.env.get("PROJECT_URL") || "https://cugwtwpgccpcjeumrkxf.supabase.co";
@@ -30,6 +33,12 @@ serve(async (req) => {
     const { type, email, data } = await req.json();
     console.log(`Processing ${type} email request for ${email}`);
     console.log("Request data:", JSON.stringify(data, null, 2));
+    
+    // Validate Resend API key
+    if (!resendApiKey) {
+      console.error("CRITICAL ERROR: Cannot send email - RESEND_API_KEY is not configured");
+      throw new Error("Email service is not properly configured. Please contact support.");
+    }
     
     // Handle various email types
     if (type === "signup") {
@@ -87,7 +96,7 @@ serve(async (req) => {
           // Use Resend to send the email
           console.log("Sending email via Resend with OTP flow");
           const emailResponse = await resend.emails.send({
-            from: "Tennexis <no-reply@resend.dev>",
+            from: "Tennexis <onboarding@resend.dev>",
             to: [email],
             subject: "Welcome to Tennexis - Please Confirm Your Account",
             html: `
@@ -124,10 +133,15 @@ serve(async (req) => {
             `,
           });
 
-          console.log("Email sent response:", JSON.stringify(emailResponse));
+          console.log("Email sent response:", JSON.stringify(emailResponse, null, 2));
           
-          if (!emailResponse || emailResponse.error) {
-            throw new Error(emailResponse?.error?.message || "Failed to send email via Resend");
+          if (!emailResponse) {
+            throw new Error("No response from Resend API");
+          }
+          
+          if (emailResponse.error) {
+            console.error("Resend API error:", emailResponse.error);
+            throw new Error(emailResponse.error.message || "Failed to send email via Resend");
           }
           
           return new Response(JSON.stringify({ 
@@ -166,7 +180,7 @@ serve(async (req) => {
       try {
         console.log("Sending email via Resend with token flow");
         const emailResponse = await resend.emails.send({
-          from: "Tennexis <no-reply@resend.dev>",
+          from: "Tennexis <onboarding@resend.dev>",
           to: [email],
           subject: "Welcome to Tennexis - Please Confirm Your Account",
           html: `
@@ -203,10 +217,21 @@ serve(async (req) => {
           `,
         });
 
-        console.log("Email sent response:", JSON.stringify(emailResponse));
+        console.log("Email sent response:", JSON.stringify(emailResponse, null, 2));
         
-        if (!emailResponse || emailResponse.error) {
-          throw new Error(emailResponse?.error?.message || "Failed to send email via Resend");
+        if (!emailResponse) {
+          throw new Error("No response from Resend API");
+        }
+        
+        if (emailResponse.error) {
+          console.error("Resend API error:", emailResponse.error);
+          throw new Error(emailResponse.error.message || "Failed to send email via Resend");
+        }
+        
+        // Check email status
+        if (emailResponse.status && emailResponse.status !== "queued" && emailResponse.status !== "sent") {
+          console.error(`Unexpected email status: ${emailResponse.status}`);
+          throw new Error(`Unexpected email status: ${emailResponse.status}`);
         }
         
         return new Response(JSON.stringify({ 

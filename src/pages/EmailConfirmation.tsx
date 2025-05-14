@@ -12,6 +12,7 @@ const EmailConfirmation = () => {
   const email = location.state?.email || '';
   const [isResending, setIsResending] = useState(false);
   const [resendCount, setResendCount] = useState(0);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
 
   // Log when component renders
   useEffect(() => {
@@ -35,7 +36,9 @@ const EmailConfirmation = () => {
       // Increment resend counter
       setResendCount(prev => prev + 1);
       
-      // Use direct OTP flow for better deliverability
+      // Direct approach - use signInWithOtp for better deliverability
+      console.log("Using signInWithOtp for email verification");
+      
       const { data, error } = await supabase.auth.signInWithOtp({
         email,
         options: {
@@ -50,6 +53,12 @@ const EmailConfirmation = () => {
       }
       
       console.log("Supabase OTP response:", data);
+      setDebugInfo({
+        message: "OTP email request sent",
+        email: email,
+        timestamp: new Date().toISOString(),
+        redirect: `${window.location.origin}/auth/callback`
+      });
       
       toast({
         title: "Email sent",
@@ -57,6 +66,11 @@ const EmailConfirmation = () => {
       });
     } catch (error: any) {
       console.error("Error resending email:", error);
+      setDebugInfo({
+        error: error.message || "Unknown error",
+        timestamp: new Date().toISOString()
+      });
+      
       toast({
         variant: "destructive",
         title: "Error",
@@ -137,6 +151,15 @@ const EmailConfirmation = () => {
                   .
                 </p>
               </div>
+              
+              {debugInfo && (
+                <div className="mt-4 p-4 border border-gray-200 rounded-md bg-gray-50">
+                  <h4 className="text-xs font-semibold text-gray-500 mb-2">Debug Information:</h4>
+                  <pre className="text-xs text-gray-600 whitespace-pre-wrap">
+                    {JSON.stringify(debugInfo, null, 2)}
+                  </pre>
+                </div>
+              )}
             </div>
           </div>
         </div>
