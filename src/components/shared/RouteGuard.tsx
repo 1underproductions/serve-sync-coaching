@@ -69,11 +69,21 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
     hash: location.hash
   });
   
+  // Check for auth error parameters anywhere in the URL
+  const params = new URLSearchParams(location.search);
+  const error = params.get('error');
+  const errorCode = params.get('error_code');
+  
   // Special handling for errors in auth flow
-  if (location.pathname === '/' && location.search && location.search.includes('error=')) {
-    console.log("Detected error in auth redirect", location.search);
-    // Let the home page handle this case or redirect to login
-    return <>{children}</>;
+  if ((location.pathname === '/' || location.pathname === '/verify') && 
+      ((error && error === 'access_denied') || 
+       (errorCode && errorCode === 'otp_expired'))) {
+    console.log("Detected auth error, redirecting to AuthCallback to handle it");
+    // Redirect to auth callback which will handle the error
+    return <Navigate to={{
+      pathname: '/auth/callback',
+      search: location.search
+    }} replace />;
   }
   
   // Special case for auth callback - always allow access

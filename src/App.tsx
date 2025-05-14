@@ -96,9 +96,9 @@ const App = () => {
               {/* Add explicit route for /verify to handle Supabase's default verify path */}
               <Route path="/verify" element={<AuthCallback />} />
               
-              {/* Root path - make it public */}
+              {/* Root path with error handler for auth errors */}
               <Route path="/" element={<Index />} />
-
+              
               {/* Protected routes - require authentication */}
               <Route path="/dashboard" element={
                 <RouteGuard>
