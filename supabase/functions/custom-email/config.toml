@@ -7,3 +7,6 @@ port = 54321
 
 [deploy.env]
 PROJECT_URL = "https://cugwtwpgccpcjeumrkxf.supabase.co"
+
+[auth]
+verify_jwt = false

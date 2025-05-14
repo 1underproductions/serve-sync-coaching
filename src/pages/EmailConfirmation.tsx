@@ -36,8 +36,8 @@ const EmailConfirmation = () => {
       // Increment resend counter
       setResendCount(prev => prev + 1);
       
-      // Direct approach - use signInWithOtp for better deliverability
-      console.log("Using signInWithOtp for email verification");
+      // Direct approach with detailed logs
+      console.log("Calling Supabase signInWithOtp to trigger email verification");
       
       const { data, error } = await supabase.auth.signInWithOtp({
         email,
@@ -57,24 +57,27 @@ const EmailConfirmation = () => {
         message: "OTP email request sent",
         email: email,
         timestamp: new Date().toISOString(),
-        redirect: `${window.location.origin}/auth/callback`
+        redirect: `${window.location.origin}/auth/callback`,
+        resendCount: resendCount + 1
       });
       
+      // Show a more detailed toast with information about the email
       toast({
         title: "Email sent",
-        description: "A new verification email has been sent to your inbox. Please check both inbox and spam folders."
+        description: `A new verification email has been sent to ${email}. Please check both inbox and spam folders.`,
       });
     } catch (error: any) {
       console.error("Error resending email:", error);
       setDebugInfo({
         error: error.message || "Unknown error",
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        resendCount: resendCount + 1
       });
       
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message || "Failed to resend verification email. Please try again."
+        description: `Failed to resend email: ${error.message || "Unknown error"}. Please try again.`
       });
     } finally {
       setIsResending(false);

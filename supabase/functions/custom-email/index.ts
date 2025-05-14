@@ -1,15 +1,16 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend@2.0.0";
 
-// Initialize Resend with the API key from environment variables
-const resendApiKey = Deno.env.get("RESEND_API_KEY");
-if (!resendApiKey) {
-  console.error("CRITICAL ERROR: RESEND_API_KEY is not set in environment variables");
+// Initialize Mailgun client with API key
+const mailgunApiKey = Deno.env.get("MAILGUN_API_KEY");
+const mailgunDomain = Deno.env.get("MAILGUN_DOMAIN");
+
+if (!mailgunApiKey || !mailgunDomain) {
+  console.error("CRITICAL ERROR: MAILGUN_API_KEY or MAILGUN_DOMAIN is not set in environment variables");
 }
-const resend = new Resend(resendApiKey);
 
 // Log API key status (safely)
-console.log(`Resend API key status: ${resendApiKey ? 'Provided' : 'MISSING!'}`);
+console.log(`Mailgun API key status: ${mailgunApiKey ? 'Provided' : 'MISSING!'}`);
+console.log(`Mailgun Domain status: ${mailgunDomain ? 'Provided' : 'MISSING!'}`);
 
 // Get the Supabase project URL from environment variables or use the default
 const projectUrl = Deno.env.get("PROJECT_URL") || "https://cugwtwpgccpcjeumrkxf.supabase.co";
@@ -20,6 +21,43 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
+
+// Helper function to send emails via Mailgun
+async function sendMailgunEmail(to: string, subject: string, html: string, from: string) {
+  const url = `https://api.mailgun.net/v3/${mailgunDomain}/messages`;
+  const formData = new URLSearchParams();
+  formData.append('from', from);
+  formData.append('to', to);
+  formData.append('subject', subject);
+  formData.append('html', html);
+  
+  const authString = btoa(`api:${mailgunApiKey}`);
+  
+  try {
+    console.log(`Sending email to ${to} via Mailgun...`);
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${authString}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formData.toString()
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Mailgun API error (${response.status}):`, errorText);
+      throw new Error(`Mailgun API error: ${response.status} - ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log("Mailgun response:", data);
+    return data;
+  } catch (error) {
+    console.error("Error sending email via Mailgun:", error);
+    throw error;
+  }
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -34,11 +72,14 @@ serve(async (req) => {
     console.log(`Processing ${type} email request for ${email}`);
     console.log("Request data:", JSON.stringify(data, null, 2));
     
-    // Validate Resend API key
-    if (!resendApiKey) {
-      console.error("CRITICAL ERROR: Cannot send email - RESEND_API_KEY is not configured");
+    // Validate Mailgun configuration
+    if (!mailgunApiKey || !mailgunDomain) {
+      console.error("CRITICAL ERROR: Cannot send email - Mailgun configuration is not complete");
       throw new Error("Email service is not properly configured. Please contact support.");
     }
+    
+    // Define sender address with Mailgun domain
+    const fromAddress = `Tennexis <no-reply@${mailgunDomain}>`;
     
     // Handle various email types
     if (type === "signup") {
@@ -93,13 +134,12 @@ serve(async (req) => {
           const signInUrl = `${projectUrl}/auth/v1/otp?email=${encodeURIComponent(email)}&redirect_to=${encodeURIComponent(redirectUrl)}`;
           console.log("Generated OTP URL:", signInUrl);
           
-          // Use Resend to send the email
-          console.log("Sending email via Resend with OTP flow");
-          const emailResponse = await resend.emails.send({
-            from: "Tennexis <onboarding@resend.dev>",
-            to: [email],
-            subject: "Welcome to Tennexis - Please Confirm Your Account",
-            html: `
+          // Use Mailgun to send the email
+          console.log("Sending email via Mailgun with OTP flow");
+          const emailResponse = await sendMailgunEmail(
+            email,
+            "Welcome to Tennexis - Please Confirm Your Account",
+            `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
                 <h1 style="color: #3b82f6; margin-bottom: 20px;">Welcome to Tennexis!</h1>
                 
@@ -131,18 +171,10 @@ serve(async (req) => {
                 </div>
               </div>
             `,
-          });
+            fromAddress
+          );
 
           console.log("Email sent response:", JSON.stringify(emailResponse, null, 2));
-          
-          if (!emailResponse) {
-            throw new Error("No response from Resend API");
-          }
-          
-          if (emailResponse.error) {
-            console.error("Resend API error:", emailResponse.error);
-            throw new Error(emailResponse.error.message || "Failed to send email via Resend");
-          }
           
           return new Response(JSON.stringify({ 
             success: true, 
@@ -150,7 +182,7 @@ serve(async (req) => {
             debug_info: { 
               email_sent_to: email, 
               otp_url: signInUrl,
-              resend_response: emailResponse 
+              mailgun_response: emailResponse 
             }
           }), {
             status: 200,
@@ -178,12 +210,11 @@ serve(async (req) => {
       console.log("Generated verification URL:", confirmUrl);
       
       try {
-        console.log("Sending email via Resend with token flow");
-        const emailResponse = await resend.emails.send({
-          from: "Tennexis <onboarding@resend.dev>",
-          to: [email],
-          subject: "Welcome to Tennexis - Please Confirm Your Account",
-          html: `
+        console.log("Sending email via Mailgun with token flow");
+        const emailResponse = await sendMailgunEmail(
+          email,
+          "Welcome to Tennexis - Please Confirm Your Account",
+          `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
               <h1 style="color: #3b82f6; margin-bottom: 20px;">Welcome to Tennexis!</h1>
               
@@ -215,24 +246,10 @@ serve(async (req) => {
               </div>
             </div>
           `,
-        });
+          fromAddress
+        );
 
         console.log("Email sent response:", JSON.stringify(emailResponse, null, 2));
-        
-        if (!emailResponse) {
-          throw new Error("No response from Resend API");
-        }
-        
-        if (emailResponse.error) {
-          console.error("Resend API error:", emailResponse.error);
-          throw new Error(emailResponse.error.message || "Failed to send email via Resend");
-        }
-        
-        // Check email status
-        if (emailResponse.status && emailResponse.status !== "queued" && emailResponse.status !== "sent") {
-          console.error(`Unexpected email status: ${emailResponse.status}`);
-          throw new Error(`Unexpected email status: ${emailResponse.status}`);
-        }
         
         return new Response(JSON.stringify({ 
           success: true, 
@@ -240,14 +257,14 @@ serve(async (req) => {
           debug_info: { 
             email_sent_to: email, 
             verification_url_generated: confirmUrl,
-            resend_response: emailResponse 
+            mailgun_response: emailResponse 
           }
         }), {
           status: 200,
           headers: { "Content-Type": "application/json", ...corsHeaders },
         });
       } catch (emailError) {
-        console.error("Error sending email via Resend:", emailError);
+        console.error("Error sending email via Mailgun:", emailError);
         throw emailError;
       }
     }
@@ -255,11 +272,10 @@ serve(async (req) => {
     if (type === "payment-link") {
       const { payment_url, coach_name, description, amount, currency, expires_in_hours } = data;
       
-      const emailResponse = await resend.emails.send({
-        from: "Tennexis <payments@resend.dev>",
-        to: [email],
-        subject: `Payment Request from ${coach_name}`,
-        html: `
+      const emailResponse = await sendMailgunEmail(
+        email,
+        `Payment Request from ${coach_name}`,
+        `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
             <img src="https://asset.brandfetch.io/idFdo8rNxK/idtYvV5iVs.jpeg" alt="Tennexis" style="max-width: 150px; margin-bottom: 20px;" />
             
@@ -302,7 +318,8 @@ serve(async (req) => {
             </div>
           </div>
         `,
-      });
+        fromAddress
+      );
 
       console.log("Payment link email sent successfully:", emailResponse);
       
@@ -315,11 +332,10 @@ serve(async (req) => {
     if (type === "payment-reminder") {
       const { payment_url, coach_name, session_details, amount, currency, expires_in_hours } = data;
       
-      const emailResponse = await resend.emails.send({
-        from: "Tennexis <payments@resend.dev>",
-        to: [email],
-        subject: `Payment Reminder - Action Required for Your Tennis Session`,
-        html: `
+      const emailResponse = await sendMailgunEmail(
+        email,
+        `Payment Reminder - Action Required for Your Tennis Session`,
+        `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
             <img src="https://asset.brandfetch.io/idFdo8rNxK/idtYvV5iVs.jpeg" alt="Tennexis" style="max-width: 150px; margin-bottom: 20px;" />
             
@@ -359,7 +375,8 @@ serve(async (req) => {
             </div>
           </div>
         `,
-      });
+        fromAddress
+      );
 
       console.log("Payment reminder email sent successfully:", emailResponse);
       
@@ -372,11 +389,10 @@ serve(async (req) => {
     if (type === "session-reminder") {
       const { player_name, session_details, session_date, coach_name, location } = data;
       
-      const emailResponse = await resend.emails.send({
-        from: "Tennexis <reminders@resend.dev>",
-        to: [email],
-        subject: `Upcoming Tennis Session Reminder`,
-        html: `
+      const emailResponse = await sendMailgunEmail(
+        email,
+        `Upcoming Tennis Session Reminder`,
+        `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
             <img src="https://asset.brandfetch.io/idFdo8rNxK/idtYvV5iVs.jpeg" alt="Tennexis" style="max-width: 150px; margin-bottom: 20px;" />
             
@@ -411,7 +427,8 @@ serve(async (req) => {
             </div>
           </div>
         `,
-      });
+        fromAddress
+      );
 
       console.log("Session reminder email sent successfully:", emailResponse);
       
@@ -424,11 +441,10 @@ serve(async (req) => {
     if (type === "payment-received") {
       const { amount, currency, date, payment_type, session_id } = data;
       
-      const emailResponse = await resend.emails.send({
-        from: "Tennexis <payments@resend.dev>",
-        to: [email],
-        subject: `Payment Received - Tennis Coaching ${payment_type.charAt(0).toUpperCase() + payment_type.slice(1)}`,
-        html: `
+      const emailResponse = await sendMailgunEmail(
+        email,
+        `Payment Received - Tennis Coaching ${payment_type.charAt(0).toUpperCase() + payment_type.slice(1)}`,
+        `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
             <img src="https://asset.brandfetch.io/idFdo8rNxK/idtYvV5iVs.jpeg" alt="Tennexis" style="max-width: 150px; margin-bottom: 20px;" />
             
@@ -455,7 +471,8 @@ serve(async (req) => {
             </div>
           </div>
         `,
-      });
+        fromAddress
+      );
 
       console.log("Payment received email sent successfully:", emailResponse);
       
@@ -477,7 +494,8 @@ serve(async (req) => {
     return new Response(JSON.stringify({ 
       error: error.message, 
       stack: error.stack,
-      resendApiKeyExists: !!resendApiKey 
+      mailgunApiKeyExists: !!mailgunApiKey,
+      mailgunDomainExists: !!mailgunDomain
     }), {
       status: 500,
       headers: { "Content-Type": "application/json", ...corsHeaders },
