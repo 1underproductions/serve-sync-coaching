@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Mail, ArrowRight, RefreshCw, AlertCircle } from 'lucide-react';
@@ -11,6 +11,12 @@ const EmailConfirmation = () => {
   const { toast } = useToast();
   const email = location.state?.email || '';
   const [isResending, setIsResending] = useState(false);
+  const [resendCount, setResendCount] = useState(0);
+
+  // Log when component renders
+  useEffect(() => {
+    console.log("EmailConfirmation component rendered with email:", email);
+  }, [email]);
 
   const handleResendEmail = async () => {
     if (!email) {
@@ -24,8 +30,12 @@ const EmailConfirmation = () => {
 
     try {
       setIsResending(true);
+      console.log(`Attempting to resend verification email to: ${email}`);
       
-      // Use OTP flow which is simpler and more reliable
+      // Increment resend counter
+      setResendCount(prev => prev + 1);
+      
+      // Use direct OTP flow for better deliverability
       const { data, error } = await supabase.auth.signInWithOtp({
         email,
         options: {
@@ -34,7 +44,12 @@ const EmailConfirmation = () => {
         }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase OTP error:", error);
+        throw error;
+      }
+      
+      console.log("Supabase OTP response:", data);
       
       toast({
         title: "Email sent",

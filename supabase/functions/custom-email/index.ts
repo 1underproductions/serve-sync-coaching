@@ -24,9 +24,12 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  console.log("Request received to custom-email function");
+
   try {
     const { type, email, data } = await req.json();
-    console.log(`Processing ${type} email request for ${email}`, data);
+    console.log(`Processing ${type} email request for ${email}`);
+    console.log("Request data:", JSON.stringify(data, null, 2));
     
     // Handle various email types
     if (type === "signup") {
@@ -58,9 +61,110 @@ serve(async (req) => {
       
       if (!token) {
         console.log("No token found in any location. Creating OTP flow instead.");
-        // Generate a sign in url directly using email
-        const signInUrl = `${projectUrl}/auth/v1/otp?email=${encodeURIComponent(email)}&redirect_to=${encodeURIComponent(data.redirect_to || `${projectUrl}/auth/callback`)}`;
-        
+        // Force restart the email confirmation process with OTP
+        try {
+          // Generate a direct signup validation URL
+          console.log("Generating direct email verification URL using OTP");
+          
+          // Log all request headers for debugging
+          const headers = {};
+          req.headers.forEach((value, key) => {
+            headers[key] = value;
+          });
+          console.log("Request headers:", headers);
+          
+          // Get origin for better redirect experience
+          const origin = req.headers.get('origin') || req.headers.get('referer') || projectUrl;
+          console.log("Using origin:", origin);
+          
+          const redirectUrl = `${origin.replace(/\/$/, "")}/auth/callback`;
+          console.log("Redirect URL for OTP:", redirectUrl);
+          
+          // Generate a direct OTP link
+          const signInUrl = `${projectUrl}/auth/v1/otp?email=${encodeURIComponent(email)}&redirect_to=${encodeURIComponent(redirectUrl)}`;
+          console.log("Generated OTP URL:", signInUrl);
+          
+          // Use Resend to send the email
+          console.log("Sending email via Resend with OTP flow");
+          const emailResponse = await resend.emails.send({
+            from: "Tennexis <no-reply@resend.dev>",
+            to: [email],
+            subject: "Welcome to Tennexis - Please Confirm Your Account",
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+                <h1 style="color: #3b82f6; margin-bottom: 20px;">Welcome to Tennexis!</h1>
+                
+                <p style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
+                  Thank you for signing up! We're excited to have you join our coaching platform. 
+                  To get started, please confirm your email address by clicking the button below.
+                </p>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="${signInUrl}" style="display: inline-block; background-color: #3b82f6; color: white; font-weight: bold; padding: 12px 24px; text-decoration: none; border-radius: 4px;">
+                    Confirm My Account
+                  </a>
+                </div>
+                
+                <p style="font-size: 16px; line-height: 1.5; margin-bottom: 10px;">
+                  Or copy and paste this URL into your browser:
+                </p>
+                
+                <p style="font-size: 14px; line-height: 1.5; margin-bottom: 30px; word-break: break-all; color: #4a5568;">
+                  ${signInUrl}
+                </p>
+                
+                <p style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
+                  This link will expire in 24 hours. If you didn't sign up for Tennexis, you can safely ignore this email.
+                </p>
+                
+                <div style="border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 30px; font-size: 14px; color: #718096;">
+                  <p>&copy; 2025 Tennexis. All rights reserved.</p>
+                </div>
+              </div>
+            `,
+          });
+
+          console.log("Email sent response:", JSON.stringify(emailResponse));
+          
+          if (!emailResponse || emailResponse.error) {
+            throw new Error(emailResponse?.error?.message || "Failed to send email via Resend");
+          }
+          
+          return new Response(JSON.stringify({ 
+            success: true, 
+            message: "Email sent via OTP flow", 
+            debug_info: { 
+              email_sent_to: email, 
+              otp_url: signInUrl,
+              resend_response: emailResponse 
+            }
+          }), {
+            status: 200,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          });
+        } catch (otpError) {
+          console.error("Error in OTP flow:", otpError);
+          throw otpError;
+        }
+      }
+      
+      // Get the redirect URL
+      let redirect_to = data.redirect_to || `${projectUrl}/auth/callback`;
+      console.log("Initial redirect_to:", redirect_to);
+      
+      // Ensure redirect URL is properly formatted
+      if (!redirect_to.startsWith('http')) {
+        const appUrl = req.headers.get('origin') || projectUrl;
+        redirect_to = `${appUrl.replace(/\/$/, "")}${redirect_to.startsWith('/') ? '' : '/'}${redirect_to}`;
+        console.log("Modified redirect_to with origin:", redirect_to);
+      }
+      
+      // Build the verification URL with properly encoded components
+      const confirmUrl = `${projectUrl}/auth/v1/verify?token=${encodeURIComponent(token)}&type=signup&redirect_to=${encodeURIComponent(redirect_to)}`;
+      console.log("Generated verification URL:", confirmUrl);
+      
+      try {
+        console.log("Sending email via Resend with token flow");
         const emailResponse = await resend.emails.send({
           from: "Tennexis <no-reply@resend.dev>",
           to: [email],
@@ -75,7 +179,7 @@ serve(async (req) => {
               </p>
               
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${signInUrl}" style="display: inline-block; background-color: #3b82f6; color: white; font-weight: bold; padding: 12px 24px; text-decoration: none; border-radius: 4px;">
+                <a href="${confirmUrl}" style="display: inline-block; background-color: #3b82f6; color: white; font-weight: bold; padding: 12px 24px; text-decoration: none; border-radius: 4px;">
                   Confirm My Account
                 </a>
               </div>
@@ -85,7 +189,7 @@ serve(async (req) => {
               </p>
               
               <p style="font-size: 14px; line-height: 1.5; margin-bottom: 30px; word-break: break-all; color: #4a5568;">
-                ${signInUrl}
+                ${confirmUrl}
               </p>
               
               <p style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
@@ -99,88 +203,28 @@ serve(async (req) => {
           `,
         });
 
-        console.log("Email sent successfully with OTP flow:", emailResponse);
+        console.log("Email sent response:", JSON.stringify(emailResponse));
+        
+        if (!emailResponse || emailResponse.error) {
+          throw new Error(emailResponse?.error?.message || "Failed to send email via Resend");
+        }
         
         return new Response(JSON.stringify({ 
           success: true, 
-          message: "Email sent via OTP flow", 
+          message: "Email sent successfully", 
           debug_info: { 
             email_sent_to: email, 
+            verification_url_generated: confirmUrl,
             resend_response: emailResponse 
           }
         }), {
           status: 200,
           headers: { "Content-Type": "application/json", ...corsHeaders },
         });
+      } catch (emailError) {
+        console.error("Error sending email via Resend:", emailError);
+        throw emailError;
       }
-      
-      // Get the redirect URL
-      let redirect_to = data.redirect_to || `${projectUrl}/auth/callback`;
-      console.log("Initial redirect_to:", redirect_to);
-      
-      // Ensure redirect URL is properly formatted
-      if (!redirect_to.startsWith('http')) {
-        const appUrl = req.headers.get('origin') || projectUrl;
-        redirect_to = `${appUrl}${redirect_to.startsWith('/') ? '' : '/'}${redirect_to}`;
-        console.log("Modified redirect_to with origin:", redirect_to);
-      }
-      
-      // Build the verification URL with properly encoded components
-      const confirmUrl = `${projectUrl}/auth/v1/verify?token=${encodeURIComponent(token)}&type=signup&redirect_to=${encodeURIComponent(redirect_to)}`;
-      console.log("Generated verification URL:", confirmUrl);
-      
-      const emailResponse = await resend.emails.send({
-        from: "Tennexis <no-reply@resend.dev>",
-        to: [email],
-        subject: "Welcome to Tennexis - Please Confirm Your Account",
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
-            <h1 style="color: #3b82f6; margin-bottom: 20px;">Welcome to Tennexis!</h1>
-            
-            <p style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
-              Thank you for signing up! We're excited to have you join our coaching platform. 
-              To get started, please confirm your email address by clicking the button below.
-            </p>
-            
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${confirmUrl}" style="display: inline-block; background-color: #3b82f6; color: white; font-weight: bold; padding: 12px 24px; text-decoration: none; border-radius: 4px;">
-                Confirm My Account
-              </a>
-            </div>
-            
-            <p style="font-size: 16px; line-height: 1.5; margin-bottom: 10px;">
-              Or copy and paste this URL into your browser:
-            </p>
-            
-            <p style="font-size: 14px; line-height: 1.5; margin-bottom: 30px; word-break: break-all; color: #4a5568;">
-              ${confirmUrl}
-            </p>
-            
-            <p style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
-              This link will expire in 24 hours. If you didn't sign up for Tennexis, you can safely ignore this email.
-            </p>
-            
-            <div style="border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 30px; font-size: 14px; color: #718096;">
-              <p>&copy; 2025 Tennexis. All rights reserved.</p>
-            </div>
-          </div>
-        `,
-      });
-
-      console.log("Email sent successfully:", JSON.stringify(emailResponse));
-      
-      return new Response(JSON.stringify({ 
-        success: true, 
-        message: "Email sent successfully", 
-        debug_info: { 
-          email_sent_to: email, 
-          verification_url_generated: confirmUrl,
-          resend_response: emailResponse 
-        }
-      }), {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
     }
     
     if (type === "payment-link") {
@@ -405,7 +449,11 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error sending custom email:", error);
     
-    return new Response(JSON.stringify({ error: error.message, stack: error.stack }), {
+    return new Response(JSON.stringify({ 
+      error: error.message, 
+      stack: error.stack,
+      resendApiKeyExists: !!resendApiKey 
+    }), {
       status: 500,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
