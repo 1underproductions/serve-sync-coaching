@@ -54,10 +54,11 @@ export const sendCustomEmail = async (type: string, email: string, data: any) =>
     // Get the current app URL - use the actual window location rather than localhost
     const appUrl = window.location.origin;
     console.log(`Current app URL: ${appUrl}`);
+    console.log(`Sending ${type} email with data:`, data);
     
     // Update the redirect URL to point to our auth callback handler
     if (type === 'signup' || type === 'confirmation') {
-      data.redirect_to = `${appUrl}/auth/callback`;
+      data.redirect_to = data.redirect_to || `${appUrl}/auth/callback`;
     } else if (data.redirect_to) {
       // If it's a relative path, make it absolute using the current app URL
       if (data.redirect_to.startsWith('/')) {
@@ -73,7 +74,16 @@ export const sendCustomEmail = async (type: string, email: string, data: any) =>
       }
     }
     
-    console.log(`Sending ${type} email with redirect to:`, data.redirect_to);
+    // Ensure we're passing the token if it exists
+    if (!data.token && data.access_token) {
+      data.token = data.access_token;
+    }
+    
+    console.log(`Sending ${type} email with final data:`, {
+      email,
+      hasToken: !!data.token,
+      redirect_to: data.redirect_to
+    });
     
     const response = await supabase.functions.invoke('custom-email', {
       body: { type, email, data }

@@ -225,7 +225,7 @@ export const useAuthProvider = () => {
 
       if (data.user) {
         try {
-          // Pass the token directly from the session data
+          // Make sure to pass the session access token for verification
           await sendCustomEmail('signup', email, {
             token: data.session?.access_token,
             redirect_to: redirectTo,

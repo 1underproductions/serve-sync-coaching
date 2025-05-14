@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 
@@ -36,25 +37,28 @@ serve(async (req) => {
         throw new Error("Invalid data provided for email");
       }
       
-      // Get the token and redirect URL
-      const token = data.token || "";
-      let redirect_to = data.redirect_to || `${projectUrl}/auth/callback`;
-      
-      // Format the verification URL - using the token directly from Supabase
-      // This should be a JWT token provided by Supabase during signUp
-      if (!token) {
-        console.log("Token missing, attempting to use session access token");
-        // If no specific token provided, check if we have an access token
-        if (data.session && data.session.access_token) {
-          token = data.session.access_token;
-        } else {
-          throw new Error("No authentication token provided");  
-        }
+      // Check and extract the token
+      let token = '';
+      if (data.token) {
+        token = data.token;
+        console.log("Using provided token");
+      } else if (data.access_token) {
+        token = data.access_token;
+        console.log("Using access_token");
+      } else {
+        console.log("No token found in data payload:", data);
+        throw new Error("No authentication token provided");
       }
       
+      // Get the redirect URL
+      let redirect_to = data.redirect_to || `${projectUrl}/auth/callback`;
+      console.log("Initial redirect_to:", redirect_to);
+      
       // Ensure redirect URL is properly formatted
-      if (redirect_to.startsWith('/')) {
-        redirect_to = `${new URL(req.url).origin}${redirect_to}`;
+      if (!redirect_to.startsWith('http')) {
+        const appUrl = req.headers.get('origin') || projectUrl;
+        redirect_to = `${appUrl}${redirect_to.startsWith('/') ? '' : '/'}${redirect_to}`;
+        console.log("Modified redirect_to with origin:", redirect_to);
       }
       
       // Build the verification URL with properly encoded components
