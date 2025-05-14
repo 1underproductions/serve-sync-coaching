@@ -1,19 +1,10 @@
 
-import React, { useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Mail, ArrowRight } from 'lucide-react';
 
 const EmailConfirmation = () => {
-  const location = useLocation();
-
-  useEffect(() => {
-    // Store the email in localStorage if provided in state
-    if (location.state?.email) {
-      localStorage.setItem('last_signup_email', location.state.email);
-    }
-  }, [location.state]);
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">

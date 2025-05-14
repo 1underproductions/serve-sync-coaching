@@ -69,20 +69,11 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
     hash: location.hash
   });
   
-  // Check for auth error parameters in the URL
-  const params = new URLSearchParams(location.search);
-  const error = params.get('error');
-  const errorCode = params.get('error_code');
-  const errorDescription = params.get('error_description');
-  
-  // Special handling for errors in auth flow - redirect to AuthCallback to handle them
-  if ((location.pathname === '/' || location.pathname === '') && 
-      (error === 'access_denied' || errorCode === 'otp_expired')) {
-    console.log("Detected auth error at root path, redirecting to AuthCallback:", {error, errorCode, errorDescription});
-    return <Navigate to={{
-      pathname: '/auth/callback',
-      search: location.search
-    }} replace />;
+  // Special handling for errors in auth flow
+  if (location.pathname === '/' && location.search && location.search.includes('error=')) {
+    console.log("Detected error in auth redirect", location.search);
+    // Let the home page handle this case or redirect to login
+    return <>{children}</>;
   }
   
   // Special case for auth callback - always allow access
@@ -92,7 +83,9 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
   }
   
   // Handle Supabase email verification redirection
-  if (location.hash && (location.hash.includes("type=signup") || location.hash.includes("type=recovery")) ||
+  // This special case checks if we're handling a verification callback
+  if (location.hash && location.hash.includes("type=signup") || 
+      location.hash && location.hash.includes("type=recovery") ||
       location.pathname.includes("/verify")) {
     console.log("Processing auth confirmation/verification flow");
     return <>{children}</>;

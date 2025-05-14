@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 
@@ -20,17 +21,8 @@ serve(async (req) => {
     const { type, email, data } = await req.json();
     
     // Handle various email types
-    if (type === "signup" || type === "confirmation") {
-      // Set the redirect_to parameter correctly
-      let redirectUrl = data.redirect_to || `${projectUrl}/auth/callback`;
-      
-      // Ensure redirectUrl is properly encoded and formatted
-      redirectUrl = encodeURIComponent(redirectUrl);
-      
-      // Create confirmation URL
-      const confirmUrl = `${projectUrl}/auth/v1/verify?token=${data.token_hash}&type=signup&redirect_to=${redirectUrl}`;
-      
-      console.log("Generated confirmation URL:", confirmUrl);
+    if (type === "signup") {
+      const confirmUrl = `${projectUrl}/auth/v1/verify?token=${data.token_hash}&type=signup&redirect_to=${data.redirect_to}`;
       
       const emailResponse = await resend.emails.send({
         from: "Tennexis <onboarding@resend.dev>",
