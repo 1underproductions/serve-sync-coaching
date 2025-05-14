@@ -1,8 +1,16 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+// Initialize Resend with the API key from environment variables
+const resendApiKey = Deno.env.get("RESEND_API_KEY");
+if (!resendApiKey) {
+  console.error("RESEND_API_KEY is not set in environment variables");
+}
+const resend = new Resend(resendApiKey);
+
+// Get the Supabase project URL from environment variables or use the default
 const projectUrl = Deno.env.get("PROJECT_URL") || "https://cugwtwpgccpcjeumrkxf.supabase.co";
+console.log("Project URL set to:", projectUrl);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,34 +29,44 @@ serve(async (req) => {
     
     // Handle various email types
     if (type === "signup") {
-      // Extract the token and ensure it's properly formatted
-      const token_hash = data.token_hash || '';
-      let redirect_to = encodeURIComponent(data.redirect_to || `${projectUrl}/auth/callback`);
+      // Log all data for debugging
+      console.log("Signup email request received:", { email, data });
       
-      // Ensure the redirect URL is properly encoded
-      if (!redirect_to.startsWith('http')) {
-        const appUrl = new URL(req.url).origin;
-        redirect_to = encodeURIComponent(`${appUrl}/auth/callback`);
+      if (!data || typeof data !== 'object') {
+        throw new Error("Invalid data provided for email");
       }
       
-      // Check if the token_hash is properly formatted
-      if (!token_hash) {
-        console.error("Missing token_hash in verification request");
-        throw new Error("Invalid verification token");
+      // Get the token and redirect URL
+      const token = data.token || "";
+      let redirect_to = data.redirect_to || `${projectUrl}/auth/callback`;
+      
+      // Format the verification URL - using the token directly from Supabase
+      // This should be a JWT token provided by Supabase during signUp
+      if (!token) {
+        console.log("Token missing, attempting to use session access token");
+        // If no specific token provided, check if we have an access token
+        if (data.session && data.session.access_token) {
+          token = data.session.access_token;
+        } else {
+          throw new Error("No authentication token provided");  
+        }
       }
       
-      // Format the verification URL correctly
-      const confirmUrl = `${projectUrl}/auth/v1/verify?token=${token_hash}&type=signup&redirect_to=${redirect_to}`;
+      // Ensure redirect URL is properly formatted
+      if (redirect_to.startsWith('/')) {
+        redirect_to = `${new URL(req.url).origin}${redirect_to}`;
+      }
+      
+      // Build the verification URL with properly encoded components
+      const confirmUrl = `${projectUrl}/auth/v1/verify?token=${encodeURIComponent(token)}&type=signup&redirect_to=${encodeURIComponent(redirect_to)}`;
       console.log("Generated verification URL:", confirmUrl);
       
       const emailResponse = await resend.emails.send({
-        from: "Tennexis <onboarding@resend.dev>",
+        from: "Tennexis <no-reply@resend.dev>",
         to: [email],
         subject: "Welcome to Tennexis - Please Confirm Your Account",
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
-            <img src="https://asset.brandfetch.io/idFdo8rNxK/idtYvV5iVs.jpeg" alt="Tennexis" style="max-width: 150px; margin-bottom: 20px;" />
-            
             <h1 style="color: #3b82f6; margin-bottom: 20px;">Welcome to Tennexis!</h1>
             
             <p style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
@@ -75,10 +93,7 @@ serve(async (req) => {
             </p>
             
             <div style="border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 30px; font-size: 14px; color: #718096;">
-              <p>&copy; 2023 Tennexis. All rights reserved.</p>
-              <p>
-                You're receiving this email because you signed up for Tennexis, the tennis coaching platform that helps you manage your coaching business.
-              </p>
+              <p>&copy; 2025 Tennexis. All rights reserved.</p>
             </div>
           </div>
         `,
@@ -137,7 +152,7 @@ serve(async (req) => {
             <div style="border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 30px; font-size: 14px; color: #718096;">
               <p>&copy; 2023 Tennexis. All rights reserved.</p>
               <p>
-                You're receiving this email because you have a coaching session with ${coach_name} through Tennexis, the tennis coaching platform.
+                You're receiving this email because you signed up for Tennexis, the tennis coaching platform that helps you manage your coaching business.
               </p>
             </div>
           </div>
@@ -311,7 +326,7 @@ serve(async (req) => {
       status: 400,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error sending custom email:", error);
     
     return new Response(JSON.stringify({ error: error.message }), {

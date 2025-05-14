@@ -1,2 +1,5 @@
 
 project_id = "cugwtwpgccpcjeumrkxf"
+
+[deploy]
+allowed_origins = ["*"]

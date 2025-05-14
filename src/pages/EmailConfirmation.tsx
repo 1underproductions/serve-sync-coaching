@@ -1,8 +1,8 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Mail, ArrowRight, RefreshCw } from 'lucide-react';
+import { Mail, ArrowRight, RefreshCw, AlertCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/supabase';
 
@@ -10,6 +10,7 @@ const EmailConfirmation = () => {
   const location = useLocation();
   const { toast } = useToast();
   const email = location.state?.email || '';
+  const [isResending, setIsResending] = useState(false);
 
   const handleResendEmail = async () => {
     if (!email) {
@@ -22,6 +23,7 @@ const EmailConfirmation = () => {
     }
 
     try {
+      setIsResending(true);
       const { error } = await supabase.auth.resend({
         type: 'signup',
         email,
@@ -43,6 +45,8 @@ const EmailConfirmation = () => {
         title: "Error",
         description: error.message || "Failed to resend verification email. Please try again."
       });
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -68,6 +72,16 @@ const EmailConfirmation = () => {
             </p>
             
             <div className="mt-8 space-y-4">
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-md">
+                <div className="flex items-center">
+                  <AlertCircle className="h-5 w-5 text-amber-500 mr-2" />
+                  <h3 className="text-sm font-medium text-amber-800">Important note</h3>
+                </div>
+                <p className="mt-2 text-sm text-amber-700">
+                  If you don't see the email in your inbox, please check your spam folder. The email comes from no-reply@resend.dev.
+                </p>
+              </div>
+              
               <div className="p-4 bg-gray-50 rounded-md">
                 <h3 className="text-sm font-medium text-gray-800">What happens next?</h3>
                 <ul className="mt-2 text-sm text-gray-600 list-disc pl-5 space-y-1">
@@ -83,10 +97,11 @@ const EmailConfirmation = () => {
                   <Button 
                     variant="outline" 
                     onClick={handleResendEmail} 
+                    disabled={isResending}
                     className="w-full flex items-center justify-center"
                   >
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Resend verification email
+                    <RefreshCw className={`mr-2 h-4 w-4 ${isResending ? 'animate-spin' : ''}`} />
+                    {isResending ? 'Sending email...' : 'Resend verification email'}
                   </Button>
                 )}
                 

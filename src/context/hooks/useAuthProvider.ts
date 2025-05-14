@@ -225,8 +225,9 @@ export const useAuthProvider = () => {
 
       if (data.user) {
         try {
+          // Pass the token directly from the session data
           await sendCustomEmail('signup', email, {
-            token_hash: data.session?.access_token,
+            token: data.session?.access_token,
             redirect_to: redirectTo,
           });
           
@@ -235,14 +236,18 @@ export const useAuthProvider = () => {
             description: "Welcome to Tennexis. Please check your email to confirm your account.",
           });
           
-          // No navigation here - handled by the SignUp component
+          // Navigate to email confirmation page with the email address
+          navigate('/email-confirmation', { state: { email } });
         } catch (emailError) {
           console.error("Error sending custom email:", emailError);
           toast({
             variant: "destructive",
             title: "Error sending confirmation email",
-            description: "Your account was created, but we couldn't send a confirmation email. Please contact support.",
+            description: "Your account was created, but we couldn't send a confirmation email. Please try again or contact support.",
           });
+          
+          // Still navigate to email confirmation page
+          navigate('/email-confirmation', { state: { email } });
         }
       }
     } catch (error: any) {

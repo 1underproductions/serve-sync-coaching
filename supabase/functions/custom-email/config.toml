@@ -5,5 +5,8 @@ project_id = "cugwtwpgccpcjeumrkxf"
 [http]
 port = 54321
 
+[deploy]
+allowed_origins = ["*"]
+
 [deploy.env]
 PROJECT_URL = "https://cugwtwpgccpcjeumrkxf.supabase.co"
