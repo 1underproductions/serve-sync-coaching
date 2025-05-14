@@ -1,106 +1,81 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { 
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, CreditCard, Mail, Lock, User } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useAuth } from '@/context/useAuth';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { EyeIcon, EyeOffIcon } from 'lucide-react';
 
 const signUpSchema = z.object({
-  fullName: z.string().min(2, {
-    message: "Full name must be at least 2 characters.",
-  }),
-  email: z.string().email({
-    message: "Please enter a valid email address.",
-  }),
-  password: z.string().min(8, {
-    message: "Password must be at least 8 characters.",
-  }),
-  cardNumber: z.string().min(16, {
-    message: "Please enter a valid card number.",
-  }),
-  expiryDate: z.string().regex(/^(0[1-9]|1[0-2])\/\d{2}$/, {
-    message: "Please enter a valid expiry date (MM/YY).",
-  }),
-  cvc: z.string().regex(/^\d{3,4}$/, {
-    message: "Please enter a valid CVC code.",
-  })
+  fullName: z.string().min(1, 'Full name is required'),
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  confirmPassword: z.string()
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
 type SignUpFormValues = z.infer<typeof signUpSchema>;
 
 const SignUp = () => {
-  const [showPassword, setShowPassword] = useState(false);
+  const { signUp } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const { signUp, isLoading } = useAuth();
-  
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const form = useForm<SignUpFormValues>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
-      fullName: "",
-      email: "",
-      password: "",
-      cardNumber: "",
-      expiryDate: "",
-      cvc: "",
+      fullName: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
     },
   });
 
-  const onSubmit = async (data: SignUpFormValues) => {
+  const onSubmit = async (values: SignUpFormValues) => {
+    setIsLoading(true);
     try {
-      // In a real application, you would process the payment information here
-      // For this demo, we're just passing the full name to our signUp function
-      await signUp(data.email, data.password, {
-        fullName: data.fullName,
-      });
+      const { email, password, fullName } = values;
+      await signUp(email, password, { fullName });
       
-      // Redirect to the email confirmation page instead of relying on navigation in signUp function
-      navigate('/email-confirmation');
+      // Store email in localStorage for potential resend
+      localStorage.setItem('last_signup_email', email);
+      
+      // Navigate to confirmation page and pass email
+      navigate('/email-confirmation', { state: { email } });
     } catch (error) {
-      // Error is handled in the signUp function
-      console.error("Signup error:", error);
+      console.error('Sign up failed:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const formatCardNumber = (value: string) => {
-    const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
-    if (v.length > 16) return v.slice(0, 16);
-    return v;
+  const togglePasswordVisibility = () => {
+    setShowPassword(prev => !prev);
   };
 
-  const formatExpiryDate = (value: string) => {
-    const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
-    if (v.length > 4) return v.slice(0, 4);
-    if (v.length > 2) return `${v.slice(0, 2)}/${v.slice(2)}`;
-    return v;
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(prev => !prev);
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <Link to="/" className="flex justify-center mb-4">
+        <Link to="/" className="flex justify-center mb-6">
           <span className="text-2xl font-bold text-tennis-green-600">Tennexis</span>
         </Link>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Start your free trial
-        </h2>
+        <h2 className="text-center text-3xl font-extrabold text-gray-900">Create your account</h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          14 days free. No credit card charged until trial ends.{" "}
+          Already have an account?{" "}
           <Link to="/login" className="font-medium text-tennis-green-600 hover:text-tennis-green-500">
-            Already have an account?
+            Sign in
           </Link>
         </p>
       </div>
@@ -116,14 +91,7 @@ const SignUp = () => {
                   <FormItem>
                     <FormLabel>Full Name</FormLabel>
                     <FormControl>
-                      <div className="relative">
-                        <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                        <Input
-                          className="pl-10"
-                          placeholder="John Doe"
-                          {...field}
-                        />
-                      </div>
+                      <Input placeholder="John Doe" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -137,15 +105,7 @@ const SignUp = () => {
                   <FormItem>
                     <FormLabel>Email address</FormLabel>
                     <FormControl>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                        <Input
-                          className="pl-10"
-                          type="email"
-                          placeholder="coach@example.com"
-                          {...field}
-                        />
-                      </div>
+                      <Input placeholder="you@example.com" type="email" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -160,58 +120,57 @@ const SignUp = () => {
                     <FormLabel>Password</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                         <Input
-                          className="pl-10 pr-10"
-                          type={showPassword ? "text" : "password"}
+                          type={showPassword ? 'text' : 'password'}
                           placeholder="••••••••"
                           {...field}
                         />
-                        <button
+                        <Button
                           type="button"
-                          className="absolute right-3 top-3"
-                          onClick={() => setShowPassword(!showPassword)}
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2"
+                          onClick={togglePasswordVisibility}
                         >
                           {showPassword ? (
-                            <EyeOff className="h-4 w-4 text-gray-400" />
+                            <EyeOffIcon className="h-4 w-4 text-gray-500" />
                           ) : (
-                            <Eye className="h-4 w-4 text-gray-400" />
+                            <EyeIcon className="h-4 w-4 text-gray-500" />
                           )}
-                        </button>
+                        </Button>
                       </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
-              <div className="mt-8 mb-4">
-                <Separator />
-                <div className="relative -top-3 text-center">
-                  <span className="bg-white px-2 text-sm text-gray-500">
-                    Payment Information
-                  </span>
-                </div>
-              </div>
 
               <FormField
                 control={form.control}
-                name="cardNumber"
-                render={({ field: { onChange, ...rest } }) => (
+                name="confirmPassword"
+                render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Card Number</FormLabel>
+                    <FormLabel>Confirm Password</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <CreditCard className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                         <Input
-                          className="pl-10"
-                          placeholder="1234 5678 9012 3456"
-                          maxLength={16}
-                          onChange={(e) => {
-                            onChange(formatCardNumber(e.target.value));
-                          }}
-                          {...rest}
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          placeholder="••••••••"
+                          {...field}
                         />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2"
+                          onClick={toggleConfirmPasswordVisibility}
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOffIcon className="h-4 w-4 text-gray-500" />
+                          ) : (
+                            <EyeIcon className="h-4 w-4 text-gray-500" />
+                          )}
+                        </Button>
                       </div>
                     </FormControl>
                     <FormMessage />
@@ -219,69 +178,9 @@ const SignUp = () => {
                 )}
               />
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="expiryDate"
-                  render={({ field: { onChange, ...rest } }) => (
-                    <FormItem>
-                      <FormLabel>Expiry Date</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="MM/YY" 
-                          onChange={(e) => {
-                            onChange(formatExpiryDate(e.target.value));
-                          }}
-                          {...rest}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="cvc"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>CVC</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="123" 
-                          maxLength={4}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="text-xs text-gray-500 mt-4">
-                <p>
-                  You won't be charged during your free trial. After it ends, you'll be automatically subscribed to the Pro plan at $9.95/month.
-                </p>
-                <p className="mt-2">
-                  By signing up, you agree to our{" "}
-                  <Link to="#" className="text-tennis-green-600 hover:underline">
-                    Terms of Service
-                  </Link>{" "}
-                  and{" "}
-                  <Link to="#" className="text-tennis-green-600 hover:underline">
-                    Privacy Policy
-                  </Link>
-                  .
-                </p>
-              </div>
-
               <div>
-                <Button 
-                  type="submit" 
-                  className="w-full"
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Creating Account..." : "Start Free Trial"}
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? 'Creating account...' : 'Create account'}
                 </Button>
               </div>
             </form>

@@ -3,9 +3,17 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
+import { AlertCircle } from 'lucide-react';
 
 const AuthCallback = () => {
   const [isProcessing, setIsProcessing] = useState(true);
+  const [errorInfo, setErrorInfo] = useState<{
+    title: string;
+    message: string;
+    showRequestNew: boolean;
+  } | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -35,8 +43,8 @@ const AuthCallback = () => {
           code = code || hashParams.get('code');
         }
         
-        // Handle errors
-        if (error) {
+        // Handle specific errors
+        if (error || errorCode) {
           console.error("Error in auth callback parameters:", {
             error,
             errorCode,
@@ -45,16 +53,23 @@ const AuthCallback = () => {
           
           // Handle expired link specifically
           if (errorCode === 'otp_expired' || error === 'access_denied') {
-            toast({
-              variant: "destructive",
-              title: "Link expired",
-              description: "Your verification link has expired. Please request a new one."
+            setErrorInfo({
+              title: "Email verification link has expired",
+              message: "The verification link you clicked is no longer valid. Please request a new verification email.",
+              showRequestNew: true
             });
-            navigate('/login');
+            setIsProcessing(false);
             return;
           }
           
-          throw new Error(errorDescription || error);
+          // Handle other errors
+          setErrorInfo({
+            title: "Authentication error",
+            message: errorDescription || "There was a problem verifying your email. Please try again or contact support.",
+            showRequestNew: true
+          });
+          setIsProcessing(false);
+          return;
         }
         
         // If no error and no code, try to see if we have a hash with a type parameter
@@ -63,29 +78,38 @@ const AuthCallback = () => {
           const type = hashParams.get('type');
           
           if (type === 'recovery' || type === 'signup') {
-            // This is likely a Supabase magic link flow
+            // This is likely a Supabase magic link flow - let Supabase handle it
             console.log("Processing Supabase magic link flow:", type);
-            // Let Supabase handle it via its internal processes
-            // The URL fragment will be processed by Supabase's auto-detection
+            
+            // Wait a bit for Supabase's auto-handling
+            setTimeout(() => {
+              if (isProcessing) {
+                toast({
+                  title: "Verification in progress",
+                  description: "If you're not redirected soon, please try logging in."
+                });
+                navigate('/login');
+              }
+            }, 5000);
             return;
           }
         }
         
-        // If no code at this point, check if we're on the /verify route with no params
-        // which might be due to a Supabase internal redirect
-        if (!code && location.pathname === '/verify') {
+        // Special case for /verify path with no parameters
+        if (location.pathname === '/verify' && !code && !error) {
           console.log("On /verify path with no code, possibly from Supabase redirect");
-          // Let Supabase internal detection handle it or show friendly message
+          
+          // Let Supabase internal detection handle it or show friendly message after a delay
           setTimeout(() => {
             if (isProcessing) {
-              // If still processing after 3 seconds, show helpful message
-              toast({
-                title: "Verification in progress",
-                description: "If you're not redirected soon, you may need to return to login and request a new verification link."
+              setErrorInfo({
+                title: "Verification link issue",
+                message: "There was a problem with your verification link. Please request a new one.",
+                showRequestNew: true
               });
-              navigate('/login');
+              setIsProcessing(false);
             }
-          }, 3000);
+          }, 4000);
           return;
         }
         
@@ -97,12 +121,12 @@ const AuthCallback = () => {
 
             if (sessionError) {
               console.error("Error processing auth callback:", sessionError);
-              toast({
-                variant: "destructive",
-                title: "Authentication error",
-                description: sessionError.message || "Failed to verify your email"
+              setErrorInfo({
+                title: "Verification failed",
+                message: sessionError.message || "Failed to verify your email. Please try again.",
+                showRequestNew: true
               });
-              navigate('/login');
+              setIsProcessing(false);
               return;
             }
 
@@ -114,33 +138,95 @@ const AuthCallback = () => {
             navigate('/dashboard');
           } catch (exchangeError) {
             console.error("Exception during code exchange:", exchangeError);
-            toast({
-              variant: "destructive",
-              title: "Authentication error",
-              description: "Error during verification. Please try again or request a new link."
+            setErrorInfo({
+              title: "Verification error",
+              message: "Error during verification. Please try again or request a new link.",
+              showRequestNew: true
             });
-            navigate('/login');
+            setIsProcessing(false);
           }
           return;
         }
         
-        // If we get here, we don't have what we need
-        throw new Error('Authorization code not found in URL parameters.');
+        // If we get here with no code and no error, something unexpected happened
+        throw new Error('No authorization code or error found in URL parameters.');
       } catch (err) {
         console.error("Unexpected error in auth callback:", err);
-        toast({
-          variant: "destructive",
+        setErrorInfo({
           title: "Authentication error",
-          description: err instanceof Error ? err.message : "An unexpected error occurred during verification"
+          message: err instanceof Error ? err.message : "An unexpected error occurred during verification",
+          showRequestNew: true
         });
-        navigate('/login');
-      } finally {
         setIsProcessing(false);
       }
     };
 
     handleAuthCallback();
   }, [navigate, toast, location, isProcessing]);
+
+  const handleRequestNewLink = async () => {
+    try {
+      const email = localStorage.getItem('last_signup_email');
+      if (!email) {
+        toast({
+          variant: "destructive",
+          title: "Email not found",
+          description: "Please go to the login page and sign in with your email"
+        });
+        navigate('/login');
+        return;
+      }
+
+      // Use sendCustomEmail from supabase.ts
+      const { sendCustomEmail } = await import('@/lib/supabase');
+      await sendCustomEmail('confirmation', email, {
+        redirect_to: `${window.location.origin}/auth/callback`,
+      });
+      
+      toast({
+        title: "Verification email sent",
+        description: "We've sent a new verification email. Please check your inbox."
+      });
+      
+      navigate('/email-confirmation');
+    } catch (error: any) {
+      console.error("Error requesting new verification link:", error);
+      toast({
+        variant: "destructive",
+        title: "Failed to send verification email",
+        description: error.message || "Please try signing in again"
+      });
+      navigate('/login');
+    }
+  };
+
+  if (errorInfo) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="p-8 bg-white shadow-lg rounded-lg max-w-md w-full">
+          <div className="flex flex-col items-center">
+            <div className="rounded-full bg-red-100 p-3 mb-4">
+              <AlertCircle className="h-6 w-6 text-red-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900">{errorInfo.title}</h2>
+            <p className="mt-2 text-gray-600 text-center mb-6">
+              {errorInfo.message}
+            </p>
+            {errorInfo.showRequestNew && (
+              <div className="flex flex-col space-y-4 w-full">
+                <Button onClick={handleRequestNewLink} className="w-full">
+                  Request new verification link
+                </Button>
+                <Button variant="outline" asChild className="w-full">
+                  <Link to="/login">Return to login</Link>
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
