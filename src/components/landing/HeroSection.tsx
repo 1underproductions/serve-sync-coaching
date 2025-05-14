@@ -23,7 +23,7 @@ const HeroSection = () => {
             <p className="text-xl mb-8 text-white/90 max-w-lg">Focus on developing champions while we handle the business side. The all-in-one platform built for tennis professionals.</p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Button asChild size="lg" className="bg-white text-tennis-green-600 hover:bg-gray-100 rounded-full px-8">
-                <Link to="/dashboard">Get Started Free</Link>
+                <Link to="/sign-up">Get Started Free</Link>
               </Button>
             </div>
           </motion.div>
