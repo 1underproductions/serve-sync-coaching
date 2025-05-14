@@ -22,7 +22,12 @@ serve(async (req) => {
     
     // Handle various email types
     if (type === "signup") {
-      const confirmUrl = `${projectUrl}/auth/v1/verify?token=${data.token_hash}&type=signup&redirect_to=${data.redirect_to}`;
+      // Ensure we're using the correct format for the verification URL
+      // The token_hash should be properly encoded and not double-encoded
+      const token_hash = data.token_hash;
+      // Use the /auth/v1/verify endpoint directly with clean parameters
+      const confirmUrl = `${projectUrl}/auth/v1/verify?token=${token_hash}&type=signup&redirect_to=${encodeURIComponent(data.redirect_to)}`;
+      console.log("Generated verification URL:", confirmUrl);
       
       const emailResponse = await resend.emails.send({
         from: "Tennexis <onboarding@resend.dev>",

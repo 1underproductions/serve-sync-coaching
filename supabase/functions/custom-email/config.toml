@@ -1,2 +1,6 @@
 
+# This sets the project URL for email verification
 project_id = "cugwtwpgccpcjeumrkxf"
+[http]
+port = 54321
+

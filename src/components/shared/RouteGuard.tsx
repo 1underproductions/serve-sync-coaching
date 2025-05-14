@@ -72,8 +72,8 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
   // Special handling for errors in auth flow
   if (location.pathname === '/' && location.search && location.search.includes('error=')) {
     console.log("Detected error in auth redirect", location.search);
-    // Let the home page handle this case or redirect to login
-    return <>{children}</>;
+    // Redirect to the AuthCallback component to handle the error properly
+    return <Navigate to={`/auth/callback${location.search}`} replace />;
   }
   
   // Special case for auth callback - always allow access
@@ -84,11 +84,12 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
   
   // Handle Supabase email verification redirection
   // This special case checks if we're handling a verification callback
-  if (location.hash && location.hash.includes("type=signup") || 
-      location.hash && location.hash.includes("type=recovery") ||
-      location.pathname.includes("/verify")) {
+  if ((location.hash && location.hash.includes("type=signup")) || 
+      (location.hash && location.hash.includes("type=recovery")) ||
+      location.pathname.includes("/verify") ||
+      (location.search && location.search.includes("error="))) {
     console.log("Processing auth confirmation/verification flow");
-    return <>{children}</>;
+    return <Navigate to={`/auth/callback${location.search}`} replace />;
   }
 
   // If the current path is public, render it without restrictions
