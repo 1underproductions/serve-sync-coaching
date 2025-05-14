@@ -1,12 +1,9 @@
 
-# This sets the project URL for email verification
-project_id = "cugwtwpgccpcjeumrkxf"
+[deploy]
+allowed_origins = ["*"]
 
 [http]
 port = 54321
-
-[deploy]
-allowed_origins = ["*"]
 
 [deploy.env]
 PROJECT_URL = "https://cugwtwpgccpcjeumrkxf.supabase.co"

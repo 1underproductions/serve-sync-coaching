@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -74,9 +73,17 @@ export const sendCustomEmail = async (type: string, email: string, data: any) =>
       }
     }
     
-    // Ensure we're passing the token if it exists
-    if (!data.token && data.access_token) {
-      data.token = data.access_token;
+    // Try to get a session token if not already provided
+    if (!data.token) {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData?.session?.access_token) {
+          data.token = sessionData.session.access_token;
+          console.log("Added session token to email data");
+        }
+      } catch (e) {
+        console.error("Error getting session token:", e);
+      }
     }
     
     console.log(`Sending ${type} email with final data:`, {
@@ -91,6 +98,7 @@ export const sendCustomEmail = async (type: string, email: string, data: any) =>
     
     if (response.error) throw response.error;
     
+    console.log("Custom email function response:", response.data);
     return response.data;
   } catch (error) {
     console.error("Error sending custom email:", error);

@@ -29,7 +29,7 @@ const EmailConfirmation = () => {
       const { data, error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          shouldCreateUser: false,
+          shouldCreateUser: false, // Don't create a new user
           emailRedirectTo: `${window.location.origin}/auth/callback`,
         }
       });
@@ -38,7 +38,7 @@ const EmailConfirmation = () => {
       
       toast({
         title: "Email sent",
-        description: "A new verification email has been sent to your inbox."
+        description: "A new verification email has been sent to your inbox. Please check both inbox and spam folders."
       });
     } catch (error: any) {
       console.error("Error resending email:", error);

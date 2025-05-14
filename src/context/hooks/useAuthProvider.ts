@@ -223,7 +223,7 @@ export const useAuthProvider = () => {
 
       if (error) throw error;
 
-      // Navigate to email confirmation page even without custom email
+      // Navigate to email confirmation page
       toast({
         title: "Account created successfully!",
         description: "Welcome to Tennexis. Please check your email to confirm your account.",

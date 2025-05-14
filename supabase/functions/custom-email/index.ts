@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 
@@ -102,7 +101,14 @@ serve(async (req) => {
 
         console.log("Email sent successfully with OTP flow:", emailResponse);
         
-        return new Response(JSON.stringify({ success: true }), {
+        return new Response(JSON.stringify({ 
+          success: true, 
+          message: "Email sent via OTP flow", 
+          debug_info: { 
+            email_sent_to: email, 
+            resend_response: emailResponse 
+          }
+        }), {
           status: 200,
           headers: { "Content-Type": "application/json", ...corsHeaders },
         });
@@ -161,9 +167,17 @@ serve(async (req) => {
         `,
       });
 
-      console.log("Email sent successfully:", emailResponse);
+      console.log("Email sent successfully:", JSON.stringify(emailResponse));
       
-      return new Response(JSON.stringify({ success: true }), {
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: "Email sent successfully", 
+        debug_info: { 
+          email_sent_to: email, 
+          verification_url_generated: confirmUrl,
+          resend_response: emailResponse 
+        }
+      }), {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
@@ -391,7 +405,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error sending custom email:", error);
     
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error.message, stack: error.stack }), {
       status: 500,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
