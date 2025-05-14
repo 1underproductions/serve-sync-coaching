@@ -69,6 +69,13 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
     hash: location.hash
   });
   
+  // Special handling for errors in auth flow
+  if (location.pathname === '/' && location.search && location.search.includes('error=')) {
+    console.log("Detected error in auth redirect", location.search);
+    // Let the home page handle this case or redirect to login
+    return <>{children}</>;
+  }
+  
   // Special case for auth callback - always allow access
   if (location.pathname === '/auth/callback') {
     console.log("Processing auth callback route");

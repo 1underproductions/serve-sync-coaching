@@ -15,7 +15,34 @@ const AuthCallback = () => {
       try {
         console.log("Auth callback page loaded, processing redirect...");
         
+        // Check for error parameters first
         const params = new URLSearchParams(location.search);
+        const error = params.get('error');
+        const errorDescription = params.get('error_description');
+        const errorCode = params.get('error_code');
+        
+        if (error) {
+          console.error("Error in auth callback URL parameters:", {
+            error,
+            errorCode,
+            errorDescription
+          });
+          
+          // Handle expired link specifically
+          if (errorCode === 'otp_expired' || error === 'access_denied') {
+            toast({
+              variant: "destructive",
+              title: "Link expired",
+              description: "Your verification link has expired. Please request a new one."
+            });
+            navigate('/login');
+            return;
+          }
+          
+          throw new Error(errorDescription || error);
+        }
+        
+        // If no error, look for the code parameter
         const code = params.get('code');
         
         if (!code) {
@@ -23,14 +50,14 @@ const AuthCallback = () => {
         }
         
         console.log("Found authorization code, exchanging for session...");
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+        const { data, error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
 
-        if (error) {
-          console.error("Error processing auth callback:", error);
+        if (sessionError) {
+          console.error("Error processing auth callback:", sessionError);
           toast({
             variant: "destructive",
             title: "Authentication error",
-            description: error.message || "Failed to verify your email"
+            description: sessionError.message || "Failed to verify your email"
           });
           navigate('/login');
           return;

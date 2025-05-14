@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -93,6 +92,9 @@ const App = () => {
                   <Helpdesk />
                 </RouteGuard>
               } />
+              
+              {/* Add explicit route for /verify to handle Supabase's default verify path */}
+              <Route path="/verify" element={<AuthCallback />} />
               
               {/* Root path - make it public */}
               <Route path="/" element={<Index />} />
