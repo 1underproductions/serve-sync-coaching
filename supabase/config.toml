@@ -24,3 +24,9 @@ verify_jwt = false
 
 [functions.update-avatar]
 verify_jwt = true
+
+[functions.custom-email]
+verify_jwt = false
+
+[functions.custom-email.test-mailgun]
+verify_jwt = false

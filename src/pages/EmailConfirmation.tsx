@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Mail, ArrowRight, RefreshCw, AlertCircle } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 
 const EmailConfirmation = () => {
@@ -23,27 +22,36 @@ const EmailConfirmation = () => {
     const testMailgunConfig = async () => {
       try {
         console.log("Testing Mailgun configuration...");
-        const response = await fetch(`${window.location.origin}/functions/v1/custom-email/test-mailgun`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
         
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`Mailgun test failed with status ${response.status}:`, errorText);
-          setMailgunTestStatus(`Mailgun test failed (${response.status}): ${errorText || 'No response body'}`);
-          return;
-        }
-        
+        // Use a try-catch to handle fetch errors
         try {
-          const data = await response.json();
-          console.log("Mailgun test response:", data);
-          setMailgunTestStatus(data.success ? 'Mailgun configuration looks good' : `Mailgun error: ${data.error}`);
-        } catch (parseError) {
-          console.error("Error parsing Mailgun test response:", parseError);
-          setMailgunTestStatus(`Error parsing response: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+          const response = await fetch(`${window.location.origin}/functions/v1/custom-email/test-mailgun`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          // If the response is not OK, handle it accordingly
+          if (!response.ok) {
+            const statusText = response.statusText || 'No response body';
+            console.error(`Mailgun test failed with status ${response.status}:`, statusText);
+            setMailgunTestStatus(`Mailgun test failed (${response.status}): ${statusText}`);
+            return;
+          }
+          
+          // Try to parse the JSON response
+          try {
+            const data = await response.json();
+            console.log("Mailgun test response:", data);
+            setMailgunTestStatus(data.success ? 'Mailgun configuration looks good' : `Mailgun error: ${data.error}`);
+          } catch (parseError) {
+            console.error("Error parsing Mailgun test response:", parseError);
+            setMailgunTestStatus(`Error parsing response: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+          }
+        } catch (fetchError) {
+          console.error("Network error testing Mailgun:", fetchError);
+          setMailgunTestStatus(`Network error: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`);
         }
       } catch (error) {
         console.error("Error testing Mailgun:", error);
