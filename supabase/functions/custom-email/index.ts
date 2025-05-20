@@ -77,10 +77,10 @@ serve(async (req) => {
 
   // Extract the path from the URL to determine if it's the test-mailgun endpoint
   const url = new URL(req.url);
-  const pathSegments = url.pathname.split('/');
-  const isTestMailgunEndpoint = pathSegments.includes('test-mailgun');
+  const pathParts = url.pathname.split('/');
   
-  console.log("Path segments:", pathSegments);
+  console.log("Path parts:", pathParts);
+  const isTestMailgunEndpoint = pathParts.some(part => part === 'test-mailgun');
   console.log("Is test-mailgun endpoint:", isTestMailgunEndpoint);
   
   // Handle test-mailgun endpoint
@@ -91,41 +91,59 @@ serve(async (req) => {
       // Check if Mailgun is configured
       if (!mailgunApiKey || !mailgunDomain) {
         console.error("Missing Mailgun configuration for test");
-        return new Response(JSON.stringify({
-          success: false,
-          error: "Mailgun is not configured correctly. Missing API key or domain.",
-          config: {
-            apiKeyExists: !!mailgunApiKey,
-            domainExists: !!mailgunDomain
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Mailgun is not configured correctly. Missing API key or domain.",
+            config: {
+              apiKeyExists: !!mailgunApiKey,
+              domainExists: !!mailgunDomain
+            }
+          }),
+          {
+            status: 200,
+            headers: { 
+              "Content-Type": "application/json", 
+              ...corsHeaders 
+            },
           }
-        }), {
-          status: 200, // Return 200 to allow frontend to display error message
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        });
+        );
       }
       
       // Don't actually send an email, just return the configuration status
-      return new Response(JSON.stringify({
-        success: true,
-        message: "Mailgun appears to be configured correctly",
-        config: {
-          apiKeyExists: !!mailgunApiKey,
-          domainExists: !!mailgunDomain,
-          domain: mailgunDomain
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "Mailgun appears to be configured correctly",
+          config: {
+            apiKeyExists: !!mailgunApiKey,
+            domainExists: !!mailgunDomain,
+            domain: mailgunDomain
+          }
+        }),
+        {
+          status: 200,
+          headers: { 
+            "Content-Type": "application/json", 
+            ...corsHeaders 
+          },
         }
-      }), {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      );
     } catch (error) {
       console.error("Error in test-mailgun endpoint:", error);
-      return new Response(JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : String(error)
-      }), {
-        status: 200, // Return 200 to allow frontend to display error message
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: error instanceof Error ? error.message : String(error)
+        }),
+        {
+          status: 200,
+          headers: { 
+            "Content-Type": "application/json", 
+            ...corsHeaders 
+          },
+        }
+      );
     }
   }
 
@@ -547,21 +565,27 @@ serve(async (req) => {
 
     // Handle other email types here if needed
 
-    return new Response(JSON.stringify({ error: "Unsupported email type" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
+    return new Response(
+      JSON.stringify({ error: "Unsupported email type" }),
+      {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      }
+    );
   } catch (error) {
     console.error("Error sending custom email:", error);
     
-    return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : String(error), 
-      stack: error instanceof Error ? error.stack : undefined,
-      mailgunApiKeyExists: !!mailgunApiKey,
-      mailgunDomainExists: !!mailgunDomain
-    }), {
-      status: 500,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
+    return new Response(
+      JSON.stringify({ 
+        error: error instanceof Error ? error.message : String(error), 
+        stack: error instanceof Error ? error.stack : undefined,
+        mailgunApiKeyExists: !!mailgunApiKey,
+        mailgunDomainExists: !!mailgunDomain
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      }
+    );
   }
 });

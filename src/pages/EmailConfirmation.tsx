@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,7 @@ const EmailConfirmation = () => {
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [mailgunTestStatus, setMailgunTestStatus] = useState<string | null>(null);
   const [isTestingMailgun, setIsTestingMailgun] = useState(false);
+  const [testError, setTestError] = useState<string | null>(null);
 
   // Log when component renders
   useEffect(() => {
@@ -25,6 +27,7 @@ const EmailConfirmation = () => {
     try {
       console.log("Testing Mailgun configuration...");
       setIsTestingMailgun(true);
+      setTestError(null);
       
       try {
         const apiUrl = `${window.location.origin}/functions/v1/custom-email/test-mailgun`;
@@ -47,14 +50,26 @@ const EmailConfirmation = () => {
         }
         
         try {
-          const data = await response.json();
-          console.log("Mailgun test response data:", data);
-          setMailgunTestStatus(data.success 
-            ? 'Mailgun configuration looks good' 
-            : `Mailgun error: ${data.error || 'Unknown error'}`);
-        } catch (parseError) {
-          console.error("Error parsing Mailgun test response:", parseError);
-          setMailgunTestStatus(`Error parsing response: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+          // First try to get the response text
+          const responseText = await response.text();
+          console.log("Mailgun test raw response:", responseText);
+          
+          // Then try to parse it as JSON
+          try {
+            const data = JSON.parse(responseText);
+            console.log("Mailgun test parsed response:", data);
+            setMailgunTestStatus(data.success 
+              ? 'Mailgun configuration looks good' 
+              : `Mailgun error: ${data.error || 'Unknown error'}`);
+          } catch (jsonError) {
+            console.error("Error parsing JSON response:", jsonError);
+            setTestError(`Error parsing response as JSON: ${jsonError instanceof Error ? jsonError.message : String(jsonError)}. Raw response: ${responseText.substring(0, 100)}...`);
+            setMailgunTestStatus(`Response format error: Not valid JSON`);
+          }
+        } catch (responseError) {
+          console.error("Error getting response text:", responseError);
+          setTestError(`Error getting response: ${responseError instanceof Error ? responseError.message : String(responseError)}`);
+          setMailgunTestStatus(`Failed to read server response`);
         }
       } catch (fetchError) {
         console.error("Network error testing Mailgun:", fetchError);
@@ -104,12 +119,26 @@ const EmailConfirmation = () => {
         });
         
         if (!response.ok) {
-          const errorText = await response.text();
+          // Try to get the text for error information
+          let errorText;
+          try {
+            errorText = await response.text();
+          } catch (textError) {
+            errorText = "Could not read error response";
+          }
+          
           console.error(`Custom email function failed with status ${response.status}:`, errorText);
           throw new Error(`Failed to send email (${response.status}): ${errorText || 'Unknown error'}`);
         }
         
-        const result = await response.json();
+        let result;
+        try {
+          result = await response.json();
+        } catch (parseError) {
+          console.error("Failed to parse JSON response:", parseError);
+          throw new Error(`Failed to parse server response: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+        }
+        
         console.log("Custom email function response:", result);
         
         setDebugInfo({
@@ -213,15 +242,27 @@ const EmailConfirmation = () => {
               </div>
               
               {mailgunTestStatus && (
-                <div className={`p-4 rounded-md ${mailgunTestStatus.includes('error') || mailgunTestStatus.includes('Error') || mailgunTestStatus.includes('failed') ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
-                  <p className={`text-sm ${mailgunTestStatus.includes('error') || mailgunTestStatus.includes('Error') || mailgunTestStatus.includes('failed') ? 'text-red-700' : 'text-green-700'}`}>
+                <div className={`p-4 rounded-md ${mailgunTestStatus.includes('error') || mailgunTestStatus.includes('Error') || mailgunTestStatus.includes('failed') || mailgunTestStatus.includes('Failed') ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
+                  <p className={`text-sm ${mailgunTestStatus.includes('error') || mailgunTestStatus.includes('Error') || mailgunTestStatus.includes('failed') || mailgunTestStatus.includes('Failed') ? 'text-red-700' : 'text-green-700'}`}>
                     {mailgunTestStatus}
                   </p>
-                  {(mailgunTestStatus.includes('error') || mailgunTestStatus.includes('Error') || mailgunTestStatus.includes('failed')) && (
+                  {(mailgunTestStatus.includes('error') || mailgunTestStatus.includes('Error') || mailgunTestStatus.includes('failed') || mailgunTestStatus.includes('Failed')) && (
                     <p className="mt-2 text-xs text-red-500">
                       Make sure MAILGUN_API_KEY and MAILGUN_DOMAIN are set in your Supabase environment variables.
                     </p>
                   )}
+                </div>
+              )}
+
+              {testError && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+                  <div className="flex items-center">
+                    <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+                    <h3 className="text-sm font-medium text-red-800">Response Error</h3>
+                  </div>
+                  <p className="mt-2 text-xs text-red-700 whitespace-pre-wrap">
+                    {testError}
+                  </p>
                 </div>
               )}
               
