@@ -13,54 +13,60 @@ const EmailConfirmation = () => {
   const [resendCount, setResendCount] = useState(0);
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [mailgunTestStatus, setMailgunTestStatus] = useState<string | null>(null);
+  const [isTestingMailgun, setIsTestingMailgun] = useState(false);
 
   // Log when component renders
   useEffect(() => {
     console.log("EmailConfirmation component rendered with email:", email);
-    
-    // Test Mailgun configuration on component load
-    const testMailgunConfig = async () => {
-      try {
-        console.log("Testing Mailgun configuration...");
-        
-        // Use a try-catch to handle fetch errors
-        try {
-          const response = await fetch(`${window.location.origin}/functions/v1/custom-email/test-mailgun`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          // If the response is not OK, handle it accordingly
-          if (!response.ok) {
-            const statusText = response.statusText || 'No response body';
-            console.error(`Mailgun test failed with status ${response.status}:`, statusText);
-            setMailgunTestStatus(`Mailgun test failed (${response.status}): ${statusText}`);
-            return;
-          }
-          
-          // Try to parse the JSON response
-          try {
-            const data = await response.json();
-            console.log("Mailgun test response:", data);
-            setMailgunTestStatus(data.success ? 'Mailgun configuration looks good' : `Mailgun error: ${data.error}`);
-          } catch (parseError) {
-            console.error("Error parsing Mailgun test response:", parseError);
-            setMailgunTestStatus(`Error parsing response: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
-          }
-        } catch (fetchError) {
-          console.error("Network error testing Mailgun:", fetchError);
-          setMailgunTestStatus(`Network error: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`);
-        }
-      } catch (error) {
-        console.error("Error testing Mailgun:", error);
-        setMailgunTestStatus(`Error testing Mailgun: ${error instanceof Error ? error.message : String(error)}`);
-      }
-    };
-    
     testMailgunConfig();
   }, [email]);
+
+  const testMailgunConfig = async () => {
+    try {
+      console.log("Testing Mailgun configuration...");
+      setIsTestingMailgun(true);
+      
+      try {
+        const apiUrl = `${window.location.origin}/functions/v1/custom-email/test-mailgun`;
+        console.log("Calling Mailgun test endpoint:", apiUrl);
+        
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        console.log("Mailgun test response status:", response.status);
+        
+        if (!response.ok) {
+          const statusText = response.statusText || 'No response body';
+          console.error(`Mailgun test failed with status ${response.status}:`, statusText);
+          setMailgunTestStatus(`Mailgun test failed (${response.status}): ${statusText}`);
+          return;
+        }
+        
+        try {
+          const data = await response.json();
+          console.log("Mailgun test response data:", data);
+          setMailgunTestStatus(data.success 
+            ? 'Mailgun configuration looks good' 
+            : `Mailgun error: ${data.error || 'Unknown error'}`);
+        } catch (parseError) {
+          console.error("Error parsing Mailgun test response:", parseError);
+          setMailgunTestStatus(`Error parsing response: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+        }
+      } catch (fetchError) {
+        console.error("Network error testing Mailgun:", fetchError);
+        setMailgunTestStatus(`Network error: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`);
+      }
+    } catch (error) {
+      console.error("Error testing Mailgun:", error);
+      setMailgunTestStatus(`Error testing Mailgun: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setIsTestingMailgun(false);
+    }
+  };
 
   const handleResendEmail = async () => {
     if (!email) {
@@ -211,8 +217,33 @@ const EmailConfirmation = () => {
                   <p className={`text-sm ${mailgunTestStatus.includes('error') || mailgunTestStatus.includes('Error') || mailgunTestStatus.includes('failed') ? 'text-red-700' : 'text-green-700'}`}>
                     {mailgunTestStatus}
                   </p>
+                  {(mailgunTestStatus.includes('error') || mailgunTestStatus.includes('Error') || mailgunTestStatus.includes('failed')) && (
+                    <p className="mt-2 text-xs text-red-500">
+                      Make sure MAILGUN_API_KEY and MAILGUN_DOMAIN are set in your Supabase environment variables.
+                    </p>
+                  )}
                 </div>
               )}
+              
+              {isTestingMailgun && (
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+                  <p className="text-sm text-blue-700 flex items-center">
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Testing Mailgun configuration...
+                  </p>
+                </div>
+              )}
+              
+              <Button 
+                onClick={testMailgunConfig}
+                variant="outline" 
+                size="sm"
+                disabled={isTestingMailgun}
+                className="w-full"
+              >
+                <RefreshCw className={`mr-2 h-4 w-4 ${isTestingMailgun ? 'animate-spin' : ''}`} />
+                {isTestingMailgun ? 'Testing...' : 'Test Mailgun Configuration'}
+              </Button>
               
               <div className="p-4 bg-gray-50 rounded-md">
                 <h3 className="text-sm font-medium text-gray-800">What happens next?</h3>

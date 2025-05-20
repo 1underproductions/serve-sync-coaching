@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 
 // Initialize Mailgun client with API key
@@ -64,19 +65,29 @@ async function sendMailgunEmail(to: string, subject: string, html: string, from:
 }
 
 serve(async (req) => {
+  console.log("Request received to custom-email function");
+  console.log("Request URL:", req.url);
+  console.log("Request method:", req.method);
+  
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
+    console.log("Handling OPTIONS request (CORS preflight)");
     return new Response(null, { headers: corsHeaders });
   }
 
-  console.log("Request received to custom-email function");
-  console.log("Request URL:", req.url);
+  // Extract the path from the URL to determine if it's the test-mailgun endpoint
+  const url = new URL(req.url);
+  const pathSegments = url.pathname.split('/');
+  const isTestMailgunEndpoint = pathSegments.includes('test-mailgun');
+  
+  console.log("Path segments:", pathSegments);
+  console.log("Is test-mailgun endpoint:", isTestMailgunEndpoint);
   
   // Handle test-mailgun endpoint
-  if (req.url.includes('/test-mailgun')) {
+  if (isTestMailgunEndpoint) {
+    console.log("Mailgun test endpoint called");
+    
     try {
-      console.log("Mailgun test endpoint called");
-      
       // Check if Mailgun is configured
       if (!mailgunApiKey || !mailgunDomain) {
         console.error("Missing Mailgun configuration for test");
@@ -118,6 +129,7 @@ serve(async (req) => {
     }
   }
 
+  // Regular email sending endpoint
   try {
     const { type, email, data } = await req.json();
     console.log(`Processing ${type} email request for ${email}`);

@@ -28,5 +28,4 @@ verify_jwt = true
 [functions.custom-email]
 verify_jwt = false
 
-[functions.custom-email.test-mailgun]
-verify_jwt = false
+# Instead of creating a separate test-mailgun function, we'll handle it within the custom-email function
