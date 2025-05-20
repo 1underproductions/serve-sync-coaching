@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 
 // Initialize Mailgun client with API key
@@ -89,7 +88,7 @@ serve(async (req) => {
             domainExists: !!mailgunDomain
           }
         }), {
-          status: 500,
+          status: 200, // Return 200 to allow frontend to display error message
           headers: { "Content-Type": "application/json", ...corsHeaders },
         });
       }
@@ -113,7 +112,7 @@ serve(async (req) => {
         success: false,
         error: error instanceof Error ? error.message : String(error)
       }), {
-        status: 500,
+        status: 200, // Return 200 to allow frontend to display error message
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ const EmailConfirmation = () => {
     // Test Mailgun configuration on component load
     const testMailgunConfig = async () => {
       try {
+        console.log("Testing Mailgun configuration...");
         const response = await fetch(`${window.location.origin}/functions/v1/custom-email/test-mailgun`, {
           method: 'POST',
           headers: {
@@ -28,9 +30,21 @@ const EmailConfirmation = () => {
           }
         });
         
-        const data = await response.json();
-        console.log("Mailgun test response:", data);
-        setMailgunTestStatus(data.success ? 'Mailgun configuration looks good' : `Mailgun error: ${data.error}`);
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Mailgun test failed with status ${response.status}:`, errorText);
+          setMailgunTestStatus(`Mailgun test failed (${response.status}): ${errorText || 'No response body'}`);
+          return;
+        }
+        
+        try {
+          const data = await response.json();
+          console.log("Mailgun test response:", data);
+          setMailgunTestStatus(data.success ? 'Mailgun configuration looks good' : `Mailgun error: ${data.error}`);
+        } catch (parseError) {
+          console.error("Error parsing Mailgun test response:", parseError);
+          setMailgunTestStatus(`Error parsing response: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+        }
       } catch (error) {
         console.error("Error testing Mailgun:", error);
         setMailgunTestStatus(`Error testing Mailgun: ${error instanceof Error ? error.message : String(error)}`);
@@ -74,6 +88,12 @@ const EmailConfirmation = () => {
             }
           })
         });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Custom email function failed with status ${response.status}:`, errorText);
+          throw new Error(`Failed to send email (${response.status}): ${errorText || 'Unknown error'}`);
+        }
         
         const result = await response.json();
         console.log("Custom email function response:", result);
@@ -179,8 +199,8 @@ const EmailConfirmation = () => {
               </div>
               
               {mailgunTestStatus && (
-                <div className={`p-4 rounded-md ${mailgunTestStatus.includes('error') || mailgunTestStatus.includes('Error') ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
-                  <p className={`text-sm ${mailgunTestStatus.includes('error') || mailgunTestStatus.includes('Error') ? 'text-red-700' : 'text-green-700'}`}>
+                <div className={`p-4 rounded-md ${mailgunTestStatus.includes('error') || mailgunTestStatus.includes('Error') || mailgunTestStatus.includes('failed') ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
+                  <p className={`text-sm ${mailgunTestStatus.includes('error') || mailgunTestStatus.includes('Error') || mailgunTestStatus.includes('failed') ? 'text-red-700' : 'text-green-700'}`}>
                     {mailgunTestStatus}
                   </p>
                 </div>
