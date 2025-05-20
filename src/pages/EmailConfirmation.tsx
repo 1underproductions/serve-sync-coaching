@@ -13,10 +13,32 @@ const EmailConfirmation = () => {
   const [isResending, setIsResending] = useState(false);
   const [resendCount, setResendCount] = useState(0);
   const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [mailgunTestStatus, setMailgunTestStatus] = useState<string | null>(null);
 
   // Log when component renders
   useEffect(() => {
     console.log("EmailConfirmation component rendered with email:", email);
+    
+    // Test Mailgun configuration on component load
+    const testMailgunConfig = async () => {
+      try {
+        const response = await fetch(`${window.location.origin}/functions/v1/custom-email/test-mailgun`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        const data = await response.json();
+        console.log("Mailgun test response:", data);
+        setMailgunTestStatus(data.success ? 'Mailgun configuration looks good' : `Mailgun error: ${data.error}`);
+      } catch (error) {
+        console.error("Error testing Mailgun:", error);
+        setMailgunTestStatus(`Error testing Mailgun: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    };
+    
+    testMailgunConfig();
   }, [email]);
 
   const handleResendEmail = async () => {
@@ -36,13 +58,54 @@ const EmailConfirmation = () => {
       // Increment resend counter
       setResendCount(prev => prev + 1);
       
-      // Direct approach with detailed logs
-      console.log("Calling Supabase signInWithOtp to trigger email verification");
+      // First try direct call to custom-email function
+      console.log("Calling custom-email function directly");
+      
+      try {
+        const response = await fetch(`${window.location.origin}/functions/v1/custom-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            type: 'signup',
+            email: email,
+            data: {
+              redirect_to: `${window.location.origin}/auth/callback`
+            }
+          })
+        });
+        
+        const result = await response.json();
+        console.log("Custom email function response:", result);
+        
+        setDebugInfo({
+          method: "direct-function-call",
+          timestamp: new Date().toISOString(),
+          response: result,
+          email: email,
+          resendCount: resendCount + 1
+        });
+        
+        if (result.success) {
+          toast({
+            title: "Email sent",
+            description: `A new verification email has been sent to ${email}. Please check both inbox and spam folders.`,
+          });
+          return;
+        }
+      } catch (directError) {
+        console.error("Error calling custom-email function directly:", directError);
+        // Continue to fallback method
+      }
+      
+      // Fallback to OTP method
+      console.log("Falling back to Supabase signInWithOtp");
       
       const { data, error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          shouldCreateUser: false, // Don't create a new user
+          shouldCreateUser: false,
           emailRedirectTo: `${window.location.origin}/auth/callback`,
         }
       });
@@ -54,9 +117,9 @@ const EmailConfirmation = () => {
       
       console.log("Supabase OTP response:", data);
       setDebugInfo({
-        message: "OTP email request sent",
-        email: email,
+        method: "supabase-otp",
         timestamp: new Date().toISOString(),
+        email: email,
         redirect: `${window.location.origin}/auth/callback`,
         resendCount: resendCount + 1
       });
@@ -112,9 +175,17 @@ const EmailConfirmation = () => {
                   <h3 className="text-sm font-medium text-amber-800">Important note</h3>
                 </div>
                 <p className="mt-2 text-sm text-amber-700">
-                  If you don't see the email in your inbox, please check your spam folder. The email comes from no-reply@resend.dev.
+                  If you don't see the email in your inbox, please check your spam folder. The email comes from {Deno.env.get("MAILGUN_DOMAIN") || "your Mailgun domain"}.
                 </p>
               </div>
+              
+              {mailgunTestStatus && (
+                <div className={`p-4 rounded-md ${mailgunTestStatus.includes('error') || mailgunTestStatus.includes('Error') ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
+                  <p className={`text-sm ${mailgunTestStatus.includes('error') || mailgunTestStatus.includes('Error') ? 'text-red-700' : 'text-green-700'}`}>
+                    {mailgunTestStatus}
+                  </p>
+                </div>
+              )}
               
               <div className="p-4 bg-gray-50 rounded-md">
                 <h3 className="text-sm font-medium text-gray-800">What happens next?</h3>
@@ -158,7 +229,7 @@ const EmailConfirmation = () => {
               {debugInfo && (
                 <div className="mt-4 p-4 border border-gray-200 rounded-md bg-gray-50">
                   <h4 className="text-xs font-semibold text-gray-500 mb-2">Debug Information:</h4>
-                  <pre className="text-xs text-gray-600 whitespace-pre-wrap">
+                  <pre className="text-xs text-gray-600 whitespace-pre-wrap overflow-auto max-h-60">
                     {JSON.stringify(debugInfo, null, 2)}
                   </pre>
                 </div>

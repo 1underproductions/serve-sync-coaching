@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 
 // Initialize Mailgun client with API key
@@ -24,6 +25,10 @@ const corsHeaders = {
 
 // Helper function to send emails via Mailgun
 async function sendMailgunEmail(to: string, subject: string, html: string, from: string) {
+  if (!mailgunApiKey || !mailgunDomain) {
+    throw new Error("Mailgun configuration is incomplete. Missing API key or domain.");
+  }
+  
   const url = `https://api.mailgun.net/v3/${mailgunDomain}/messages`;
   const formData = new URLSearchParams();
   formData.append('from', from);
@@ -66,6 +71,53 @@ serve(async (req) => {
   }
 
   console.log("Request received to custom-email function");
+  console.log("Request URL:", req.url);
+  
+  // Handle test-mailgun endpoint
+  if (req.url.includes('/test-mailgun')) {
+    try {
+      console.log("Mailgun test endpoint called");
+      
+      // Check if Mailgun is configured
+      if (!mailgunApiKey || !mailgunDomain) {
+        console.error("Missing Mailgun configuration for test");
+        return new Response(JSON.stringify({
+          success: false,
+          error: "Mailgun is not configured correctly. Missing API key or domain.",
+          config: {
+            apiKeyExists: !!mailgunApiKey,
+            domainExists: !!mailgunDomain
+          }
+        }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+      
+      // Don't actually send an email, just return the configuration status
+      return new Response(JSON.stringify({
+        success: true,
+        message: "Mailgun appears to be configured correctly",
+        config: {
+          apiKeyExists: !!mailgunApiKey,
+          domainExists: !!mailgunDomain,
+          domain: mailgunDomain
+        }
+      }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    } catch (error) {
+      console.error("Error in test-mailgun endpoint:", error);
+      return new Response(JSON.stringify({
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      }), {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+  }
 
   try {
     const { type, email, data } = await req.json();
@@ -117,7 +169,7 @@ serve(async (req) => {
           console.log("Generating direct email verification URL using OTP");
           
           // Log all request headers for debugging
-          const headers = {};
+          const headers: Record<string, string> = {};
           req.headers.forEach((value, key) => {
             headers[key] = value;
           });
@@ -492,8 +544,8 @@ serve(async (req) => {
     console.error("Error sending custom email:", error);
     
     return new Response(JSON.stringify({ 
-      error: error.message, 
-      stack: error.stack,
+      error: error instanceof Error ? error.message : String(error), 
+      stack: error instanceof Error ? error.stack : undefined,
       mailgunApiKeyExists: !!mailgunApiKey,
       mailgunDomainExists: !!mailgunDomain
     }), {
