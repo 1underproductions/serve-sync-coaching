@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -175,7 +174,7 @@ const EmailConfirmation = () => {
                   <h3 className="text-sm font-medium text-amber-800">Important note</h3>
                 </div>
                 <p className="mt-2 text-sm text-amber-700">
-                  If you don't see the email in your inbox, please check your spam folder. The email comes from {Deno.env.get("MAILGUN_DOMAIN") || "your Mailgun domain"}.
+                  If you don't see the email in your inbox, please check your spam folder. The email comes from your Mailgun domain.
                 </p>
               </div>
               
