@@ -239,18 +239,18 @@ serve(async (req) => {
       throw new Error("Email service is not properly configured. Please contact support.");
     }
     
-    // CRITICAL FIX: Use a proper verified domain for the from address
-    // TODO: Replace 'tennexis.com' with your actual verified domain in Resend
-    const fromAddress = `Tennexis <onboarding@resend.dev>`;
+    // 🔥 CRITICAL UPDATE: Replace with your verified domain
+    // TODO: Replace 'yourdomain.com' with your actual verified domain from Resend
+    const fromAddress = `Tennexis <noreply@yourdomain.com>`;
     
     console.log(`Using from address: ${fromAddress}`);
-    console.log("⚠️ IMPORTANT: Using Resend's default domain. For production, verify your own domain and update this address!");
-    console.log("📋 Domain verification checklist:");
+    console.log("🚨 IMPORTANT: Make sure 'yourdomain.com' is verified in your Resend dashboard!");
+    console.log("📋 Steps to verify your domain:");
     console.log("   1. Go to https://resend.com/domains");
-    console.log("   2. Add your domain (e.g., tennexis.com)");
+    console.log("   2. Add your domain (e.g., yourdomain.com)");
     console.log("   3. Add required DNS records (SPF, DKIM, DMARC)");
     console.log("   4. Wait for verification (status must show 'Verified')");
-    console.log("   5. Update fromAddress to use your verified domain");
+    console.log("   5. Update fromAddress above to use your verified domain");
     
     // Handle various email types
     if (type === "signup") {
