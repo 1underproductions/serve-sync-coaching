@@ -59,10 +59,10 @@ serve(async (req) => {
 
   // Extract the path from the URL to determine if it's the test-resend endpoint
   const url = new URL(req.url);
-  const pathParts = url.pathname.split('/');
+  console.log("Full URL pathname:", url.pathname);
   
-  console.log("Path parts:", pathParts);
-  const isTestResendEndpoint = pathParts.some(part => part === 'test-resend');
+  // Check if this is the test-resend endpoint
+  const isTestResendEndpoint = url.pathname.includes('test-resend');
   console.log("Is test-resend endpoint:", isTestResendEndpoint);
   
   // Handle test-resend endpoint
@@ -99,7 +99,8 @@ serve(async (req) => {
           success: true,
           message: "Resend appears to be configured correctly",
           config: {
-            apiKeyExists: !!resendApiKey
+            apiKeyExists: !!resendApiKey,
+            apiKeyLength: resendApiKey.length
           }
         }),
         {
