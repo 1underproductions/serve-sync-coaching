@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 
@@ -174,19 +175,19 @@ serve(async (req) => {
         console.log("Modified redirect_to with origin:", redirect_to);
       }
       
-      // For signup emails, we'll use OTP flow since we don't have a token
-      console.log("Generating OTP verification URL for signup");
+      // For signup emails, we'll create a magic link for email verification
+      console.log("Generating magic link for signup verification");
       
       // Get origin for better redirect experience
       const origin = req.headers.get('origin') || req.headers.get('referer') || projectUrl;
       console.log("Using origin:", origin);
       
       const redirectUrl = `${origin.replace(/\/$/, "")}/auth/callback`;
-      console.log("Redirect URL for OTP:", redirectUrl);
+      console.log("Redirect URL for magic link:", redirectUrl);
       
-      // Generate a direct OTP link - this will trigger Supabase to send the email
-      const signInUrl = `${projectUrl}/auth/v1/otp?email=${encodeURIComponent(email)}&redirect_to=${encodeURIComponent(redirectUrl)}`;
-      console.log("Generated OTP URL:", signInUrl);
+      // Create a proper Supabase auth magic link
+      const magicLinkUrl = `${projectUrl}/auth/v1/magiclink?email=${encodeURIComponent(email)}&redirect_to=${encodeURIComponent(redirectUrl)}`;
+      console.log("Generated magic link URL:", magicLinkUrl);
       
       try {
         console.log("Sending signup confirmation email via Resend");
@@ -203,7 +204,7 @@ serve(async (req) => {
               </p>
               
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${signInUrl}" style="display: inline-block; background-color: #3b82f6; color: white; font-weight: bold; padding: 12px 24px; text-decoration: none; border-radius: 4px;">
+                <a href="${magicLinkUrl}" style="display: inline-block; background-color: #3b82f6; color: white; font-weight: bold; padding: 12px 24px; text-decoration: none; border-radius: 4px;">
                   Confirm My Account
                 </a>
               </div>
@@ -213,7 +214,7 @@ serve(async (req) => {
               </p>
               
               <p style="font-size: 14px; line-height: 1.5; margin-bottom: 30px; word-break: break-all; color: #4a5568;">
-                ${signInUrl}
+                ${magicLinkUrl}
               </p>
               
               <p style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
@@ -236,7 +237,7 @@ serve(async (req) => {
           message: "Email sent successfully via Resend", 
           debug_info: { 
             email_sent_to: email, 
-            verification_url_generated: signInUrl,
+            verification_url_generated: magicLinkUrl,
             resend_response: emailResponse,
             message_id: emailResponse.data?.id
           }

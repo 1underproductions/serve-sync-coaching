@@ -15,7 +15,6 @@ const EmailConfirmation = () => {
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [resendTestStatus, setResendTestStatus] = useState<string | null>(null);
   const [isTestingResend, setIsTestingResend] = useState(false);
-  const [testError, setTestError] = useState<string | null>(null);
 
   // Log when component renders
   useEffect(() => {
@@ -27,34 +26,27 @@ const EmailConfirmation = () => {
     try {
       console.log("Testing Resend configuration...");
       setIsTestingResend(true);
-      setTestError(null);
       
-      try {
-        // Call the custom-email function with test-resend in the URL path
-        const response = await supabase.functions.invoke('custom-email/test-resend', {
-          body: {},
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        console.log("Resend test response:", response);
-        
-        if (response.error) {
-          console.error("Resend test failed:", response.error);
-          setResendTestStatus(`Resend test failed: ${response.error.message || 'Unknown error'}`);
-          return;
+      const response = await supabase.functions.invoke('custom-email/test-resend', {
+        body: {},
+        headers: {
+          'Content-Type': 'application/json'
         }
-        
-        const data = response.data;
-        console.log("Resend test parsed response:", data);
-        setResendTestStatus(data.success 
-          ? 'Resend configuration looks good' 
-          : `Resend error: ${data.error || 'Unknown error'}`);
-      } catch (fetchError) {
-        console.error("Network error testing Resend:", fetchError);
-        setResendTestStatus(`Network error: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`);
+      });
+      
+      console.log("Resend test response:", response);
+      
+      if (response.error) {
+        console.error("Resend test failed:", response.error);
+        setResendTestStatus(`Resend test failed: ${response.error.message || 'Unknown error'}`);
+        return;
       }
+      
+      const data = response.data;
+      console.log("Resend test parsed response:", data);
+      setResendTestStatus(data.success 
+        ? 'Resend configuration looks good' 
+        : `Resend error: ${data.error || 'Unknown error'}`);
     } catch (error) {
       console.error("Error testing Resend:", error);
       setResendTestStatus(`Error testing Resend: ${error instanceof Error ? error.message : String(error)}`);
@@ -80,7 +72,7 @@ const EmailConfirmation = () => {
       // Increment resend counter
       setResendCount(prev => prev + 1);
       
-      // Use the custom-email function directly for signup emails
+      // Use the custom-email function for signup emails
       console.log("Calling custom-email function via Supabase for signup verification");
       
       const emailData = {
@@ -194,27 +186,6 @@ const EmailConfirmation = () => {
                   )}
                 </div>
               )}
-
-              {testError && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-                  <div className="flex items-center">
-                    <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-                    <h3 className="text-sm font-medium text-red-800">Response Error</h3>
-                  </div>
-                  <p className="mt-2 text-xs text-red-700 whitespace-pre-wrap">
-                    {testError}
-                  </p>
-                </div>
-              )}
-              
-              {isTestingResend && (
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
-                  <p className="text-sm text-blue-700 flex items-center">
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Testing Resend configuration...
-                  </p>
-                </div>
-              )}
               
               <Button 
                 onClick={testResendConfig}
@@ -240,17 +211,16 @@ const EmailConfirmation = () => {
               <div className="flex flex-col space-y-3">
                 {email && (
                   <Button 
-                    variant="outline" 
                     onClick={handleResendEmail} 
                     disabled={isResending}
-                    className="w-full flex items-center justify-center"
+                    className="w-full flex items-center justify-center bg-tennis-green-600 hover:bg-tennis-green-700"
                   >
                     <RefreshCw className={`mr-2 h-4 w-4 ${isResending ? 'animate-spin' : ''}`} />
-                    {isResending ? 'Sending email...' : 'Resend verification email'}
+                    {isResending ? 'Sending verification email...' : 'Resend verification email'}
                   </Button>
                 )}
                 
-                <Button asChild>
+                <Button asChild variant="outline">
                   <Link to="/login" className="w-full flex items-center justify-center">
                     Go to sign in
                     <ArrowRight className="ml-2 h-4 w-4" />
