@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 
@@ -133,18 +132,18 @@ serve(async (req) => {
         );
       }
       
-      // Test actual Resend API call - Use delivery@resend.dev for testing
-      console.log("Testing actual Resend API call...");
+      // Test actual Resend API call - Use your verified domain
+      console.log("Testing actual Resend API call with verified tennexis.com domain...");
       const resend = new Resend(resendApiKey);
       
       // Try a simple API call to verify connectivity
       try {
         console.log("Making test API call to Resend...");
         const testResponse = await resend.emails.send({
-          from: "Tennexis <onboarding@resend.dev>",
+          from: "Tennexis <noreply@tennexis.com>",
           to: ["delivered@resend.dev"], // Use Resend's test email for verification
           subject: "Connection Test - Tennexis Email System",
-          html: "<p>This is a connection test from Tennexis. If you receive this, the integration is working!</p>",
+          html: "<p>This is a connection test from Tennexis using the verified tennexis.com domain. If you receive this, the integration is working!</p>",
         });
         
         console.log("Test API call response:", JSON.stringify(testResponse, null, 2));
@@ -152,19 +151,19 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({
             success: true,
-            message: "Resend API connection successful",
+            message: "Resend API connection successful with verified tennexis.com domain",
             config: {
               apiKeyExists: !!resendApiKey,
               apiKeyLength: resendApiKey.length,
-              testApiCall: "successful"
+              testApiCall: "successful",
+              verifiedDomain: "tennexis.com"
             },
             testResponse: testResponse,
             important_notes: [
               "Resend API is reachable and responding",
-              "Test email sent to delivered@resend.dev for verification",
-              "Check your domain verification status in Resend dashboard",
-              "Monitor Resend logs at https://resend.com/emails for delivery status",
-              "CRITICAL: Update sender email to use your verified domain"
+              "Test email sent using verified tennexis.com domain",
+              "Check Resend dashboard at https://resend.com/emails for delivery status",
+              "Domain tennexis.com is verified and ready for production use"
             ]
           }),
           {
@@ -183,11 +182,12 @@ serve(async (req) => {
             error: `Resend API test failed: ${apiError instanceof Error ? apiError.message : String(apiError)}`,
             config: {
               apiKeyExists: !!resendApiKey,
-              apiKeyLength: resendApiKey.length
+              apiKeyLength: resendApiKey.length,
+              verifiedDomain: "tennexis.com"
             },
             troubleshooting: [
               "Check if your API key is correct",
-              "Verify your domain is verified in Resend",
+              "Verify your tennexis.com domain is still verified in Resend",
               "Make sure you're using the Live API key, not test key"
             ]
           }),
@@ -239,18 +239,12 @@ serve(async (req) => {
       throw new Error("Email service is not properly configured. Please contact support.");
     }
     
-    // 🔥 CRITICAL UPDATE: Replace with your verified domain
-    // TODO: Replace 'yourdomain.com' with your actual verified domain from Resend
-    const fromAddress = `Tennexis <noreply@yourdomain.com>`;
+    // ✅ VERIFIED DOMAIN: Using your verified tennexis.com domain
+    const fromAddress = `Tennexis <noreply@tennexis.com>`;
     
     console.log(`Using from address: ${fromAddress}`);
-    console.log("🚨 IMPORTANT: Make sure 'yourdomain.com' is verified in your Resend dashboard!");
-    console.log("📋 Steps to verify your domain:");
-    console.log("   1. Go to https://resend.com/domains");
-    console.log("   2. Add your domain (e.g., yourdomain.com)");
-    console.log("   3. Add required DNS records (SPF, DKIM, DMARC)");
-    console.log("   4. Wait for verification (status must show 'Verified')");
-    console.log("   5. Update fromAddress above to use your verified domain");
+    console.log("✅ SUCCESS: Using verified tennexis.com domain for production emails!");
+    console.log("📧 Email delivery should now work reliably with your verified domain");
     
     // Handle various email types
     if (type === "signup") {
@@ -321,7 +315,7 @@ serve(async (req) => {
               <div style="border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 30px; font-size: 14px; color: #718096;">
                 <p>&copy; 2025 Tennexis. All rights reserved.</p>
                 <p style="margin-top: 10px; font-size: 12px;">
-                  <strong>Not receiving emails?</strong> Check your spam folder and ensure onboarding@resend.dev is not blocked.
+                  <strong>Email sent from our verified domain tennexis.com</strong> - This ensures reliable delivery to your inbox.
                 </p>
               </div>
             </div>
@@ -335,28 +329,22 @@ serve(async (req) => {
         
         return new Response(JSON.stringify({ 
           success: true, 
-          message: "Email sent successfully via Resend", 
+          message: "Email sent successfully via Resend using verified tennexis.com domain", 
           debug_info: { 
             email_sent_to: email, 
             verification_url_generated: magicLinkUrl,
             resend_response: emailResponse,
             message_id: emailResponse.data?.id,
             from_address: fromAddress,
+            verified_domain: "tennexis.com",
             api_key_length: resendApiKey.length,
             delivery_status: emailResponse.data?.id ? "Submitted to Resend" : "Status unknown",
             delivery_notes: [
-              "Email submitted to Resend successfully",
+              "Email submitted to Resend successfully using verified tennexis.com domain",
               "Check Resend dashboard at https://resend.com/emails for delivery status",
-              "If email doesn't appear in dashboard, check domain verification",
-              "Verify sender domain is fully verified at https://resend.com/domains",
-              "Update sender email to use your verified domain for production",
-              "Check recipient's spam folder if using free email providers"
-            ],
-            domain_verification_reminder: {
-              action_required: "Verify your domain at https://resend.com/domains",
-              current_sender: fromAddress,
-              recommended_sender: "onboarding@yourdomain.com (replace with your verified domain)"
-            }
+              "Domain tennexis.com is verified and ready for production use",
+              "Email should be delivered reliably to recipient's inbox"
+            ]
           }
         }), {
           status: 200,
@@ -604,21 +592,14 @@ serve(async (req) => {
         stack: error instanceof Error ? error.stack : undefined,
         resendApiKeyExists: !!resendApiKey,
         resendApiKeyLength: resendApiKey ? resendApiKey.length : 0,
+        verifiedDomain: "tennexis.com",
         troubleshooting_steps: [
           "1. Check the function logs above for the exact error",
           "2. Verify RESEND_API_KEY is set correctly in Supabase secrets",
-          "3. CRITICAL: Verify your domain at https://resend.com/domains",
-          "4. Ensure all DNS records (SPF, DKIM) show 'Verified' status",
-          "5. Update sender email to use your verified domain",
-          "6. Redeploy the function after setting environment variables", 
-          "7. Check Resend logs at https://resend.com/emails",
-          "8. Try sending to a different email provider for testing"
-        ],
-        domain_verification: {
-          url: "https://resend.com/domains",
-          required_status: "All records must show 'Verified'",
-          note: "Even with correct API key, unverified domains cause silent delivery failures"
-        }
+          "3. Domain tennexis.com is verified and ready for production use",
+          "4. Check Resend logs at https://resend.com/emails",
+          "5. Try sending to a different email provider for testing"
+        ]
       }),
       {
         status: 500,
