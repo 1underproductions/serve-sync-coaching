@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -30,47 +29,27 @@ const EmailConfirmation = () => {
       setTestError(null);
       
       try {
-        const apiUrl = `${window.location.origin}/functions/v1/custom-email/test-resend`;
-        console.log("Calling Resend test endpoint:", apiUrl);
-        
-        const response = await fetch(apiUrl, {
-          method: 'POST',
+        // Call the custom-email function with test-resend in the URL path
+        const response = await supabase.functions.invoke('custom-email/test-resend', {
+          body: {},
           headers: {
             'Content-Type': 'application/json'
           }
         });
         
-        console.log("Resend test response status:", response.status);
+        console.log("Resend test response:", response);
         
-        if (!response.ok) {
-          const statusText = response.statusText || 'No response body';
-          console.error(`Resend test failed with status ${response.status}:`, statusText);
-          setResendTestStatus(`Resend test failed (${response.status}): ${statusText}`);
+        if (response.error) {
+          console.error("Resend test failed:", response.error);
+          setResendTestStatus(`Resend test failed: ${response.error.message || 'Unknown error'}`);
           return;
         }
         
-        try {
-          // First try to get the response text
-          const responseText = await response.text();
-          console.log("Resend test raw response:", responseText);
-          
-          // Then try to parse it as JSON
-          try {
-            const data = JSON.parse(responseText);
-            console.log("Resend test parsed response:", data);
-            setResendTestStatus(data.success 
-              ? 'Resend configuration looks good' 
-              : `Resend error: ${data.error || 'Unknown error'}`);
-          } catch (jsonError) {
-            console.error("Error parsing JSON response:", jsonError);
-            setTestError(`Error parsing response as JSON: ${jsonError instanceof Error ? jsonError.message : String(jsonError)}. Raw response: ${responseText.substring(0, 100)}...`);
-            setResendTestStatus(`Response format error: Not valid JSON`);
-          }
-        } catch (responseError) {
-          console.error("Error getting response text:", responseError);
-          setTestError(`Error getting response: ${responseError instanceof Error ? responseError.message : String(responseError)}`);
-          setResendTestStatus(`Failed to read server response`);
-        }
+        const data = response.data;
+        console.log("Resend test parsed response:", data);
+        setResendTestStatus(data.success 
+          ? 'Resend configuration looks good' 
+          : `Resend error: ${data.error || 'Unknown error'}`);
       } catch (fetchError) {
         console.error("Network error testing Resend:", fetchError);
         setResendTestStatus(`Network error: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`);
@@ -100,49 +79,30 @@ const EmailConfirmation = () => {
       // Increment resend counter
       setResendCount(prev => prev + 1);
       
-      // First try direct call to custom-email function
-      console.log("Calling custom-email function directly");
+      // Use the custom-email function through Supabase
+      console.log("Calling custom-email function via Supabase");
       
       try {
-        const response = await fetch(`${window.location.origin}/functions/v1/custom-email`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
+        const response = await supabase.functions.invoke('custom-email', {
+          body: {
             type: 'signup',
             email: email,
             data: {
               redirect_to: `${window.location.origin}/auth/callback`
             }
-          })
+          }
         });
         
-        if (!response.ok) {
-          // Try to get the text for error information
-          let errorText;
-          try {
-            errorText = await response.text();
-          } catch (textError) {
-            errorText = "Could not read error response";
-          }
-          
-          console.error(`Custom email function failed with status ${response.status}:`, errorText);
-          throw new Error(`Failed to send email (${response.status}): ${errorText || 'Unknown error'}`);
+        if (response.error) {
+          console.error("Custom email function failed:", response.error);
+          throw new Error(`Failed to send email: ${response.error.message || 'Unknown error'}`);
         }
         
-        let result;
-        try {
-          result = await response.json();
-        } catch (parseError) {
-          console.error("Failed to parse JSON response:", parseError);
-          throw new Error(`Failed to parse server response: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
-        }
-        
+        const result = response.data;
         console.log("Custom email function response:", result);
         
         setDebugInfo({
-          method: "direct-function-call",
+          method: "supabase-function-call",
           timestamp: new Date().toISOString(),
           response: result,
           email: email,
@@ -157,7 +117,7 @@ const EmailConfirmation = () => {
           return;
         }
       } catch (directError) {
-        console.error("Error calling custom-email function directly:", directError);
+        console.error("Error calling custom-email function via Supabase:", directError);
         // Continue to fallback method
       }
       
