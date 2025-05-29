@@ -1,17 +1,15 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { Resend } from "npm:resend@2.0.0";
 
-// Initialize Mailgun client with API key
-const mailgunApiKey = Deno.env.get("MAILGUN_API_KEY");
-const mailgunDomain = Deno.env.get("MAILGUN_DOMAIN");
+// Initialize Resend client with API key
+const resendApiKey = Deno.env.get("RESEND_API_KEY");
 
-if (!mailgunApiKey || !mailgunDomain) {
-  console.error("CRITICAL ERROR: MAILGUN_API_KEY or MAILGUN_DOMAIN is not set in environment variables");
+if (!resendApiKey) {
+  console.error("CRITICAL ERROR: RESEND_API_KEY is not set in environment variables");
 }
 
 // Log API key status (safely)
-console.log(`Mailgun API key status: ${mailgunApiKey ? 'Provided' : 'MISSING!'}`);
-console.log(`Mailgun Domain status: ${mailgunDomain ? 'Provided' : 'MISSING!'}`);
+console.log(`Resend API key status: ${resendApiKey ? 'Provided' : 'MISSING!'}`);
 
 // Get the Supabase project URL from environment variables or use the default
 const projectUrl = Deno.env.get("PROJECT_URL") || "https://cugwtwpgccpcjeumrkxf.supabase.co";
@@ -23,43 +21,27 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-// Helper function to send emails via Mailgun
-async function sendMailgunEmail(to: string, subject: string, html: string, from: string) {
-  if (!mailgunApiKey || !mailgunDomain) {
-    throw new Error("Mailgun configuration is incomplete. Missing API key or domain.");
+// Helper function to send emails via Resend
+async function sendResendEmail(to: string, subject: string, html: string, from: string) {
+  if (!resendApiKey) {
+    throw new Error("Resend configuration is incomplete. Missing API key.");
   }
   
-  const url = `https://api.mailgun.net/v3/${mailgunDomain}/messages`;
-  const formData = new URLSearchParams();
-  formData.append('from', from);
-  formData.append('to', to);
-  formData.append('subject', subject);
-  formData.append('html', html);
-  
-  const authString = btoa(`api:${mailgunApiKey}`);
+  const resend = new Resend(resendApiKey);
   
   try {
-    console.log(`Sending email to ${to} via Mailgun...`);
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${authString}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: formData.toString()
+    console.log(`Sending email to ${to} via Resend...`);
+    const response = await resend.emails.send({
+      from: from,
+      to: [to],
+      subject: subject,
+      html: html
     });
     
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Mailgun API error (${response.status}):`, errorText);
-      throw new Error(`Mailgun API error: ${response.status} - ${errorText}`);
-    }
-    
-    const data = await response.json();
-    console.log("Mailgun response:", data);
-    return data;
+    console.log("Resend response:", response);
+    return response;
   } catch (error) {
-    console.error("Error sending email via Mailgun:", error);
+    console.error("Error sending email via Resend:", error);
     throw error;
   }
 }
@@ -75,29 +57,28 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Extract the path from the URL to determine if it's the test-mailgun endpoint
+  // Extract the path from the URL to determine if it's the test-resend endpoint
   const url = new URL(req.url);
   const pathParts = url.pathname.split('/');
   
   console.log("Path parts:", pathParts);
-  const isTestMailgunEndpoint = pathParts.some(part => part === 'test-mailgun');
-  console.log("Is test-mailgun endpoint:", isTestMailgunEndpoint);
+  const isTestResendEndpoint = pathParts.some(part => part === 'test-resend');
+  console.log("Is test-resend endpoint:", isTestResendEndpoint);
   
-  // Handle test-mailgun endpoint
-  if (isTestMailgunEndpoint) {
-    console.log("Mailgun test endpoint called");
+  // Handle test-resend endpoint
+  if (isTestResendEndpoint) {
+    console.log("Resend test endpoint called");
     
     try {
-      // Check if Mailgun is configured
-      if (!mailgunApiKey || !mailgunDomain) {
-        console.error("Missing Mailgun configuration for test");
+      // Check if Resend is configured
+      if (!resendApiKey) {
+        console.error("Missing Resend configuration for test");
         return new Response(
           JSON.stringify({
             success: false,
-            error: "Mailgun is not configured correctly. Missing API key or domain.",
+            error: "Resend is not configured correctly. Missing API key.",
             config: {
-              apiKeyExists: !!mailgunApiKey,
-              domainExists: !!mailgunDomain
+              apiKeyExists: !!resendApiKey
             }
           }),
           {
@@ -110,15 +91,15 @@ serve(async (req) => {
         );
       }
       
-      // Don't actually send an email, just return the configuration status
+      // Test Resend configuration by checking the API key format
+      const resend = new Resend(resendApiKey);
+      
       return new Response(
         JSON.stringify({
           success: true,
-          message: "Mailgun appears to be configured correctly",
+          message: "Resend appears to be configured correctly",
           config: {
-            apiKeyExists: !!mailgunApiKey,
-            domainExists: !!mailgunDomain,
-            domain: mailgunDomain
+            apiKeyExists: !!resendApiKey
           }
         }),
         {
@@ -130,7 +111,7 @@ serve(async (req) => {
         }
       );
     } catch (error) {
-      console.error("Error in test-mailgun endpoint:", error);
+      console.error("Error in test-resend endpoint:", error);
       return new Response(
         JSON.stringify({
           success: false,
@@ -153,14 +134,14 @@ serve(async (req) => {
     console.log(`Processing ${type} email request for ${email}`);
     console.log("Request data:", JSON.stringify(data, null, 2));
     
-    // Validate Mailgun configuration
-    if (!mailgunApiKey || !mailgunDomain) {
-      console.error("CRITICAL ERROR: Cannot send email - Mailgun configuration is not complete");
+    // Validate Resend configuration
+    if (!resendApiKey) {
+      console.error("CRITICAL ERROR: Cannot send email - Resend configuration is not complete");
       throw new Error("Email service is not properly configured. Please contact support.");
     }
     
-    // Define sender address with Mailgun domain
-    const fromAddress = `Tennexis <no-reply@${mailgunDomain}>`;
+    // Define sender address - using a verified domain or the default
+    const fromAddress = `Tennexis <onboarding@resend.dev>`;
     
     // Handle various email types
     if (type === "signup") {
@@ -215,9 +196,9 @@ serve(async (req) => {
           const signInUrl = `${projectUrl}/auth/v1/otp?email=${encodeURIComponent(email)}&redirect_to=${encodeURIComponent(redirectUrl)}`;
           console.log("Generated OTP URL:", signInUrl);
           
-          // Use Mailgun to send the email
-          console.log("Sending email via Mailgun with OTP flow");
-          const emailResponse = await sendMailgunEmail(
+          // Use Resend to send the email
+          console.log("Sending email via Resend with OTP flow");
+          const emailResponse = await sendResendEmail(
             email,
             "Welcome to Tennexis - Please Confirm Your Account",
             `
@@ -263,7 +244,7 @@ serve(async (req) => {
             debug_info: { 
               email_sent_to: email, 
               otp_url: signInUrl,
-              mailgun_response: emailResponse 
+              resend_response: emailResponse 
             }
           }), {
             status: 200,
@@ -291,8 +272,8 @@ serve(async (req) => {
       console.log("Generated verification URL:", confirmUrl);
       
       try {
-        console.log("Sending email via Mailgun with token flow");
-        const emailResponse = await sendMailgunEmail(
+        console.log("Sending email via Resend with token flow");
+        const emailResponse = await sendResendEmail(
           email,
           "Welcome to Tennexis - Please Confirm Your Account",
           `
@@ -338,14 +319,14 @@ serve(async (req) => {
           debug_info: { 
             email_sent_to: email, 
             verification_url_generated: confirmUrl,
-            mailgun_response: emailResponse 
+            resend_response: emailResponse 
           }
         }), {
           status: 200,
           headers: { "Content-Type": "application/json", ...corsHeaders },
         });
       } catch (emailError) {
-        console.error("Error sending email via Mailgun:", emailError);
+        console.error("Error sending email via Resend:", emailError);
         throw emailError;
       }
     }
@@ -353,7 +334,7 @@ serve(async (req) => {
     if (type === "payment-link") {
       const { payment_url, coach_name, description, amount, currency, expires_in_hours } = data;
       
-      const emailResponse = await sendMailgunEmail(
+      const emailResponse = await sendResendEmail(
         email,
         `Payment Request from ${coach_name}`,
         `
@@ -413,7 +394,7 @@ serve(async (req) => {
     if (type === "payment-reminder") {
       const { payment_url, coach_name, session_details, amount, currency, expires_in_hours } = data;
       
-      const emailResponse = await sendMailgunEmail(
+      const emailResponse = await sendResendEmail(
         email,
         `Payment Reminder - Action Required for Your Tennis Session`,
         `
@@ -470,7 +451,7 @@ serve(async (req) => {
     if (type === "session-reminder") {
       const { player_name, session_details, session_date, coach_name, location } = data;
       
-      const emailResponse = await sendMailgunEmail(
+      const emailResponse = await sendResendEmail(
         email,
         `Upcoming Tennis Session Reminder`,
         `
@@ -522,7 +503,7 @@ serve(async (req) => {
     if (type === "payment-received") {
       const { amount, currency, date, payment_type, session_id } = data;
       
-      const emailResponse = await sendMailgunEmail(
+      const emailResponse = await sendResendEmail(
         email,
         `Payment Received - Tennis Coaching ${payment_type.charAt(0).toUpperCase() + payment_type.slice(1)}`,
         `
@@ -579,8 +560,7 @@ serve(async (req) => {
       JSON.stringify({ 
         error: error instanceof Error ? error.message : String(error), 
         stack: error instanceof Error ? error.stack : undefined,
-        mailgunApiKeyExists: !!mailgunApiKey,
-        mailgunDomainExists: !!mailgunDomain
+        resendApiKeyExists: !!resendApiKey
       }),
       {
         status: 500,

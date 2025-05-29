@@ -13,25 +13,25 @@ const EmailConfirmation = () => {
   const [isResending, setIsResending] = useState(false);
   const [resendCount, setResendCount] = useState(0);
   const [debugInfo, setDebugInfo] = useState<any>(null);
-  const [mailgunTestStatus, setMailgunTestStatus] = useState<string | null>(null);
-  const [isTestingMailgun, setIsTestingMailgun] = useState(false);
+  const [resendTestStatus, setResendTestStatus] = useState<string | null>(null);
+  const [isTestingResend, setIsTestingResend] = useState(false);
   const [testError, setTestError] = useState<string | null>(null);
 
   // Log when component renders
   useEffect(() => {
     console.log("EmailConfirmation component rendered with email:", email);
-    testMailgunConfig();
+    testResendConfig();
   }, [email]);
 
-  const testMailgunConfig = async () => {
+  const testResendConfig = async () => {
     try {
-      console.log("Testing Mailgun configuration...");
-      setIsTestingMailgun(true);
+      console.log("Testing Resend configuration...");
+      setIsTestingResend(true);
       setTestError(null);
       
       try {
-        const apiUrl = `${window.location.origin}/functions/v1/custom-email/test-mailgun`;
-        console.log("Calling Mailgun test endpoint:", apiUrl);
+        const apiUrl = `${window.location.origin}/functions/v1/custom-email/test-resend`;
+        console.log("Calling Resend test endpoint:", apiUrl);
         
         const response = await fetch(apiUrl, {
           method: 'POST',
@@ -40,46 +40,46 @@ const EmailConfirmation = () => {
           }
         });
         
-        console.log("Mailgun test response status:", response.status);
+        console.log("Resend test response status:", response.status);
         
         if (!response.ok) {
           const statusText = response.statusText || 'No response body';
-          console.error(`Mailgun test failed with status ${response.status}:`, statusText);
-          setMailgunTestStatus(`Mailgun test failed (${response.status}): ${statusText}`);
+          console.error(`Resend test failed with status ${response.status}:`, statusText);
+          setResendTestStatus(`Resend test failed (${response.status}): ${statusText}`);
           return;
         }
         
         try {
           // First try to get the response text
           const responseText = await response.text();
-          console.log("Mailgun test raw response:", responseText);
+          console.log("Resend test raw response:", responseText);
           
           // Then try to parse it as JSON
           try {
             const data = JSON.parse(responseText);
-            console.log("Mailgun test parsed response:", data);
-            setMailgunTestStatus(data.success 
-              ? 'Mailgun configuration looks good' 
-              : `Mailgun error: ${data.error || 'Unknown error'}`);
+            console.log("Resend test parsed response:", data);
+            setResendTestStatus(data.success 
+              ? 'Resend configuration looks good' 
+              : `Resend error: ${data.error || 'Unknown error'}`);
           } catch (jsonError) {
             console.error("Error parsing JSON response:", jsonError);
             setTestError(`Error parsing response as JSON: ${jsonError instanceof Error ? jsonError.message : String(jsonError)}. Raw response: ${responseText.substring(0, 100)}...`);
-            setMailgunTestStatus(`Response format error: Not valid JSON`);
+            setResendTestStatus(`Response format error: Not valid JSON`);
           }
         } catch (responseError) {
           console.error("Error getting response text:", responseError);
           setTestError(`Error getting response: ${responseError instanceof Error ? responseError.message : String(responseError)}`);
-          setMailgunTestStatus(`Failed to read server response`);
+          setResendTestStatus(`Failed to read server response`);
         }
       } catch (fetchError) {
-        console.error("Network error testing Mailgun:", fetchError);
-        setMailgunTestStatus(`Network error: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`);
+        console.error("Network error testing Resend:", fetchError);
+        setResendTestStatus(`Network error: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`);
       }
     } catch (error) {
-      console.error("Error testing Mailgun:", error);
-      setMailgunTestStatus(`Error testing Mailgun: ${error instanceof Error ? error.message : String(error)}`);
+      console.error("Error testing Resend:", error);
+      setResendTestStatus(`Error testing Resend: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
-      setIsTestingMailgun(false);
+      setIsTestingResend(false);
     }
   };
 
@@ -237,18 +237,18 @@ const EmailConfirmation = () => {
                   <h3 className="text-sm font-medium text-amber-800">Important note</h3>
                 </div>
                 <p className="mt-2 text-sm text-amber-700">
-                  If you don't see the email in your inbox, please check your spam folder. The email comes from your Mailgun domain.
+                  If you don't see the email in your inbox, please check your spam folder. The email comes from Resend.
                 </p>
               </div>
               
-              {mailgunTestStatus && (
-                <div className={`p-4 rounded-md ${mailgunTestStatus.includes('error') || mailgunTestStatus.includes('Error') || mailgunTestStatus.includes('failed') || mailgunTestStatus.includes('Failed') ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
-                  <p className={`text-sm ${mailgunTestStatus.includes('error') || mailgunTestStatus.includes('Error') || mailgunTestStatus.includes('failed') || mailgunTestStatus.includes('Failed') ? 'text-red-700' : 'text-green-700'}`}>
-                    {mailgunTestStatus}
+              {resendTestStatus && (
+                <div className={`p-4 rounded-md ${resendTestStatus.includes('error') || resendTestStatus.includes('Error') || resendTestStatus.includes('failed') || resendTestStatus.includes('Failed') ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
+                  <p className={`text-sm ${resendTestStatus.includes('error') || resendTestStatus.includes('Error') || resendTestStatus.includes('failed') || resendTestStatus.includes('Failed') ? 'text-red-700' : 'text-green-700'}`}>
+                    {resendTestStatus}
                   </p>
-                  {(mailgunTestStatus.includes('error') || mailgunTestStatus.includes('Error') || mailgunTestStatus.includes('failed') || mailgunTestStatus.includes('Failed')) && (
+                  {(resendTestStatus.includes('error') || resendTestStatus.includes('Error') || resendTestStatus.includes('failed') || resendTestStatus.includes('Failed')) && (
                     <p className="mt-2 text-xs text-red-500">
-                      Make sure MAILGUN_API_KEY and MAILGUN_DOMAIN are set in your Supabase environment variables.
+                      Make sure RESEND_API_KEY is set in your Supabase environment variables.
                     </p>
                   )}
                 </div>
@@ -266,24 +266,24 @@ const EmailConfirmation = () => {
                 </div>
               )}
               
-              {isTestingMailgun && (
+              {isTestingResend && (
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
                   <p className="text-sm text-blue-700 flex items-center">
                     <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Testing Mailgun configuration...
+                    Testing Resend configuration...
                   </p>
                 </div>
               )}
               
               <Button 
-                onClick={testMailgunConfig}
+                onClick={testResendConfig}
                 variant="outline" 
                 size="sm"
-                disabled={isTestingMailgun}
+                disabled={isTestingResend}
                 className="w-full"
               >
-                <RefreshCw className={`mr-2 h-4 w-4 ${isTestingMailgun ? 'animate-spin' : ''}`} />
-                {isTestingMailgun ? 'Testing...' : 'Test Mailgun Configuration'}
+                <RefreshCw className={`mr-2 h-4 w-4 ${isTestingResend ? 'animate-spin' : ''}`} />
+                {isTestingResend ? 'Testing...' : 'Test Resend Configuration'}
               </Button>
               
               <div className="p-4 bg-gray-50 rounded-md">
