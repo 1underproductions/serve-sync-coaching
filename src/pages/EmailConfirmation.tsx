@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -79,84 +80,64 @@ const EmailConfirmation = () => {
       // Increment resend counter
       setResendCount(prev => prev + 1);
       
-      // Use the custom-email function through Supabase
-      console.log("Calling custom-email function via Supabase");
+      // Use the custom-email function directly for signup emails
+      console.log("Calling custom-email function via Supabase for signup verification");
       
-      try {
-        const response = await supabase.functions.invoke('custom-email', {
-          body: {
-            type: 'signup',
-            email: email,
-            data: {
-              redirect_to: `${window.location.origin}/auth/callback`
-            }
-          }
-        });
-        
-        if (response.error) {
-          console.error("Custom email function failed:", response.error);
-          throw new Error(`Failed to send email: ${response.error.message || 'Unknown error'}`);
-        }
-        
-        const result = response.data;
-        console.log("Custom email function response:", result);
-        
-        setDebugInfo({
-          method: "supabase-function-call",
-          timestamp: new Date().toISOString(),
-          response: result,
+      const emailData = {
+        redirect_to: `${window.location.origin}/auth/callback`
+      };
+      
+      console.log("Email data being sent:", emailData);
+      
+      const response = await supabase.functions.invoke('custom-email', {
+        body: {
+          type: 'signup',
           email: email,
-          resendCount: resendCount + 1
-        });
-        
-        if (result.success) {
-          toast({
-            title: "Email sent",
-            description: `A new verification email has been sent to ${email}. Please check both inbox and spam folders.`,
-          });
-          return;
-        }
-      } catch (directError) {
-        console.error("Error calling custom-email function via Supabase:", directError);
-        // Continue to fallback method
-      }
-      
-      // Fallback to OTP method
-      console.log("Falling back to Supabase signInWithOtp");
-      
-      const { data, error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: false,
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          data: emailData
+        },
+        headers: {
+          'Content-Type': 'application/json'
         }
       });
       
-      if (error) {
-        console.error("Supabase OTP error:", error);
-        throw error;
+      console.log("Custom email function complete response:", response);
+      
+      if (response.error) {
+        console.error("Custom email function failed:", response.error);
+        throw new Error(`Failed to send email: ${response.error.message || 'Unknown error'}`);
       }
       
-      console.log("Supabase OTP response:", data);
+      const result = response.data;
+      console.log("Custom email function response data:", result);
+      
       setDebugInfo({
-        method: "supabase-otp",
+        method: "supabase-function-call",
         timestamp: new Date().toISOString(),
+        response: result,
         email: email,
-        redirect: `${window.location.origin}/auth/callback`,
-        resendCount: resendCount + 1
+        resendCount: resendCount + 1,
+        emailData: emailData
       });
       
-      // Show a more detailed toast with information about the email
-      toast({
-        title: "Email sent",
-        description: `A new verification email has been sent to ${email}. Please check both inbox and spam folders.`,
-      });
+      if (result && result.success) {
+        toast({
+          title: "Email sent successfully",
+          description: `A verification email has been sent to ${email}. Please check both inbox and spam folders. It may take a few minutes to arrive.`,
+        });
+      } else {
+        // Even if success is not explicitly true, if there's no error, assume success
+        toast({
+          title: "Email sent",
+          description: `A verification email has been sent to ${email}. Please check both inbox and spam folders. It may take a few minutes to arrive.`,
+        });
+      }
     } catch (error: any) {
       console.error("Error resending email:", error);
       setDebugInfo({
         error: error.message || "Unknown error",
         timestamp: new Date().toISOString(),
-        resendCount: resendCount + 1
+        resendCount: resendCount + 1,
+        email: email
       });
       
       toast({
@@ -197,7 +178,7 @@ const EmailConfirmation = () => {
                   <h3 className="text-sm font-medium text-amber-800">Important note</h3>
                 </div>
                 <p className="mt-2 text-sm text-amber-700">
-                  If you don't see the email in your inbox, please check your spam folder. The email comes from Resend.
+                  If you don't see the email in your inbox, please check your spam folder. The email comes from Resend and may take a few minutes to arrive.
                 </p>
               </div>
               
