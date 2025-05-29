@@ -11,6 +11,8 @@ if (!resendApiKey) {
 
 // Log API key status (safely)
 console.log(`Resend API key status: ${resendApiKey ? 'Provided' : 'MISSING!'}`);
+console.log(`API key length: ${resendApiKey ? resendApiKey.length : 0}`);
+console.log(`API key starts with: ${resendApiKey ? resendApiKey.substring(0, 8) + '...' : 'N/A'}`);
 
 // Get the Supabase project URL from environment variables or use the default
 const projectUrl = Deno.env.get("PROJECT_URL") || "https://cugwtwpgccpcjeumrkxf.supabase.co";
@@ -22,45 +24,74 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-// Helper function to send emails via Resend
+// Helper function to send emails via Resend with comprehensive logging
 async function sendResendEmail(to: string, subject: string, html: string, from: string) {
+  console.log("=== RESEND EMAIL SEND ATTEMPT ===");
+  console.log(`API Key Status: ${resendApiKey ? 'Present' : 'MISSING'}`);
+  console.log(`API Key Length: ${resendApiKey ? resendApiKey.length : 0}`);
+  console.log(`To: ${to}`);
+  console.log(`From: ${from}`);
+  console.log(`Subject: ${subject}`);
+  
   if (!resendApiKey) {
-    throw new Error("Resend configuration is incomplete. Missing API key.");
+    const error = "Resend configuration is incomplete. Missing API key.";
+    console.error("FATAL ERROR:", error);
+    throw new Error(error);
   }
   
-  const resend = new Resend(resendApiKey);
-  
   try {
-    console.log(`Sending email to ${to} via Resend...`);
-    console.log(`From: ${from}`);
-    console.log(`Subject: ${subject}`);
+    console.log("Creating Resend client instance...");
+    const resend = new Resend(resendApiKey);
+    console.log("Resend client created successfully");
     
-    const response = await resend.emails.send({
+    const emailData = {
       from: from,
       to: [to],
       subject: subject,
       html: html
-    });
+    };
     
-    console.log("Resend API response:", JSON.stringify(response, null, 2));
+    console.log("Email data prepared:", JSON.stringify(emailData, null, 2));
+    console.log("Calling Resend API...");
+    
+    // Add timing for the API call
+    const startTime = Date.now();
+    const response = await resend.emails.send(emailData);
+    const endTime = Date.now();
+    
+    console.log(`Resend API call completed in ${endTime - startTime}ms`);
+    console.log("Raw Resend API response:", JSON.stringify(response, null, 2));
     
     if (response.error) {
-      console.error("Resend API returned an error:", response.error);
-      throw new Error(`Resend API error: ${response.error.message || 'Unknown error'}`);
+      console.error("Resend API returned an error:", JSON.stringify(response.error, null, 2));
+      throw new Error(`Resend API error: ${response.error.message || JSON.stringify(response.error)}`);
     }
     
-    console.log(`Email successfully sent to ${to}. Message ID: ${response.data?.id || 'No ID returned'}`);
+    if (response.data && response.data.id) {
+      console.log(`✅ Email successfully sent! Message ID: ${response.data.id}`);
+      console.log("Email should appear in Resend dashboard shortly");
+    } else {
+      console.warn("⚠️ Unexpected response format from Resend:", response);
+    }
+    
+    console.log("=== RESEND EMAIL SEND SUCCESS ===");
     return response;
   } catch (error) {
-    console.error("Error sending email via Resend:", error);
+    console.error("=== RESEND EMAIL SEND FAILED ===");
+    console.error("Error type:", typeof error);
+    console.error("Error message:", error instanceof Error ? error.message : String(error));
+    console.error("Error stack:", error instanceof Error ? error.stack : 'No stack trace');
+    console.error("Full error object:", JSON.stringify(error, null, 2));
     throw error;
   }
 }
 
 serve(async (req) => {
+  console.log("=== CUSTOM EMAIL FUNCTION CALLED ===");
   console.log("Request received to custom-email function");
   console.log("Request URL:", req.url);
   console.log("Request method:", req.method);
+  console.log("Environment check - RESEND_API_KEY exists:", !!resendApiKey);
   
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -78,7 +109,7 @@ serve(async (req) => {
   
   // Handle test-resend endpoint
   if (isTestResendEndpoint) {
-    console.log("Resend test endpoint called");
+    console.log("=== RESEND TEST ENDPOINT CALLED ===");
     
     try {
       // Check if Resend is configured
@@ -102,37 +133,82 @@ serve(async (req) => {
         );
       }
       
-      // Test Resend configuration by checking the API key format
+      // Test actual Resend API call
+      console.log("Testing actual Resend API call...");
       const resend = new Resend(resendApiKey);
       
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: "Resend appears to be configured correctly",
-          config: {
-            apiKeyExists: !!resendApiKey,
-            apiKeyLength: resendApiKey.length
-          },
-          important_notes: [
-            "Make sure to use a verified domain in your from address",
-            "Check your domain verification status in Resend dashboard",
-            "Monitor Resend logs at https://resend.com/emails for delivery status"
-          ]
-        }),
-        {
-          status: 200,
-          headers: { 
-            "Content-Type": "application/json", 
-            ...corsHeaders 
-          },
-        }
-      );
+      // Try a simple API call to verify connectivity
+      try {
+        console.log("Making test API call to Resend...");
+        const testResponse = await resend.emails.send({
+          from: "Tennexis Test <onboarding@resend.dev>",
+          to: ["test@example.com"], // This won't actually send
+          subject: "Connection Test",
+          html: "<p>This is a connection test</p>",
+        });
+        
+        console.log("Test API call response:", JSON.stringify(testResponse, null, 2));
+        
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: "Resend API connection successful",
+            config: {
+              apiKeyExists: !!resendApiKey,
+              apiKeyLength: resendApiKey.length,
+              testApiCall: "successful"
+            },
+            testResponse: testResponse,
+            important_notes: [
+              "Resend API is reachable and responding",
+              "Check your domain verification status in Resend dashboard",
+              "Monitor Resend logs at https://resend.com/emails for delivery status"
+            ]
+          }),
+          {
+            status: 200,
+            headers: { 
+              "Content-Type": "application/json", 
+              ...corsHeaders 
+            },
+          }
+        );
+      } catch (apiError) {
+        console.error("Resend API test call failed:", apiError);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: `Resend API test failed: ${apiError instanceof Error ? apiError.message : String(apiError)}`,
+            config: {
+              apiKeyExists: !!resendApiKey,
+              apiKeyLength: resendApiKey.length
+            },
+            troubleshooting: [
+              "Check if your API key is correct",
+              "Verify your domain is verified in Resend",
+              "Make sure you're using the Live API key, not test key"
+            ]
+          }),
+          {
+            status: 200,
+            headers: { 
+              "Content-Type": "application/json", 
+              ...corsHeaders 
+            },
+          }
+        );
+      }
     } catch (error) {
       console.error("Error in test-resend endpoint:", error);
       return new Response(
         JSON.stringify({
           success: false,
-          error: error instanceof Error ? error.message : String(error)
+          error: error instanceof Error ? error.message : String(error),
+          troubleshooting: [
+            "Check Supabase function logs for detailed error information",
+            "Verify RESEND_API_KEY is set in Supabase secrets",
+            "Redeploy the function after setting environment variables"
+          ]
         }),
         {
           status: 200,
@@ -147,7 +223,11 @@ serve(async (req) => {
 
   // Regular email sending endpoint
   try {
-    const { type, email, data } = await req.json();
+    console.log("=== PROCESSING EMAIL SEND REQUEST ===");
+    const requestBody = await req.json();
+    console.log("Raw request body:", JSON.stringify(requestBody, null, 2));
+    
+    const { type, email, data } = requestBody;
     console.log(`Processing ${type} email request for ${email}`);
     console.log("Request data:", JSON.stringify(data, null, 2));
     
@@ -167,6 +247,7 @@ serve(async (req) => {
     
     // Handle various email types
     if (type === "signup") {
+      console.log("=== PROCESSING SIGNUP EMAIL ===");
       console.log("Signup email request received:", { email, data });
       
       if (!data || typeof data !== 'object') {
@@ -199,7 +280,7 @@ serve(async (req) => {
       console.log("Generated magic link URL:", magicLinkUrl);
       
       try {
-        console.log("Sending signup confirmation email via Resend");
+        console.log("=== CALLING RESEND EMAIL FUNCTION ===");
         const emailResponse = await sendResendEmail(
           email,
           "Welcome to Tennexis - Please Confirm Your Account",
@@ -241,6 +322,7 @@ serve(async (req) => {
           fromAddress
         );
 
+        console.log("=== EMAIL SENT SUCCESSFULLY ===");
         console.log("Email sent successfully via Resend!");
         console.log("Resend response:", JSON.stringify(emailResponse, null, 2));
         
@@ -253,7 +335,9 @@ serve(async (req) => {
             resend_response: emailResponse,
             message_id: emailResponse.data?.id,
             from_address: fromAddress,
+            api_key_length: resendApiKey.length,
             delivery_notes: [
+              "Email sent to Resend successfully - check Resend dashboard",
               "Check Resend logs at https://resend.com/emails for delivery status",
               "If using Gmail/Outlook, emails may be filtered as spam",
               "Consider using a verified domain for better deliverability"
@@ -264,6 +348,7 @@ serve(async (req) => {
           headers: { "Content-Type": "application/json", ...corsHeaders },
         });
       } catch (emailError) {
+        console.error("=== EMAIL SENDING FAILED ===");
         console.error("Error sending email via Resend:", emailError);
         throw emailError;
       }
@@ -492,18 +577,26 @@ serve(async (req) => {
       }
     );
   } catch (error) {
+    console.error("=== FUNCTION ERROR ===");
     console.error("Error sending custom email:", error);
+    console.error("Error type:", typeof error);
+    console.error("Error message:", error instanceof Error ? error.message : String(error));
+    console.error("Error stack:", error instanceof Error ? error.stack : 'No stack trace');
     
     return new Response(
       JSON.stringify({ 
         error: error instanceof Error ? error.message : String(error), 
         stack: error instanceof Error ? error.stack : undefined,
         resendApiKeyExists: !!resendApiKey,
+        resendApiKeyLength: resendApiKey ? resendApiKey.length : 0,
         troubleshooting_steps: [
-          "1. Verify your domain in Resend dashboard",
-          "2. Update the from address to use your verified domain",
-          "3. Check Resend logs at https://resend.com/emails",
-          "4. Try sending to a different email provider for testing"
+          "1. Check the function logs above for the exact error",
+          "2. Verify RESEND_API_KEY is set correctly in Supabase secrets",
+          "3. Redeploy the function after setting environment variables", 
+          "4. Verify your domain in Resend dashboard",
+          "5. Update the from address to use your verified domain",
+          "6. Check Resend logs at https://resend.com/emails",
+          "7. Try sending to a different email provider for testing"
         ]
       }),
       {

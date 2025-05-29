@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -43,12 +44,19 @@ const EmailConfirmation = () => {
       
       const data = response.data;
       console.log("Resend test parsed response:", data);
-      setResendTestStatus(data.success 
-        ? 'Resend configuration looks good - Check your domain verification in Resend dashboard' 
-        : `Resend error: ${data.error || 'Unknown error'}`);
+      
+      if (data.success) {
+        if (data.testApiCall === 'successful') {
+          setResendTestStatus('✅ Resend API connection verified - Ready to send emails!');
+        } else {
+          setResendTestStatus('✅ Resend configuration looks good - Check your domain verification in Resend dashboard');
+        }
+      } else {
+        setResendTestStatus(`❌ Resend error: ${data.error || 'Unknown error'}`);
+      }
     } catch (error) {
       console.error("Error testing Resend:", error);
-      setResendTestStatus(`Error testing Resend: ${error instanceof Error ? error.message : String(error)}`);
+      setResendTestStatus(`❌ Error testing Resend: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsTestingResend(false);
     }
@@ -66,6 +74,7 @@ const EmailConfirmation = () => {
 
     try {
       setIsResending(true);
+      console.log(`=== STARTING EMAIL RESEND ATTEMPT #${resendCount + 1} ===`);
       console.log(`Attempting to resend verification email to: ${email}`);
       
       // Increment resend counter
@@ -79,6 +88,7 @@ const EmailConfirmation = () => {
       };
       
       console.log("Email data being sent:", emailData);
+      console.log("Current window origin:", window.location.origin);
       
       const response = await supabase.functions.invoke('custom-email', {
         body: {
@@ -107,34 +117,40 @@ const EmailConfirmation = () => {
         response: result,
         email: email,
         resendCount: resendCount + 1,
-        emailData: emailData
+        emailData: emailData,
+        success: result?.success,
+        messageId: result?.debug_info?.message_id,
+        deliveryNotes: result?.debug_info?.delivery_notes
       });
       
       if (result && result.success) {
         toast({
-          title: "Email sent successfully",
-          description: `A verification email has been sent to ${email}. Please check both inbox and spam folders. It may take a few minutes to arrive.`,
+          title: "✅ Email sent successfully!",
+          description: `A verification email has been sent to ${email}. Message ID: ${result.debug_info?.message_id || 'Unknown'}. Check both inbox and spam folders.`,
         });
       } else {
-        // Even if success is not explicitly true, if there's no error, assume success
+        // Show warning if success is not explicitly true
         toast({
-          title: "Email sent",
-          description: `A verification email has been sent to ${email}. Please check both inbox and spam folders. It may take a few minutes to arrive.`,
+          variant: "destructive",
+          title: "⚠️ Email send status unclear",
+          description: `The email may have been sent to ${email}, but we couldn't confirm delivery. Check your inbox and spam folder.`,
         });
       }
     } catch (error: any) {
+      console.error("=== EMAIL RESEND FAILED ===");
       console.error("Error resending email:", error);
       setDebugInfo({
         error: error.message || "Unknown error",
         timestamp: new Date().toISOString(),
         resendCount: resendCount + 1,
-        email: email
+        email: email,
+        failed: true
       });
       
       toast({
         variant: "destructive",
-        title: "Error",
-        description: `Failed to resend email: ${error.message || "Unknown error"}. Please try again.`
+        title: "❌ Failed to send email",
+        description: `Error: ${error.message || "Unknown error"}. Check the debug info below for details.`
       });
     } finally {
       setIsResending(false);
@@ -166,7 +182,7 @@ const EmailConfirmation = () => {
               <div className="p-4 bg-amber-50 border border-amber-200 rounded-md">
                 <div className="flex items-center">
                   <AlertCircle className="h-5 w-5 text-amber-500 mr-2" />
-                  <h3 className="text-sm font-medium text-amber-800">Email Delivery Issues?</h3>
+                  <h3 className="text-sm font-medium text-amber-800">Email Delivery Checklist</h3>
                 </div>
                 <div className="mt-2 text-sm text-amber-700 space-y-2">
                   <p>If you don't see the email within 5 minutes:</p>
@@ -175,23 +191,34 @@ const EmailConfirmation = () => {
                     <li>Add onboarding@resend.dev to your contacts</li>
                     <li>Try a different email provider (Gmail, ProtonMail, etc.)</li>
                     <li>Check if your email provider blocks automated emails</li>
+                    <li>Look for emails from "Tennexis" or "onboarding@resend.dev"</li>
                   </ul>
                 </div>
               </div>
               
               {resendTestStatus && (
-                <div className={`p-4 rounded-md ${resendTestStatus.includes('error') || resendTestStatus.includes('Error') || resendTestStatus.includes('failed') || resendTestStatus.includes('Failed') ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
-                  <p className={`text-sm ${resendTestStatus.includes('error') || resendTestStatus.includes('Error') || resendTestStatus.includes('failed') || resendTestStatus.includes('Failed') ? 'text-red-700' : 'text-green-700'}`}>
+                <div className={`p-4 rounded-md ${
+                  resendTestStatus.includes('❌') || resendTestStatus.includes('error') || resendTestStatus.includes('Error') || resendTestStatus.includes('failed') || resendTestStatus.includes('Failed') 
+                    ? 'bg-red-50 border border-red-200' 
+                    : 'bg-green-50 border border-green-200'
+                }`}>
+                  <p className={`text-sm font-medium ${
+                    resendTestStatus.includes('❌') || resendTestStatus.includes('error') || resendTestStatus.includes('Error') || resendTestStatus.includes('failed') || resendTestStatus.includes('Failed') 
+                      ? 'text-red-700' 
+                      : 'text-green-700'
+                  }`}>
                     {resendTestStatus}
                   </p>
-                  {(resendTestStatus.includes('error') || resendTestStatus.includes('Error') || resendTestStatus.includes('failed') || resendTestStatus.includes('Failed')) && (
+                  {(resendTestStatus.includes('❌') || resendTestStatus.includes('error') || resendTestStatus.includes('Error') || resendTestStatus.includes('failed') || resendTestStatus.includes('Failed')) && (
                     <div className="mt-2 text-xs text-red-500 space-y-1">
-                      <p>Make sure RESEND_API_KEY is set in your Supabase environment variables.</p>
-                      <p>Verify your domain at: 
+                      <p>🔧 Troubleshooting steps:</p>
+                      <p>• Check RESEND_API_KEY is set in Supabase environment variables</p>
+                      <p>• Verify your domain at: 
                         <a href="https://resend.com/domains" target="_blank" rel="noopener noreferrer" className="ml-1 text-blue-600 hover:text-blue-800 inline-flex items-center">
                           resend.com/domains <ExternalLink className="h-3 w-3 ml-1" />
                         </a>
                       </p>
+                      <p>• Redeploy the function after setting environment variables</p>
                     </div>
                   )}
                 </div>
@@ -206,7 +233,7 @@ const EmailConfirmation = () => {
                   className="flex-1"
                 >
                   <RefreshCw className={`mr-2 h-4 w-4 ${isTestingResend ? 'animate-spin' : ''}`} />
-                  {isTestingResend ? 'Testing...' : 'Test Configuration'}
+                  {isTestingResend ? 'Testing...' : 'Test API Connection'}
                 </Button>
                 
                 <Button 
@@ -216,7 +243,7 @@ const EmailConfirmation = () => {
                   className="flex-1"
                 >
                   <a href="https://resend.com/emails" target="_blank" rel="noopener noreferrer" className="inline-flex items-center">
-                    Check Logs <ExternalLink className="ml-2 h-4 w-4" />
+                    Check Resend Logs <ExternalLink className="ml-2 h-4 w-4" />
                   </a>
                 </Button>
               </div>
@@ -239,7 +266,7 @@ const EmailConfirmation = () => {
                     className="w-full flex items-center justify-center bg-tennis-green-600 hover:bg-tennis-green-700"
                   >
                     <RefreshCw className={`mr-2 h-4 w-4 ${isResending ? 'animate-spin' : ''}`} />
-                    {isResending ? 'Sending verification email...' : 'Resend verification email'}
+                    {isResending ? 'Sending verification email...' : `Resend verification email ${resendCount > 0 ? `(#${resendCount + 1})` : ''}`}
                   </Button>
                 )}
                 
@@ -261,10 +288,35 @@ const EmailConfirmation = () => {
               
               {debugInfo && (
                 <div className="mt-4 p-4 border border-gray-200 rounded-md bg-gray-50">
-                  <h4 className="text-xs font-semibold text-gray-500 mb-2">Debug Information:</h4>
-                  <pre className="text-xs text-gray-600 whitespace-pre-wrap overflow-auto max-h-60">
-                    {JSON.stringify(debugInfo, null, 2)}
-                  </pre>
+                  <h4 className="text-xs font-semibold text-gray-500 mb-2">
+                    🔍 Debug Information (Attempt #{debugInfo.resendCount}):
+                  </h4>
+                  <div className="text-xs text-gray-600 space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div><strong>Email:</strong> {debugInfo.email}</div>
+                      <div><strong>Success:</strong> {debugInfo.success ? '✅ Yes' : debugInfo.failed ? '❌ Failed' : '⚠️ Unknown'}</div>
+                      <div><strong>Message ID:</strong> {debugInfo.messageId || 'None'}</div>
+                      <div><strong>Timestamp:</strong> {new Date(debugInfo.timestamp).toLocaleString()}</div>
+                    </div>
+                    {debugInfo.deliveryNotes && (
+                      <div>
+                        <strong>Delivery Notes:</strong>
+                        <ul className="list-disc pl-4 mt-1">
+                          {debugInfo.deliveryNotes.map((note: string, idx: number) => (
+                            <li key={idx}>{note}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    <details className="mt-2">
+                      <summary className="cursor-pointer text-blue-600 hover:text-blue-800">
+                        View Full Response
+                      </summary>
+                      <pre className="text-xs text-gray-600 whitespace-pre-wrap overflow-auto max-h-60 mt-2 p-2 bg-white border rounded">
+                        {JSON.stringify(debugInfo, null, 2)}
+                      </pre>
+                    </details>
+                  </div>
                 </div>
               )}
             </div>
