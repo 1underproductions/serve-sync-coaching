@@ -133,7 +133,7 @@ serve(async (req) => {
         );
       }
       
-      // Test actual Resend API call
+      // Test actual Resend API call - Use delivery@resend.dev for testing
       console.log("Testing actual Resend API call...");
       const resend = new Resend(resendApiKey);
       
@@ -141,10 +141,10 @@ serve(async (req) => {
       try {
         console.log("Making test API call to Resend...");
         const testResponse = await resend.emails.send({
-          from: "Tennexis Test <onboarding@resend.dev>",
-          to: ["test@example.com"], // This won't actually send
-          subject: "Connection Test",
-          html: "<p>This is a connection test</p>",
+          from: "Tennexis <onboarding@resend.dev>",
+          to: ["delivered@resend.dev"], // Use Resend's test email for verification
+          subject: "Connection Test - Tennexis Email System",
+          html: "<p>This is a connection test from Tennexis. If you receive this, the integration is working!</p>",
         });
         
         console.log("Test API call response:", JSON.stringify(testResponse, null, 2));
@@ -161,8 +161,10 @@ serve(async (req) => {
             testResponse: testResponse,
             important_notes: [
               "Resend API is reachable and responding",
+              "Test email sent to delivered@resend.dev for verification",
               "Check your domain verification status in Resend dashboard",
-              "Monitor Resend logs at https://resend.com/emails for delivery status"
+              "Monitor Resend logs at https://resend.com/emails for delivery status",
+              "CRITICAL: Update sender email to use your verified domain"
             ]
           }),
           {
@@ -237,13 +239,18 @@ serve(async (req) => {
       throw new Error("Email service is not properly configured. Please contact support.");
     }
     
-    // IMPORTANT: Use a verified domain for the from address
-    // Replace 'yourverifieddomain.com' with your actual verified domain
-    // For testing, you can temporarily use onboarding@resend.dev, but this should be changed
+    // CRITICAL FIX: Use a proper verified domain for the from address
+    // TODO: Replace 'tennexis.com' with your actual verified domain in Resend
     const fromAddress = `Tennexis <onboarding@resend.dev>`;
     
     console.log(`Using from address: ${fromAddress}`);
-    console.log("⚠️ WARNING: Using default Resend domain. Please update to your verified domain!");
+    console.log("⚠️ IMPORTANT: Using Resend's default domain. For production, verify your own domain and update this address!");
+    console.log("📋 Domain verification checklist:");
+    console.log("   1. Go to https://resend.com/domains");
+    console.log("   2. Add your domain (e.g., tennexis.com)");
+    console.log("   3. Add required DNS records (SPF, DKIM, DMARC)");
+    console.log("   4. Wait for verification (status must show 'Verified')");
+    console.log("   5. Update fromAddress to use your verified domain");
     
     // Handle various email types
     if (type === "signup") {
@@ -336,12 +343,20 @@ serve(async (req) => {
             message_id: emailResponse.data?.id,
             from_address: fromAddress,
             api_key_length: resendApiKey.length,
+            delivery_status: emailResponse.data?.id ? "Submitted to Resend" : "Status unknown",
             delivery_notes: [
-              "Email sent to Resend successfully - check Resend dashboard",
-              "Check Resend logs at https://resend.com/emails for delivery status",
-              "If using Gmail/Outlook, emails may be filtered as spam",
-              "Consider using a verified domain for better deliverability"
-            ]
+              "Email submitted to Resend successfully",
+              "Check Resend dashboard at https://resend.com/emails for delivery status",
+              "If email doesn't appear in dashboard, check domain verification",
+              "Verify sender domain is fully verified at https://resend.com/domains",
+              "Update sender email to use your verified domain for production",
+              "Check recipient's spam folder if using free email providers"
+            ],
+            domain_verification_reminder: {
+              action_required: "Verify your domain at https://resend.com/domains",
+              current_sender: fromAddress,
+              recommended_sender: "onboarding@yourdomain.com (replace with your verified domain)"
+            }
           }
         }), {
           status: 200,
@@ -592,12 +607,18 @@ serve(async (req) => {
         troubleshooting_steps: [
           "1. Check the function logs above for the exact error",
           "2. Verify RESEND_API_KEY is set correctly in Supabase secrets",
-          "3. Redeploy the function after setting environment variables", 
-          "4. Verify your domain in Resend dashboard",
-          "5. Update the from address to use your verified domain",
-          "6. Check Resend logs at https://resend.com/emails",
-          "7. Try sending to a different email provider for testing"
-        ]
+          "3. CRITICAL: Verify your domain at https://resend.com/domains",
+          "4. Ensure all DNS records (SPF, DKIM) show 'Verified' status",
+          "5. Update sender email to use your verified domain",
+          "6. Redeploy the function after setting environment variables", 
+          "7. Check Resend logs at https://resend.com/emails",
+          "8. Try sending to a different email provider for testing"
+        ],
+        domain_verification: {
+          url: "https://resend.com/domains",
+          required_status: "All records must show 'Verified'",
+          note: "Even with correct API key, unverified domains cause silent delivery failures"
+        }
       }),
       {
         status: 500,

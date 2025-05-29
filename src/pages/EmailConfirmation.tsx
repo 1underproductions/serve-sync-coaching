@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Mail, ArrowRight, RefreshCw, AlertCircle, ExternalLink } from 'lucide-react';
+import { Mail, ArrowRight, RefreshCw, AlertCircle, ExternalLink, CheckCircle, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 
@@ -15,6 +15,7 @@ const EmailConfirmation = () => {
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [resendTestStatus, setResendTestStatus] = useState<string | null>(null);
   const [isTestingResend, setIsTestingResend] = useState(false);
+  const [domainVerificationStatus, setDomainVerificationStatus] = useState<'checking' | 'verified' | 'unverified' | 'error'>('checking');
 
   // Log when component renders
   useEffect(() => {
@@ -26,6 +27,7 @@ const EmailConfirmation = () => {
     try {
       console.log("Testing Resend configuration...");
       setIsTestingResend(true);
+      setDomainVerificationStatus('checking');
       
       const response = await supabase.functions.invoke('custom-email/test-resend', {
         body: {},
@@ -38,7 +40,8 @@ const EmailConfirmation = () => {
       
       if (response.error) {
         console.error("Resend test failed:", response.error);
-        setResendTestStatus(`Resend test failed: ${response.error.message || 'Unknown error'}`);
+        setResendTestStatus(`❌ Resend test failed: ${response.error.message || 'Unknown error'}`);
+        setDomainVerificationStatus('error');
         return;
       }
       
@@ -47,16 +50,20 @@ const EmailConfirmation = () => {
       
       if (data.success) {
         if (data.testApiCall === 'successful') {
-          setResendTestStatus('✅ Resend API connection verified - Ready to send emails!');
+          setResendTestStatus('✅ Resend API connection verified - Test email sent successfully!');
+          setDomainVerificationStatus('verified');
         } else {
           setResendTestStatus('✅ Resend configuration looks good - Check your domain verification in Resend dashboard');
+          setDomainVerificationStatus('unverified');
         }
       } else {
         setResendTestStatus(`❌ Resend error: ${data.error || 'Unknown error'}`);
+        setDomainVerificationStatus('error');
       }
     } catch (error) {
       console.error("Error testing Resend:", error);
       setResendTestStatus(`❌ Error testing Resend: ${error instanceof Error ? error.message : String(error)}`);
+      setDomainVerificationStatus('error');
     } finally {
       setIsTestingResend(false);
     }
@@ -120,13 +127,14 @@ const EmailConfirmation = () => {
         emailData: emailData,
         success: result?.success,
         messageId: result?.debug_info?.message_id,
-        deliveryNotes: result?.debug_info?.delivery_notes
+        deliveryNotes: result?.debug_info?.delivery_notes,
+        domainVerification: result?.debug_info?.domain_verification_reminder
       });
       
       if (result && result.success) {
         toast({
           title: "✅ Email sent successfully!",
-          description: `A verification email has been sent to ${email}. Message ID: ${result.debug_info?.message_id || 'Unknown'}. Check both inbox and spam folders.`,
+          description: `A verification email has been sent to ${email}. Message ID: ${result.debug_info?.message_id || 'Unknown'}. Check Resend dashboard and your inbox.`,
         });
       } else {
         // Show warning if success is not explicitly true
@@ -157,6 +165,36 @@ const EmailConfirmation = () => {
     }
   };
 
+  const getDomainStatusIcon = () => {
+    switch (domainVerificationStatus) {
+      case 'checking':
+        return <RefreshCw className="h-5 w-5 text-blue-500 animate-spin" />;
+      case 'verified':
+        return <CheckCircle className="h-5 w-5 text-green-500" />;
+      case 'unverified':
+        return <AlertCircle className="h-5 w-5 text-amber-500" />;
+      case 'error':
+        return <XCircle className="h-5 w-5 text-red-500" />;
+      default:
+        return <AlertCircle className="h-5 w-5 text-gray-500" />;
+    }
+  };
+
+  const getDomainStatusMessage = () => {
+    switch (domainVerificationStatus) {
+      case 'checking':
+        return 'Checking domain verification status...';
+      case 'verified':
+        return 'Domain verification confirmed - Emails should be delivered';
+      case 'unverified':
+        return 'Domain may need verification - Check Resend dashboard';
+      case 'error':
+        return 'Unable to verify domain status - Check Resend configuration';
+      default:
+        return 'Domain status unknown';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -179,6 +217,25 @@ const EmailConfirmation = () => {
             </p>
             
             <div className="mt-8 space-y-4">
+              {/* Domain Verification Status */}
+              <div className={`p-4 rounded-md border ${
+                domainVerificationStatus === 'verified' ? 'bg-green-50 border-green-200' :
+                domainVerificationStatus === 'error' ? 'bg-red-50 border-red-200' :
+                'bg-amber-50 border-amber-200'
+              }`}>
+                <div className="flex items-center">
+                  {getDomainStatusIcon()}
+                  <h3 className="ml-2 text-sm font-medium text-gray-800">Domain Status</h3>
+                </div>
+                <p className={`mt-1 text-sm ${
+                  domainVerificationStatus === 'verified' ? 'text-green-700' :
+                  domainVerificationStatus === 'error' ? 'text-red-700' :
+                  'text-amber-700'
+                }`}>
+                  {getDomainStatusMessage()}
+                </p>
+              </div>
+
               <div className="p-4 bg-amber-50 border border-amber-200 rounded-md">
                 <div className="flex items-center">
                   <AlertCircle className="h-5 w-5 text-amber-500 mr-2" />
@@ -192,6 +249,7 @@ const EmailConfirmation = () => {
                     <li>Try a different email provider (Gmail, ProtonMail, etc.)</li>
                     <li>Check if your email provider blocks automated emails</li>
                     <li>Look for emails from "Tennexis" or "onboarding@resend.dev"</li>
+                    <li><strong>Check Resend dashboard for delivery status</strong></li>
                   </ul>
                 </div>
               </div>
@@ -213,11 +271,13 @@ const EmailConfirmation = () => {
                     <div className="mt-2 text-xs text-red-500 space-y-1">
                       <p>🔧 Troubleshooting steps:</p>
                       <p>• Check RESEND_API_KEY is set in Supabase environment variables</p>
-                      <p>• Verify your domain at: 
+                      <p>• <strong>CRITICAL:</strong> Verify your domain at: 
                         <a href="https://resend.com/domains" target="_blank" rel="noopener noreferrer" className="ml-1 text-blue-600 hover:text-blue-800 inline-flex items-center">
                           resend.com/domains <ExternalLink className="h-3 w-3 ml-1" />
                         </a>
                       </p>
+                      <p>• Ensure all DNS records show "Verified" status</p>
+                      <p>• Update sender email to use your verified domain</p>
                       <p>• Redeploy the function after setting environment variables</p>
                     </div>
                   )}
@@ -233,7 +293,7 @@ const EmailConfirmation = () => {
                   className="flex-1"
                 >
                   <RefreshCw className={`mr-2 h-4 w-4 ${isTestingResend ? 'animate-spin' : ''}`} />
-                  {isTestingResend ? 'Testing...' : 'Test API Connection'}
+                  {isTestingResend ? 'Testing...' : 'Test Connection'}
                 </Button>
                 
                 <Button 
@@ -243,9 +303,27 @@ const EmailConfirmation = () => {
                   className="flex-1"
                 >
                   <a href="https://resend.com/emails" target="_blank" rel="noopener noreferrer" className="inline-flex items-center">
-                    Check Resend Logs <ExternalLink className="ml-2 h-4 w-4" />
+                    Resend Dashboard <ExternalLink className="ml-2 h-4 w-4" />
                   </a>
                 </Button>
+              </div>
+
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+                <h3 className="text-sm font-medium text-blue-800">🔍 Most Likely Issues</h3>
+                <div className="mt-2 text-sm text-blue-700 space-y-2">
+                  <div>
+                    <p><strong>1. Domain Not Verified:</strong></p>
+                    <p className="text-xs">Go to <a href="https://resend.com/domains" target="_blank" rel="noopener noreferrer" className="underline">resend.com/domains</a> and ensure your domain shows "Verified"</p>
+                  </div>
+                  <div>
+                    <p><strong>2. DNS Records Missing:</strong></p>
+                    <p className="text-xs">Add SPF, DKIM records and wait for DNS propagation (up to 30 minutes)</p>
+                  </div>
+                  <div>
+                    <p><strong>3. Sender Email Issues:</strong></p>
+                    <p className="text-xs">Using onboarding@resend.dev - update to your verified domain for production</p>
+                  </div>
+                </div>
               </div>
               
               <div className="p-4 bg-gray-50 rounded-md">
@@ -298,6 +376,20 @@ const EmailConfirmation = () => {
                       <div><strong>Message ID:</strong> {debugInfo.messageId || 'None'}</div>
                       <div><strong>Timestamp:</strong> {new Date(debugInfo.timestamp).toLocaleString()}</div>
                     </div>
+                    {debugInfo.domainVerification && (
+                      <div className="p-2 bg-yellow-50 border border-yellow-200 rounded">
+                        <strong className="text-yellow-800">Domain Verification Required:</strong>
+                        <p className="text-yellow-700 text-xs mt-1">
+                          Current: {debugInfo.domainVerification.current_sender}
+                        </p>
+                        <p className="text-yellow-700 text-xs">
+                          Recommended: {debugInfo.domainVerification.recommended_sender}
+                        </p>
+                        <p className="text-yellow-700 text-xs">
+                          Action: <a href="https://resend.com/domains" target="_blank" rel="noopener noreferrer" className="underline">Verify domain</a>
+                        </p>
+                      </div>
+                    )}
                     {debugInfo.deliveryNotes && (
                       <div>
                         <strong>Delivery Notes:</strong>
