@@ -112,7 +112,12 @@ serve(async (req) => {
           config: {
             apiKeyExists: !!resendApiKey,
             apiKeyLength: resendApiKey.length
-          }
+          },
+          important_notes: [
+            "Make sure to use a verified domain in your from address",
+            "Check your domain verification status in Resend dashboard",
+            "Monitor Resend logs at https://resend.com/emails for delivery status"
+          ]
         }),
         {
           status: 200,
@@ -152,9 +157,13 @@ serve(async (req) => {
       throw new Error("Email service is not properly configured. Please contact support.");
     }
     
-    // Define sender address - using a verified domain or the default
+    // IMPORTANT: Use a verified domain for the from address
+    // Replace 'yourverifieddomain.com' with your actual verified domain
+    // For testing, you can temporarily use onboarding@resend.dev, but this should be changed
     const fromAddress = `Tennexis <onboarding@resend.dev>`;
+    
     console.log(`Using from address: ${fromAddress}`);
+    console.log("⚠️ WARNING: Using default Resend domain. Please update to your verified domain!");
     
     // Handle various email types
     if (type === "signup") {
@@ -223,6 +232,9 @@ serve(async (req) => {
               
               <div style="border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 30px; font-size: 14px; color: #718096;">
                 <p>&copy; 2025 Tennexis. All rights reserved.</p>
+                <p style="margin-top: 10px; font-size: 12px;">
+                  <strong>Not receiving emails?</strong> Check your spam folder and ensure onboarding@resend.dev is not blocked.
+                </p>
               </div>
             </div>
           `,
@@ -239,7 +251,13 @@ serve(async (req) => {
             email_sent_to: email, 
             verification_url_generated: magicLinkUrl,
             resend_response: emailResponse,
-            message_id: emailResponse.data?.id
+            message_id: emailResponse.data?.id,
+            from_address: fromAddress,
+            delivery_notes: [
+              "Check Resend logs at https://resend.com/emails for delivery status",
+              "If using Gmail/Outlook, emails may be filtered as spam",
+              "Consider using a verified domain for better deliverability"
+            ]
           }
         }), {
           status: 200,
@@ -480,7 +498,13 @@ serve(async (req) => {
       JSON.stringify({ 
         error: error instanceof Error ? error.message : String(error), 
         stack: error instanceof Error ? error.stack : undefined,
-        resendApiKeyExists: !!resendApiKey
+        resendApiKeyExists: !!resendApiKey,
+        troubleshooting_steps: [
+          "1. Verify your domain in Resend dashboard",
+          "2. Update the from address to use your verified domain",
+          "3. Check Resend logs at https://resend.com/emails",
+          "4. Try sending to a different email provider for testing"
+        ]
       }),
       {
         status: 500,

@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Mail, ArrowRight, RefreshCw, AlertCircle } from 'lucide-react';
+import { Mail, ArrowRight, RefreshCw, AlertCircle, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 
@@ -45,7 +44,7 @@ const EmailConfirmation = () => {
       const data = response.data;
       console.log("Resend test parsed response:", data);
       setResendTestStatus(data.success 
-        ? 'Resend configuration looks good' 
+        ? 'Resend configuration looks good - Check your domain verification in Resend dashboard' 
         : `Resend error: ${data.error || 'Unknown error'}`);
     } catch (error) {
       console.error("Error testing Resend:", error);
@@ -167,11 +166,17 @@ const EmailConfirmation = () => {
               <div className="p-4 bg-amber-50 border border-amber-200 rounded-md">
                 <div className="flex items-center">
                   <AlertCircle className="h-5 w-5 text-amber-500 mr-2" />
-                  <h3 className="text-sm font-medium text-amber-800">Important note</h3>
+                  <h3 className="text-sm font-medium text-amber-800">Email Delivery Issues?</h3>
                 </div>
-                <p className="mt-2 text-sm text-amber-700">
-                  If you don't see the email in your inbox, please check your spam folder. The email comes from Resend and may take a few minutes to arrive.
-                </p>
+                <div className="mt-2 text-sm text-amber-700 space-y-2">
+                  <p>If you don't see the email within 5 minutes:</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Check your spam/junk folder</li>
+                    <li>Add onboarding@resend.dev to your contacts</li>
+                    <li>Try a different email provider (Gmail, ProtonMail, etc.)</li>
+                    <li>Check if your email provider blocks automated emails</li>
+                  </ul>
+                </div>
               </div>
               
               {resendTestStatus && (
@@ -180,23 +185,41 @@ const EmailConfirmation = () => {
                     {resendTestStatus}
                   </p>
                   {(resendTestStatus.includes('error') || resendTestStatus.includes('Error') || resendTestStatus.includes('failed') || resendTestStatus.includes('Failed')) && (
-                    <p className="mt-2 text-xs text-red-500">
-                      Make sure RESEND_API_KEY is set in your Supabase environment variables.
-                    </p>
+                    <div className="mt-2 text-xs text-red-500 space-y-1">
+                      <p>Make sure RESEND_API_KEY is set in your Supabase environment variables.</p>
+                      <p>Verify your domain at: 
+                        <a href="https://resend.com/domains" target="_blank" rel="noopener noreferrer" className="ml-1 text-blue-600 hover:text-blue-800 inline-flex items-center">
+                          resend.com/domains <ExternalLink className="h-3 w-3 ml-1" />
+                        </a>
+                      </p>
+                    </div>
                   )}
                 </div>
               )}
               
-              <Button 
-                onClick={testResendConfig}
-                variant="outline" 
-                size="sm"
-                disabled={isTestingResend}
-                className="w-full"
-              >
-                <RefreshCw className={`mr-2 h-4 w-4 ${isTestingResend ? 'animate-spin' : ''}`} />
-                {isTestingResend ? 'Testing...' : 'Test Resend Configuration'}
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={testResendConfig}
+                  variant="outline" 
+                  size="sm"
+                  disabled={isTestingResend}
+                  className="flex-1"
+                >
+                  <RefreshCw className={`mr-2 h-4 w-4 ${isTestingResend ? 'animate-spin' : ''}`} />
+                  {isTestingResend ? 'Testing...' : 'Test Configuration'}
+                </Button>
+                
+                <Button 
+                  asChild
+                  variant="outline" 
+                  size="sm"
+                  className="flex-1"
+                >
+                  <a href="https://resend.com/emails" target="_blank" rel="noopener noreferrer" className="inline-flex items-center">
+                    Check Logs <ExternalLink className="ml-2 h-4 w-4" />
+                  </a>
+                </Button>
+              </div>
               
               <div className="p-4 bg-gray-50 rounded-md">
                 <h3 className="text-sm font-medium text-gray-800">What happens next?</h3>
