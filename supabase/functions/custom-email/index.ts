@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -42,7 +41,6 @@ const corsHeaders = {
 async function sendResendEmail(to: string, subject: string, html: string, from: string) {
   console.log("=== RESEND EMAIL SEND ATTEMPT ===");
   console.log(`API Key Status: ${resendApiKey ? 'Present' : 'MISSING'}`);
-  console.log(`API Key Length: ${resendApiKey ? resendApiKey.length : 0}`);
   console.log(`To: ${to}`);
   console.log(`From: ${from}`);
   console.log(`Subject: ${subject}`);
@@ -71,8 +69,7 @@ async function sendResendEmail(to: string, subject: string, html: string, from: 
       }
     };
     
-    console.log("Email data prepared:", JSON.stringify(emailData, null, 2));
-    console.log("Calling Resend API...");
+    console.log("Email data prepared, calling Resend API...");
     
     // Add timing for the API call
     const startTime = Date.now();
@@ -101,7 +98,6 @@ async function sendResendEmail(to: string, subject: string, html: string, from: 
     console.error("Error type:", typeof error);
     console.error("Error message:", error instanceof Error ? error.message : String(error));
     console.error("Error stack:", error instanceof Error ? error.stack : 'No stack trace');
-    console.error("Full error object:", JSON.stringify(error, null, 2));
     throw error;
   }
 }
@@ -111,7 +107,6 @@ serve(async (req) => {
   console.log("Request received to custom-email function");
   console.log("Request URL:", req.url);
   console.log("Request method:", req.method);
-  console.log("Environment check - RESEND_API_KEY exists:", !!resendApiKey);
   
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -267,7 +262,6 @@ serve(async (req) => {
     
     const { type, email, data } = requestBody;
     console.log(`Processing ${type} email request for ${email}`);
-    console.log("Request data:", JSON.stringify(data, null, 2));
     
     // Validate Resend configuration
     if (!resendApiKey) {
@@ -279,12 +273,11 @@ serve(async (req) => {
     const fromAddress = `Tennexis <noreply@tennexis.com>`;
     
     console.log(`Using from address: ${fromAddress}`);
-    console.log("✅ SUCCESS: Using verified tennexis.com domain for production emails!");
-    console.log("📧 Email delivery should now work reliably with your verified domain");
+    console.log("✅ Using verified tennexis.com domain for production emails!");
     
     // Handle various email types
     if (type === "signup") {
-      console.log("=== PROCESSING SIGNUP EMAIL ===");
+      console.log("=== PROCESSING SIGNUP EMAIL FOR ADMIN API APPROACH ===");
       console.log("Signup email request received:", { email, data });
       
       if (!data || typeof data !== 'object') {
@@ -388,18 +381,9 @@ serve(async (req) => {
               message_id: emailResponse.data?.id,
               from_address: fromAddress,
               verified_domain: "tennexis.com",
-              api_key_length: resendApiKey.length,
-              delivery_status: emailResponse.data?.id ? "Submitted to Resend for delivery" : "Status unknown",
-              deliverability_features: [
-                "✅ Verified tennexis.com domain",
-                "✅ SPF/DKIM records configured",
-                "✅ Professional email headers",
-                "✅ List-Unsubscribe headers included",
-                "✅ Proper HTML structure for inbox placement"
-              ],
               IMPORTANT_NOTES: [
                 "🎉 ONLY CUSTOM EMAIL SENT from noreply@tennexis.com",
-                "✅ NO Supabase default emails will be sent",
+                "✅ NO Supabase default emails will be sent (Admin API approach)",
                 "📧 Check your PRIMARY inbox for branded Tennexis confirmation email",
                 "🔍 Email should arrive within 1-2 minutes",
                 "📊 Check Resend dashboard at https://resend.com/emails for delivery status",

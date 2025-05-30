@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, sendCustomEmail, Profile } from '@/lib/supabase';
@@ -84,15 +85,15 @@ export const useAuthProvider = () => {
       setAuthError(null);
       
       console.log('=== STARTING CUSTOM SIGNUP PROCESS ===');
-      console.log('Step 1: Bypassing Supabase default emails completely');
+      console.log('Step 1: Using Supabase Admin API to create user (no default emails)');
       
       // Step 1: Create user with Supabase Admin API to bypass email confirmation
-      console.log('Creating user via Admin API (no emails triggered)...');
+      console.log('Creating user via Admin API (bypassing default emails)...');
       const { data: adminData, error: adminError } = await supabase.auth.admin.createUser({
         email,
         password,
         user_metadata: metadata,
-        email_confirm: false // This prevents ANY Supabase emails
+        email_confirm: false // This prevents Supabase from sending confirmation emails
       });
 
       if (adminError) {
@@ -118,17 +119,17 @@ export const useAuthProvider = () => {
         return;
       }
 
-      console.log('✅ User created successfully via Admin API (NO Supabase emails sent)');
+      console.log('✅ User created successfully via Admin API (NO default emails sent)');
       console.log('Step 2: Sending ONLY our custom branded email...');
 
-      // Step 2: Send ONLY our custom email
+      // Step 2: Send ONLY our custom email using the verified tennexis.com domain
       try {
         await sendCustomEmail('signup', email, {
           fullName: metadata.fullName,
           redirect_to: `${window.location.origin}/auth/callback`
         });
         
-        console.log('✅ SUCCESS: ONLY custom Tennexis email sent!');
+        console.log('✅ SUCCESS: ONLY custom Tennexis email sent from noreply@tennexis.com!');
         toast({
           title: "Account created!",
           description: "Please check your email to verify your account. The confirmation email is from noreply@tennexis.com",
