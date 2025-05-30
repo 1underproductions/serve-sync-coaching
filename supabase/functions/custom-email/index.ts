@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.69.1';
 
 // Initialize Resend client with API key
 const resendApiKey = Deno.env.get("RESEND_API_KEY");
@@ -16,6 +17,19 @@ console.log(`API key starts with: ${resendApiKey ? resendApiKey.substring(0, 8) 
 // Get the Supabase project URL from environment variables or use the default
 const projectUrl = Deno.env.get("PROJECT_URL") || "https://cugwtwpgccpcjeumrkxf.supabase.co";
 console.log("Project URL set to:", projectUrl);
+
+// Initialize Supabase admin client for generating confirmation links
+const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+const supabaseAdmin = createClient(
+  projectUrl,
+  supabaseServiceKey!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -255,112 +269,112 @@ serve(async (req) => {
         throw new Error("Invalid data provided for email");
       }
       
-      // Get the redirect URL
-      let redirect_to = data.redirect_to || `${projectUrl}/auth/callback`;
-      console.log("Initial redirect_to:", redirect_to);
-      
-      // Ensure redirect URL is properly formatted
-      if (!redirect_to.startsWith('http')) {
-        const appUrl = req.headers.get('origin') || projectUrl;
-        redirect_to = `${appUrl.replace(/\/$/, "")}${redirect_to.startsWith('/') ? '' : '/'}${redirect_to}`;
-        console.log("Modified redirect_to with origin:", redirect_to);
-      }
-      
-      // For signup emails, we'll create a magic link for email verification
-      console.log("Generating magic link for signup verification");
-      
-      // Get origin for better redirect experience
-      const origin = req.headers.get('origin') || req.headers.get('referer') || projectUrl;
-      console.log("Using origin:", origin);
-      
-      const redirectUrl = `${origin.replace(/\/$/, "")}/auth/callback`;
-      console.log("Redirect URL for magic link:", redirectUrl);
-      
-      // Create a proper Supabase auth magic link
-      const magicLinkUrl = `${projectUrl}/auth/v1/magiclink?email=${encodeURIComponent(email)}&redirect_to=${encodeURIComponent(redirectUrl)}`;
-      console.log("Generated magic link URL:", magicLinkUrl);
+      // Generate a proper email confirmation link using Supabase Admin API
+      console.log("Generating email confirmation link using Supabase Admin API...");
       
       try {
-        console.log("=== CALLING RESEND EMAIL FUNCTION ===");
-        const emailResponse = await sendResendEmail(
-          email,
-          "Verify your Tennexis account",
-          `
-            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #333333; line-height: 1.6;">
-              <div style="text-align: center; margin-bottom: 40px;">
-                <h1 style="color: #2563eb; font-size: 28px; font-weight: 600; margin: 0;">Welcome to Tennexis</h1>
-              </div>
-              
-              <div style="background-color: #f8fafc; border-radius: 8px; padding: 30px; margin-bottom: 30px;">
-                <p style="font-size: 18px; margin: 0 0 20px 0;">
-                  Thank you for creating your Tennexis account. To complete your registration and start using our tennis coaching platform, please verify your email address.
-                </p>
-                
-                <div style="text-align: center; margin: 30px 0;">
-                  <a href="${magicLinkUrl}" style="display: inline-block; background-color: #2563eb; color: #ffffff; font-weight: 600; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-size: 16px;">
-                    Verify Email Address
-                  </a>
+        // Generate an email confirmation link
+        const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+          type: 'signup',
+          email: email,
+          options: {
+            redirectTo: `${data.redirect_to || projectUrl + '/auth/callback'}`
+          }
+        });
+        
+        if (linkError) {
+          console.error("Error generating confirmation link:", linkError);
+          throw linkError;
+        }
+        
+        console.log("Email confirmation link generated successfully");
+        const confirmationUrl = linkData.properties.action_link;
+        
+        try {
+          console.log("=== CALLING RESEND EMAIL FUNCTION ===");
+          const emailResponse = await sendResendEmail(
+            email,
+            "Verify your Tennexis account",
+            `
+              <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #333333; line-height: 1.6;">
+                <div style="text-align: center; margin-bottom: 40px;">
+                  <h1 style="color: #2563eb; font-size: 28px; font-weight: 600; margin: 0;">Welcome to Tennexis</h1>
                 </div>
                 
-                <p style="font-size: 14px; color: #6b7280; margin: 20px 0 0 0; text-align: center;">
-                  This verification link will expire in 24 hours for security purposes.
-                </p>
+                <div style="background-color: #f8fafc; border-radius: 8px; padding: 30px; margin-bottom: 30px;">
+                  <p style="font-size: 18px; margin: 0 0 20px 0;">
+                    Thank you for creating your Tennexis account. To complete your registration and start using our tennis coaching platform, please verify your email address.
+                  </p>
+                  
+                  <div style="text-align: center; margin: 30px 0;">
+                    <a href="${confirmationUrl}" style="display: inline-block; background-color: #2563eb; color: #ffffff; font-weight: 600; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-size: 16px;">
+                      Verify Email Address
+                    </a>
+                  </div>
+                  
+                  <p style="font-size: 14px; color: #6b7280; margin: 20px 0 0 0; text-align: center;">
+                    This verification link will expire in 24 hours for security purposes.
+                  </p>
+                </div>
+                
+                <div style="border-top: 1px solid #e5e7eb; padding-top: 20px;">
+                  <p style="font-size: 14px; color: #6b7280; margin: 0;">
+                    If you didn't create this account, you can safely ignore this email.
+                  </p>
+                  <p style="font-size: 14px; color: #6b7280; margin: 10px 0 0 0;">
+                    If the button doesn't work, copy and paste this link: <br>
+                    <span style="word-break: break-all;">${confirmationUrl}</span>
+                  </p>
+                </div>
+                
+                <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                  <p style="font-size: 12px; color: #9ca3af; margin: 0;">
+                    © 2025 Tennexis. All rights reserved.<br>
+                    This email was sent from our verified domain tennexis.com
+                  </p>
+                </div>
               </div>
-              
-              <div style="border-top: 1px solid #e5e7eb; padding-top: 20px;">
-                <p style="font-size: 14px; color: #6b7280; margin: 0;">
-                  If you didn't create this account, you can safely ignore this email.
-                </p>
-                <p style="font-size: 14px; color: #6b7280; margin: 10px 0 0 0;">
-                  If the button doesn't work, copy and paste this link: <br>
-                  <span style="word-break: break-all;">${magicLinkUrl}</span>
-                </p>
-              </div>
-              
-              <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-                <p style="font-size: 12px; color: #9ca3af; margin: 0;">
-                  © 2025 Tennexis. All rights reserved.<br>
-                  This email was sent from our verified domain tennexis.com
-                </p>
-              </div>
-            </div>
-          `,
-          fromAddress
-        );
+            `,
+            fromAddress
+          );
 
-        console.log("=== EMAIL SENT SUCCESSFULLY ===");
-        console.log("Email sent successfully via Resend!");
-        console.log("Resend response:", JSON.stringify(emailResponse, null, 2));
-        
-        return new Response(JSON.stringify({ 
-          success: true, 
-          message: "Email sent successfully via Resend using verified tennexis.com domain", 
-          debug_info: { 
-            email_sent_to: email, 
-            verification_url_generated: magicLinkUrl,
-            resend_response: emailResponse,
-            message_id: emailResponse.data?.id,
-            from_address: fromAddress,
-            verified_domain: "tennexis.com",
-            api_key_length: resendApiKey.length,
-            delivery_status: emailResponse.data?.id ? "Submitted to Resend" : "Status unknown",
-            troubleshooting_notes: [
-              "Email submitted to Resend successfully using verified tennexis.com domain",
-              "Check your spam/junk folder",
-              "Try a different email provider (Gmail, Outlook) for testing", 
-              "Whitelist noreply@tennexis.com in your email client",
-              "Check Resend dashboard at https://resend.com/emails for delivery status",
-              "If using a corporate email, check with IT about automated email blocking"
-            ]
-          }
-        }), {
-          status: 200,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        });
-      } catch (emailError) {
-        console.error("=== EMAIL SENDING FAILED ===");
-        console.error("Error sending email via Resend:", emailError);
-        throw emailError;
+          console.log("=== EMAIL SENT SUCCESSFULLY ===");
+          console.log("Email sent successfully via Resend!");
+          console.log("Resend response:", JSON.stringify(emailResponse, null, 2));
+          
+          return new Response(JSON.stringify({ 
+            success: true, 
+            message: "Email sent successfully via Resend using verified tennexis.com domain", 
+            debug_info: { 
+              email_sent_to: email, 
+              verification_url_generated: confirmationUrl,
+              resend_response: emailResponse,
+              message_id: emailResponse.data?.id,
+              from_address: fromAddress,
+              verified_domain: "tennexis.com",
+              api_key_length: resendApiKey.length,
+              delivery_status: emailResponse.data?.id ? "Submitted to Resend" : "Status unknown",
+              troubleshooting_notes: [
+                "Email submitted to Resend successfully using verified tennexis.com domain",
+                "Check your spam/junk folder",
+                "Try a different email provider (Gmail, Outlook) for testing", 
+                "Whitelist noreply@tennexis.com in your email client",
+                "Check Resend dashboard at https://resend.com/emails for delivery status",
+                "If using a corporate email, check with IT about automated email blocking"
+              ]
+            }
+          }), {
+            status: 200,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          });
+        } catch (emailError) {
+          console.error("=== EMAIL SENDING FAILED ===");
+          console.error("Error sending email via Resend:", emailError);
+          throw emailError;
+        }
+      } catch (linkGenerationError) {
+        console.error("Error generating email confirmation link:", linkGenerationError);
+        throw new Error(`Failed to generate confirmation link: ${linkGenerationError.message}`);
       }
     }
     
