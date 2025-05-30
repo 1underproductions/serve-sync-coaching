@@ -92,35 +92,10 @@ export const sendCustomEmail = async (type: string, email: string, data: any) =>
       redirect_to: data.redirect_to
     });
     
-    // Use direct OTP for signup email to improve deliverability
-    if (type === 'signup') {
-      try {
-        console.log("Using direct Supabase OTP for signup verification");
-        const otpResponse = await supabase.auth.signInWithOtp({
-          email,
-          options: {
-            shouldCreateUser: false,
-            emailRedirectTo: data.redirect_to || `${appUrl}/auth/callback`,
-          }
-        });
-        
-        console.log("Direct OTP response:", otpResponse);
-        
-        if (otpResponse.error) {
-          // If OTP fails, fall back to custom email function
-          console.warn("OTP failed, falling back to custom email function:", otpResponse.error);
-        } else {
-          // OTP request successful
-          console.log("OTP verification email sent successfully");
-          return { success: true, message: "Verification email sent via OTP" };
-        }
-      } catch (otpError) {
-        console.error("Error with OTP flow:", otpError);
-        // Continue to custom email as fallback
-      }
-    }
+    // ALWAYS use custom email function with verified tennexis.com domain
+    // No fallback to native OTP to ensure verified domain is used
+    console.log("Using ONLY custom email function with verified tennexis.com domain");
     
-    // Fall back to custom email function
     const response = await supabase.functions.invoke('custom-email', {
       body: { type, email, data },
       headers: {
