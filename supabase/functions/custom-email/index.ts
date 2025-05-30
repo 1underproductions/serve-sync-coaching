@@ -247,8 +247,23 @@ serve(async (req) => {
   // Regular email sending endpoint
   try {
     console.log("=== PROCESSING EMAIL SEND REQUEST ===");
-    const requestBody = await req.json();
-    console.log("Raw request body:", JSON.stringify(requestBody, null, 2));
+    
+    let requestBody;
+    try {
+      const bodyText = await req.text();
+      console.log("Raw request body text:", bodyText);
+      
+      if (!bodyText) {
+        throw new Error("Empty request body");
+      }
+      
+      requestBody = JSON.parse(bodyText);
+    } catch (parseError) {
+      console.error("Failed to parse request body:", parseError);
+      throw new Error(`Invalid JSON in request body: ${parseError instanceof Error ? parseError.message : 'Unknown parsing error'}`);
+    }
+    
+    console.log("Parsed request body:", JSON.stringify(requestBody, null, 2));
     
     const { type, email, data } = requestBody;
     console.log(`Processing ${type} email request for ${email}`);
@@ -276,13 +291,11 @@ serve(async (req) => {
         throw new Error("Invalid data provided for email");
       }
       
-      // CRITICAL FIX: Generate a proper email confirmation link using Supabase Admin API
-      // This completely bypasses Supabase's default email system
-      console.log("Generating CUSTOM email confirmation link using Supabase Admin API...");
+      // Generate a custom email confirmation link using Supabase Admin API
+      console.log("Generating email confirmation link using Supabase Admin API...");
       
       try {
-        // Generate an email confirmation link using the ADMIN API (not user signup)
-        // This ensures we control the entire process and bypass defaults
+        // Generate an email confirmation link using the ADMIN API
         const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
           type: 'signup',
           email: email,
@@ -296,7 +309,7 @@ serve(async (req) => {
           throw linkError;
         }
         
-        console.log("CUSTOM email confirmation link generated successfully - BYPASSING all Supabase defaults");
+        console.log("Email confirmation link generated successfully");
         const confirmationUrl = linkData.properties.action_link;
         
         try {

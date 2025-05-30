@@ -83,25 +83,23 @@ export const useAuthProvider = () => {
       setIsLoading(true);
       setAuthError(null);
       
-      console.log('Starting signup process - CUSTOM EMAIL ONLY...');
+      console.log('=== STARTING CUSTOM SIGNUP PROCESS ===');
+      console.log('Step 1: Bypassing Supabase default emails completely');
       
-      // Create the user account with email confirmation DISABLED
-      // This prevents ANY Supabase emails from being sent
-      const { data, error } = await supabase.auth.signUp({
+      // Step 1: Create user with Supabase Admin API to bypass email confirmation
+      console.log('Creating user via Admin API (no emails triggered)...');
+      const { data: adminData, error: adminError } = await supabase.auth.admin.createUser({
         email,
         password,
-        options: {
-          // CRITICAL: Completely disable Supabase's email system
-          emailRedirectTo: undefined, // No redirect URL means no email
-          data: metadata
-        }
+        user_metadata: metadata,
+        email_confirm: false // This prevents ANY Supabase emails
       });
 
-      if (error) {
-        console.error('Signup error:', error);
+      if (adminError) {
+        console.error('Admin user creation failed:', adminError);
         
         // Handle specific error cases
-        if (error.message.includes('User already registered')) {
+        if (adminError.message.includes('User already registered')) {
           setAuthError('An account with this email already exists. Please try signing in instead.');
           toast({
             title: "Account exists",
@@ -111,36 +109,36 @@ export const useAuthProvider = () => {
           return;
         }
         
-        setAuthError(error.message);
+        setAuthError(adminError.message);
         toast({
           title: "Signup failed",
-          description: error.message,
+          description: adminError.message,
           variant: "destructive",
         });
         return;
       }
 
-      console.log('User created successfully (unconfirmed):', data);
+      console.log('✅ User created successfully via Admin API (NO Supabase emails sent)');
+      console.log('Step 2: Sending ONLY our custom branded email...');
 
-      // IMMEDIATELY send ONLY our custom branded email
+      // Step 2: Send ONLY our custom email
       try {
-        console.log('Sending ONLY custom branded confirmation email from noreply@tennexis.com...');
         await sendCustomEmail('signup', email, {
           fullName: metadata.fullName,
           redirect_to: `${window.location.origin}/auth/callback`
         });
         
-        console.log('SUCCESS: ONLY custom branded email sent from tennexis.com domain');
+        console.log('✅ SUCCESS: ONLY custom Tennexis email sent!');
         toast({
           title: "Account created!",
           description: "Please check your email to verify your account. The confirmation email is from noreply@tennexis.com",
         });
       } catch (emailError) {
-        console.error('Error sending custom email:', emailError);
-        // Still show success since the account was created
+        console.error('Custom email failed:', emailError);
         toast({
           title: "Account created!",
-          description: "Please check your email to verify your account.",
+          description: "Your account was created but there was an issue sending the verification email. Please try resending it.",
+          variant: "destructive",
         });
       }
 
