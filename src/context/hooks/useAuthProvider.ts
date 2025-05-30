@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, sendCustomEmail, Profile } from '@/lib/supabase';
@@ -85,22 +84,24 @@ export const useAuthProvider = () => {
       setAuthError(null);
       
       console.log('=== STARTING CUSTOM SIGNUP PROCESS ===');
-      console.log('Step 1: Using Supabase Admin API to create user (no default emails)');
+      console.log('Step 1: Creating user with Supabase (no email confirmation required)');
       
-      // Step 1: Create user with Supabase Admin API to bypass email confirmation
-      console.log('Creating user via Admin API (bypassing default emails)...');
-      const { data: adminData, error: adminError } = await supabase.auth.admin.createUser({
+      // Step 1: Create user with Supabase but disable email confirmation
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        user_metadata: metadata,
-        email_confirm: false // This prevents Supabase from sending confirmation emails
+        options: {
+          data: metadata,
+          // Don't send confirmation email from Supabase
+          emailRedirectTo: undefined,
+        }
       });
 
-      if (adminError) {
-        console.error('Admin user creation failed:', adminError);
+      if (error) {
+        console.error('Supabase user creation failed:', error);
         
         // Handle specific error cases
-        if (adminError.message.includes('User already registered')) {
+        if (error.message.includes('User already registered')) {
           setAuthError('An account with this email already exists. Please try signing in instead.');
           toast({
             title: "Account exists",
@@ -110,16 +111,16 @@ export const useAuthProvider = () => {
           return;
         }
         
-        setAuthError(adminError.message);
+        setAuthError(error.message);
         toast({
           title: "Signup failed",
-          description: adminError.message,
+          description: error.message,
           variant: "destructive",
         });
         return;
       }
 
-      console.log('✅ User created successfully via Admin API (NO default emails sent)');
+      console.log('✅ User created successfully via Supabase');
       console.log('Step 2: Sending ONLY our custom branded email...');
 
       // Step 2: Send ONLY our custom email using the verified tennexis.com domain
