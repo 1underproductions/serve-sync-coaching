@@ -284,38 +284,43 @@ serve(async (req) => {
         console.log("=== CALLING RESEND EMAIL FUNCTION ===");
         const emailResponse = await sendResendEmail(
           email,
-          "Welcome to Tennexis - Please Confirm Your Account",
+          "Verify your Tennexis account",
           `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
-              <h1 style="color: #3b82f6; margin-bottom: 20px;">Welcome to Tennexis!</h1>
-              
-              <p style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
-                Thank you for signing up! We're excited to have you join our coaching platform. 
-                To get started, please confirm your email address by clicking the button below.
-              </p>
-              
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${magicLinkUrl}" style="display: inline-block; background-color: #3b82f6; color: white; font-weight: bold; padding: 12px 24px; text-decoration: none; border-radius: 4px;">
-                  Confirm My Account
-                </a>
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #333333; line-height: 1.6;">
+              <div style="text-align: center; margin-bottom: 40px;">
+                <h1 style="color: #2563eb; font-size: 28px; font-weight: 600; margin: 0;">Welcome to Tennexis</h1>
               </div>
               
-              <p style="font-size: 16px; line-height: 1.5; margin-bottom: 10px;">
-                Or copy and paste this URL into your browser:
-              </p>
+              <div style="background-color: #f8fafc; border-radius: 8px; padding: 30px; margin-bottom: 30px;">
+                <p style="font-size: 18px; margin: 0 0 20px 0;">
+                  Thank you for creating your Tennexis account. To complete your registration and start using our tennis coaching platform, please verify your email address.
+                </p>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="${magicLinkUrl}" style="display: inline-block; background-color: #2563eb; color: #ffffff; font-weight: 600; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-size: 16px;">
+                    Verify Email Address
+                  </a>
+                </div>
+                
+                <p style="font-size: 14px; color: #6b7280; margin: 20px 0 0 0; text-align: center;">
+                  This verification link will expire in 24 hours for security purposes.
+                </p>
+              </div>
               
-              <p style="font-size: 14px; line-height: 1.5; margin-bottom: 30px; word-break: break-all; color: #4a5568;">
-                ${magicLinkUrl}
-              </p>
+              <div style="border-top: 1px solid #e5e7eb; padding-top: 20px;">
+                <p style="font-size: 14px; color: #6b7280; margin: 0;">
+                  If you didn't create this account, you can safely ignore this email.
+                </p>
+                <p style="font-size: 14px; color: #6b7280; margin: 10px 0 0 0;">
+                  If the button doesn't work, copy and paste this link: <br>
+                  <span style="word-break: break-all;">${magicLinkUrl}</span>
+                </p>
+              </div>
               
-              <p style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
-                This link will expire in 24 hours. If you didn't sign up for Tennexis, you can safely ignore this email.
-              </p>
-              
-              <div style="border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 30px; font-size: 14px; color: #718096;">
-                <p>&copy; 2025 Tennexis. All rights reserved.</p>
-                <p style="margin-top: 10px; font-size: 12px;">
-                  <strong>Email sent from our verified domain tennexis.com</strong> - This ensures reliable delivery to your inbox.
+              <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                <p style="font-size: 12px; color: #9ca3af; margin: 0;">
+                  © 2025 Tennexis. All rights reserved.<br>
+                  This email was sent from our verified domain tennexis.com
                 </p>
               </div>
             </div>
@@ -339,11 +344,13 @@ serve(async (req) => {
             verified_domain: "tennexis.com",
             api_key_length: resendApiKey.length,
             delivery_status: emailResponse.data?.id ? "Submitted to Resend" : "Status unknown",
-            delivery_notes: [
+            troubleshooting_notes: [
               "Email submitted to Resend successfully using verified tennexis.com domain",
+              "Check your spam/junk folder",
+              "Try a different email provider (Gmail, Outlook) for testing", 
+              "Whitelist noreply@tennexis.com in your email client",
               "Check Resend dashboard at https://resend.com/emails for delivery status",
-              "Domain tennexis.com is verified and ready for production use",
-              "Email should be delivered reliably to recipient's inbox"
+              "If using a corporate email, check with IT about automated email blocking"
             ]
           }
         }), {
@@ -598,7 +605,9 @@ serve(async (req) => {
           "2. Verify RESEND_API_KEY is set correctly in Supabase secrets",
           "3. Domain tennexis.com is verified and ready for production use",
           "4. Check Resend logs at https://resend.com/emails",
-          "5. Try sending to a different email provider for testing"
+          "5. Try sending to a different email provider for testing",
+          "6. Check spam/junk folders",
+          "7. Whitelist noreply@tennexis.com in your email settings"
         ]
       }),
       {
