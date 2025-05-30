@@ -1,291 +1,201 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { 
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, CreditCard, Mail, Lock, User } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
 
-const signUpSchema = z.object({
-  fullName: z.string().min(2, {
-    message: "Full name must be at least 2 characters.",
-  }),
-  email: z.string().email({
-    message: "Please enter a valid email address.",
-  }),
-  password: z.string().min(8, {
-    message: "Password must be at least 8 characters.",
-  }),
-  cardNumber: z.string().min(16, {
-    message: "Please enter a valid card number.",
-  }),
-  expiryDate: z.string().regex(/^(0[1-9]|1[0-2])\/\d{2}$/, {
-    message: "Please enter a valid expiry date (MM/YY).",
-  }),
-  cvc: z.string().regex(/^\d{3,4}$/, {
-    message: "Please enter a valid CVC code.",
-  })
-});
-
-type SignUpFormValues = z.infer<typeof signUpSchema>;
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
+import { sendCustomEmail } from '@/lib/supabase';
+import { Loader2 } from 'lucide-react';
 
 const SignUp = () => {
-  const [showPassword, setShowPassword] = useState(false);
-  const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const { signUp, isLoading } = useAuth();
-  
-  const form = useForm<SignUpFormValues>({
-    resolver: zodResolver(signUpSchema),
-    defaultValues: {
-      fullName: "",
-      email: "",
-      password: "",
-      cardNumber: "",
-      expiryDate: "",
-      cvc: "",
-    },
-  });
+  const navigate = useNavigate();
 
-  const onSubmit = async (data: SignUpFormValues) => {
-    try {
-      // In a real application, you would process the payment information here
-      // For this demo, we're just passing the full name to our signUp function
-      await signUp(data.email, data.password, {
-        fullName: data.fullName,
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !password || !fullName) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please fill in all fields"
       });
+      return;
+    }
+
+    setLoading(true);
+    
+    try {
+      console.log("=== STARTING SIGNUP PROCESS ===");
+      console.log("Email:", email);
+      console.log("Full Name:", fullName);
       
-      // Redirect to the email confirmation page instead of relying on navigation in signUp function
-      navigate('/email-confirmation');
-    } catch (error) {
-      // Error is handled in the signUp function
-      console.error("Signup error:", error);
+      // Use the custom email function for signup verification
+      console.log("Calling custom email function for signup...");
+      
+      const emailData = {
+        full_name: fullName,
+        password: password, // Include password for account creation
+        redirect_to: `${window.location.origin}/auth/callback`
+      };
+      
+      console.log("Email data being sent:", emailData);
+      
+      const result = await sendCustomEmail('signup', email, emailData);
+      
+      console.log("Custom email function result:", result);
+      
+      if (result && result.success) {
+        toast({
+          title: "✅ Verification email sent!",
+          description: `Please check your email at ${email} to verify your account. Check spam folder if needed.`
+        });
+        
+        // Navigate to email confirmation page with email
+        navigate('/email-confirmation', { 
+          state: { 
+            email,
+            signupAttempted: true,
+            customEmailUsed: true
+          } 
+        });
+      } else {
+        // Handle case where success is not explicitly true
+        console.warn("Email send result unclear:", result);
+        toast({
+          variant: "destructive",
+          title: "Email sending status unclear",
+          description: `We attempted to send a verification email to ${email}. Please check your inbox and spam folder.`
+        });
+        
+        // Still navigate to confirmation page
+        navigate('/email-confirmation', { 
+          state: { 
+            email,
+            signupAttempted: true,
+            customEmailUsed: true,
+            warningShown: true
+          } 
+        });
+      }
+    } catch (error: any) {
+      console.error("=== SIGNUP ERROR ===");
+      console.error("Error during signup:", error);
+      
+      toast({
+        variant: "destructive",
+        title: "Sign up failed",
+        description: `Error: ${error.message || "Unknown error occurred"}. Please try again.`
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const formatCardNumber = (value: string) => {
-    const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
-    if (v.length > 16) return v.slice(0, 16);
-    return v;
-  };
-
-  const formatExpiryDate = (value: string) => {
-    const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
-    if (v.length > 4) return v.slice(0, 4);
-    if (v.length > 2) return `${v.slice(0, 2)}/${v.slice(2)}`;
-    return v;
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <Link to="/" className="flex justify-center mb-4">
-          <span className="text-2xl font-bold text-tennis-green-600">Tennexis</span>
-        </Link>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Start your free trial
-        </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          14 days free. No credit card charged until trial ends.{" "}
-          <Link to="/login" className="font-medium text-tennis-green-600 hover:text-tennis-green-500">
-            Already have an account?
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <Link to="/" className="text-2xl font-bold text-tennis-green-600">
+            Tennexis
           </Link>
-        </p>
-      </div>
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+            Create your account
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Join the tennis coaching platform
+          </p>
+        </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="fullName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Full Name</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                        <Input
-                          className="pl-10"
-                          placeholder="John Doe"
-                          {...field}
-                        />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email address</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                        <Input
-                          className="pl-10"
-                          type="email"
-                          placeholder="coach@example.com"
-                          {...field}
-                        />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                        <Input
-                          className="pl-10 pr-10"
-                          type={showPassword ? "text" : "password"}
-                          placeholder="••••••••"
-                          {...field}
-                        />
-                        <button
-                          type="button"
-                          className="absolute right-3 top-3"
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
-                          {showPassword ? (
-                            <EyeOff className="h-4 w-4 text-gray-400" />
-                          ) : (
-                            <Eye className="h-4 w-4 text-gray-400" />
-                          )}
-                        </button>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="mt-8 mb-4">
-                <Separator />
-                <div className="relative -top-3 text-center">
-                  <span className="bg-white px-2 text-sm text-gray-500">
-                    Payment Information
-                  </span>
-                </div>
-              </div>
-
-              <FormField
-                control={form.control}
-                name="cardNumber"
-                render={({ field: { onChange, ...rest } }) => (
-                  <FormItem>
-                    <FormLabel>Card Number</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <CreditCard className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                        <Input
-                          className="pl-10"
-                          placeholder="1234 5678 9012 3456"
-                          maxLength={16}
-                          onChange={(e) => {
-                            onChange(formatCardNumber(e.target.value));
-                          }}
-                          {...rest}
-                        />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="expiryDate"
-                  render={({ field: { onChange, ...rest } }) => (
-                    <FormItem>
-                      <FormLabel>Expiry Date</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="MM/YY" 
-                          onChange={(e) => {
-                            onChange(formatExpiryDate(e.target.value));
-                          }}
-                          {...rest}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="cvc"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>CVC</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="123" 
-                          maxLength={4}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="text-xs text-gray-500 mt-4">
-                <p>
-                  You won't be charged during your free trial. After it ends, you'll be automatically subscribed to the Pro plan at $9.95/month.
-                </p>
-                <p className="mt-2">
-                  By signing up, you agree to our{" "}
-                  <Link to="#" className="text-tennis-green-600 hover:underline">
-                    Terms of Service
-                  </Link>{" "}
-                  and{" "}
-                  <Link to="#" className="text-tennis-green-600 hover:underline">
-                    Privacy Policy
-                  </Link>
-                  .
-                </p>
-              </div>
-
+        <Card>
+          <CardHeader>
+            <CardTitle>Sign Up</CardTitle>
+            <CardDescription>
+              Enter your details to create your Tennexis account
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSignUp} className="space-y-4">
               <div>
-                <Button 
-                  type="submit" 
-                  className="w-full"
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Creating Account..." : "Start Free Trial"}
-                </Button>
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input
+                  id="fullName"
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Enter your full name"
+                  required
+                />
               </div>
+              
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Create a password"
+                  required
+                />
+              </div>
+              
+              <Button 
+                type="submit" 
+                className="w-full bg-tennis-green-600 hover:bg-tennis-green-700"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating account...
+                  </>
+                ) : (
+                  'Create Account'
+                )}
+              </Button>
             </form>
-          </Form>
+            
+            <div className="mt-4 text-center">
+              <p className="text-sm text-gray-600">
+                Already have an account?{' '}
+                <Link to="/login" className="text-tennis-green-600 hover:text-tennis-green-500 font-medium">
+                  Sign in
+                </Link>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <div className="text-center">
+          <p className="text-xs text-gray-500">
+            By creating an account, you agree to our{' '}
+            <Link to="/terms" className="text-tennis-green-600 hover:text-tennis-green-500">
+              Terms of Service
+            </Link>{' '}
+            and{' '}
+            <Link to="/privacy" className="text-tennis-green-600 hover:text-tennis-green-500">
+              Privacy Policy
+            </Link>
+          </p>
         </div>
       </div>
     </div>

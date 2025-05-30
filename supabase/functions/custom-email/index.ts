@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 
 // Initialize Resend client with API key
 const resendApiKey = Deno.env.get("RESEND_API_KEY");
@@ -16,6 +17,11 @@ console.log(`API key starts with: ${resendApiKey ? resendApiKey.substring(0, 8) 
 // Get the Supabase project URL from environment variables or use the default
 const projectUrl = Deno.env.get("PROJECT_URL") || "https://cugwtwpgccpcjeumrkxf.supabase.co";
 console.log("Project URL set to:", projectUrl);
+
+// Initialize Supabase client for admin operations
+const supabaseUrl = 'https://cugwtwpgccpcjeumrkxf.supabase.co';
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+const supabase = createClient(supabaseUrl, supabaseServiceKey || '');
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -255,33 +261,73 @@ serve(async (req) => {
         throw new Error("Invalid data provided for email");
       }
       
-      // Get the redirect URL
-      let redirect_to = data.redirect_to || `${projectUrl}/auth/callback`;
-      console.log("Initial redirect_to:", redirect_to);
+      const { full_name, password } = data;
       
-      // Ensure redirect URL is properly formatted
-      if (!redirect_to.startsWith('http')) {
-        const appUrl = req.headers.get('origin') || projectUrl;
-        redirect_to = `${appUrl.replace(/\/$/, "")}${redirect_to.startsWith('/') ? '' : '/'}${redirect_to}`;
-        console.log("Modified redirect_to with origin:", redirect_to);
+      if (!full_name || !password) {
+        throw new Error("Missing required fields: full_name and password are required for signup");
       }
       
-      // For signup emails, we'll create a magic link for email verification
-      console.log("Generating magic link for signup verification");
-      
-      // Get origin for better redirect experience
-      const origin = req.headers.get('origin') || req.headers.get('referer') || projectUrl;
-      console.log("Using origin:", origin);
-      
-      const redirectUrl = `${origin.replace(/\/$/, "")}/auth/callback`;
-      console.log("Redirect URL for magic link:", redirectUrl);
-      
-      // Create a proper Supabase auth magic link
-      const magicLinkUrl = `${projectUrl}/auth/v1/magiclink?email=${encodeURIComponent(email)}&redirect_to=${encodeURIComponent(redirectUrl)}`;
-      console.log("Generated magic link URL:", magicLinkUrl);
+      console.log("Creating user account in Supabase...");
       
       try {
-        console.log("=== CALLING RESEND EMAIL FUNCTION ===");
+        // Create the user account using Supabase admin client
+        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+          email: email,
+          password: password,
+          email_confirm: false, // We'll handle confirmation with our custom email
+          user_metadata: {
+            full_name: full_name
+          }
+        });
+        
+        if (authError) {
+          console.error("Error creating user in Supabase:", authError);
+          throw new Error(`Failed to create user account: ${authError.message}`);
+        }
+        
+        console.log("User created successfully:", authData.user?.id);
+        
+        // Create profile entry
+        if (authData.user) {
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert({
+              id: authData.user.id,
+              email: email,
+              full_name: full_name,
+              role: 'user'
+            });
+          
+          if (profileError) {
+            console.error("Error creating profile:", profileError);
+            // Don't throw here, profile creation failure shouldn't stop the process
+          } else {
+            console.log("Profile created successfully");
+          }
+        }
+        
+        // Generate confirmation link
+        const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+          type: 'signup',
+          email: email,
+          options: {
+            redirectTo: `${window.location?.origin || projectUrl}/auth/callback`
+          }
+        });
+        
+        if (linkError) {
+          console.error("Error generating confirmation link:", linkError);
+          throw new Error(`Failed to generate confirmation link: ${linkError.message}`);
+        }
+        
+        const confirmationUrl = linkData.properties?.action_link;
+        console.log("Generated confirmation URL:", confirmationUrl);
+        
+        if (!confirmationUrl) {
+          throw new Error("Failed to generate confirmation URL");
+        }
+        
+        // Send the branded email with confirmation link
         const emailResponse = await sendResendEmail(
           email,
           "Verify your Tennexis account",
@@ -293,11 +339,14 @@ serve(async (req) => {
               
               <div style="background-color: #f8fafc; border-radius: 8px; padding: 30px; margin-bottom: 30px;">
                 <p style="font-size: 18px; margin: 0 0 20px 0;">
+                  Hi ${full_name},
+                </p>
+                <p style="font-size: 16px; margin: 0 0 20px 0;">
                   Thank you for creating your Tennexis account. To complete your registration and start using our tennis coaching platform, please verify your email address.
                 </p>
                 
                 <div style="text-align: center; margin: 30px 0;">
-                  <a href="${magicLinkUrl}" style="display: inline-block; background-color: #2563eb; color: #ffffff; font-weight: 600; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-size: 16px;">
+                  <a href="${confirmationUrl}" style="display: inline-block; background-color: #2563eb; color: #ffffff; font-weight: 600; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-size: 16px;">
                     Verify Email Address
                   </a>
                 </div>
@@ -313,7 +362,7 @@ serve(async (req) => {
                 </p>
                 <p style="font-size: 14px; color: #6b7280; margin: 10px 0 0 0;">
                   If the button doesn't work, copy and paste this link: <br>
-                  <span style="word-break: break-all;">${magicLinkUrl}</span>
+                  <span style="word-break: break-all;">${confirmationUrl}</span>
                 </p>
               </div>
               
@@ -328,39 +377,32 @@ serve(async (req) => {
           fromAddress
         );
 
-        console.log("=== EMAIL SENT SUCCESSFULLY ===");
+        console.log("=== SIGNUP EMAIL SENT SUCCESSFULLY ===");
         console.log("Email sent successfully via Resend!");
         console.log("Resend response:", JSON.stringify(emailResponse, null, 2));
         
         return new Response(JSON.stringify({ 
           success: true, 
-          message: "Email sent successfully via Resend using verified tennexis.com domain", 
+          message: "Account created and verification email sent successfully via Resend using verified tennexis.com domain", 
           debug_info: { 
+            user_id: authData.user?.id,
             email_sent_to: email, 
-            verification_url_generated: magicLinkUrl,
+            verification_url_generated: confirmationUrl,
             resend_response: emailResponse,
             message_id: emailResponse.data?.id,
             from_address: fromAddress,
             verified_domain: "tennexis.com",
             api_key_length: resendApiKey.length,
-            delivery_status: emailResponse.data?.id ? "Submitted to Resend" : "Status unknown",
-            troubleshooting_notes: [
-              "Email submitted to Resend successfully using verified tennexis.com domain",
-              "Check your spam/junk folder",
-              "Try a different email provider (Gmail, Outlook) for testing", 
-              "Whitelist noreply@tennexis.com in your email client",
-              "Check Resend dashboard at https://resend.com/emails for delivery status",
-              "If using a corporate email, check with IT about automated email blocking"
-            ]
+            delivery_status: emailResponse.data?.id ? "Submitted to Resend" : "Status unknown"
           }
         }), {
           status: 200,
           headers: { "Content-Type": "application/json", ...corsHeaders },
         });
-      } catch (emailError) {
-        console.error("=== EMAIL SENDING FAILED ===");
-        console.error("Error sending email via Resend:", emailError);
-        throw emailError;
+      } catch (signupError) {
+        console.error("=== SIGNUP PROCESS FAILED ===");
+        console.error("Error in signup process:", signupError);
+        throw signupError;
       }
     }
     
