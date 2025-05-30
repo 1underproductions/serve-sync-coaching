@@ -65,8 +65,14 @@ export const useAuthProvider = () => {
         return null;
       }
 
-      setProfile(data);
-      return data;
+      // Type assertion to ensure role conforms to the expected union type
+      const profileData: Profile = {
+        ...data,
+        role: data.role as 'user' | 'admin' | 'tennexis_admin'
+      };
+
+      setProfile(profileData);
+      return profileData;
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
       return null;
@@ -260,13 +266,19 @@ export const useAuthProvider = () => {
 
       if (error) throw error;
 
-      setProfile(updatedProfile);
+      // Type assertion to ensure role conforms to the expected union type
+      const profileData: Profile = {
+        ...updatedProfile,
+        role: updatedProfile.role as 'user' | 'admin' | 'tennexis_admin'
+      };
+
+      setProfile(profileData);
       toast({
         title: "Profile updated",
         description: "Your profile has been updated successfully.",
       });
 
-      return updatedProfile;
+      return profileData;
     } catch (error) {
       console.error('Error updating profile:', error);
       toast({
