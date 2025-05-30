@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, sendCustomEmail, Profile } from '@/lib/supabase';
@@ -84,18 +83,15 @@ export const useAuthProvider = () => {
       setIsLoading(true);
       setAuthError(null);
       
-      console.log('Starting signup process - COMPLETELY bypassing Supabase default emails...');
+      console.log('Starting signup process with custom email only...');
       
-      // Create the user account with email confirmation COMPLETELY disabled
-      // This prevents Supabase from sending ANY automatic emails
+      // Create the user account with standard signup options
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
-          data: metadata,
-          // CRITICAL: Set this to false to prevent any automatic confirmation emails
-          emailSentData: false
+          data: metadata
         }
       });
 
@@ -124,18 +120,18 @@ export const useAuthProvider = () => {
 
       console.log('User created successfully:', data);
 
-      // IMPORTANT: Wait a moment to ensure Supabase has processed the user creation
+      // Wait a moment to ensure Supabase has processed the user creation
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Now send ONLY our custom branded email - NO Supabase defaults should be sent
+      // Send our custom branded email
       try {
-        console.log('Sending ONLY custom branded confirmation email from noreply@tennexis.com...');
+        console.log('Sending custom branded confirmation email from noreply@tennexis.com...');
         await sendCustomEmail('signup', email, {
           fullName: metadata.fullName,
           redirect_to: `${window.location.origin}/auth/callback`
         });
         
-        console.log('SUCCESS: Custom branded email sent from tennexis.com domain - NO Supabase default emails!');
+        console.log('SUCCESS: Custom branded email sent from tennexis.com domain');
         toast({
           title: "Account created!",
           description: "Please check your email to verify your account. The confirmation email is from noreply@tennexis.com",
