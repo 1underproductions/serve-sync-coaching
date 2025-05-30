@@ -239,7 +239,7 @@ serve(async (req) => {
       throw new Error("Email service is not properly configured. Please contact support.");
     }
     
-    // ✅ VERIFIED DOMAIN: Using your verified tennexis.com domain
+    // ✅ VERIFIED DOMAIN: Using your verified tennexis.com domain for ALL emails
     const fromAddress = `Tennexis <noreply@tennexis.com>`;
     
     console.log(`Using from address: ${fromAddress}`);
