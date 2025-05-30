@@ -118,7 +118,14 @@ export const useAuthProvider = () => {
         return;
       }
 
-      console.log('✅ User created successfully without Supabase email');
+      const userAlreadyExists = data?.already_exists;
+      
+      if (userAlreadyExists) {
+        console.log('✅ User already exists, proceeding to send email');
+      } else {
+        console.log('✅ User created successfully without Supabase email');
+      }
+      
       console.log('Step 2: Sending ONLY our custom branded email...');
 
       // Step 2: Send ONLY our custom email using the verified tennexis.com domain
@@ -129,10 +136,18 @@ export const useAuthProvider = () => {
         });
         
         console.log('✅ SUCCESS: ONLY custom Tennexis email sent from noreply@tennexis.com!');
-        toast({
-          title: "Account created!",
-          description: "Please check your email to verify your account. The confirmation email is from noreply@tennexis.com",
-        });
+        
+        if (userAlreadyExists) {
+          toast({
+            title: "Welcome back!",
+            description: "We've sent you a new verification email to noreply@tennexis.com",
+          });
+        } else {
+          toast({
+            title: "Account created!",
+            description: "Please check your email to verify your account. The confirmation email is from noreply@tennexis.com",
+          });
+        }
       } catch (emailError) {
         console.error('Custom email failed:', emailError);
         toast({

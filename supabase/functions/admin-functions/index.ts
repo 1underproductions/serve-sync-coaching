@@ -38,6 +38,38 @@ serve(async (req) => {
     if (action === 'create_user_no_email') {
       console.log("=== CREATING USER WITHOUT EMAIL CONFIRMATION ===");
       
+      // First check if user already exists
+      const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+      
+      if (listError) {
+        console.error('Error checking existing users:', listError);
+        return new Response(
+          JSON.stringify({ error: listError.message }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          }
+        );
+      }
+
+      const existingUser = existingUsers.users.find(u => u.email === email);
+      
+      if (existingUser) {
+        console.log('User already exists, returning existing user info');
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            user: existingUser,
+            message: "User already exists",
+            already_exists: true
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          }
+        );
+      }
+      
       // Create user using admin client - this bypasses email confirmation
       const { data, error } = await supabaseAdmin.auth.admin.createUser({
         email: email,
