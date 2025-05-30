@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, sendCustomEmail, Profile } from '@/lib/supabase';
@@ -121,7 +122,7 @@ export const useAuthProvider = () => {
       console.log('User created successfully:', data);
 
       // Wait a moment to ensure Supabase has processed the user creation
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Send our custom branded email
       try {
