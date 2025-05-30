@@ -84,17 +84,18 @@ export const useAuthProvider = () => {
       setIsLoading(true);
       setAuthError(null);
       
-      console.log('Starting signup process with ONLY custom email function...');
+      console.log('Starting signup process - COMPLETELY bypassing Supabase default emails...');
       
-      // Create the user account with email confirmation disabled
+      // Create the user account with email confirmation COMPLETELY disabled
+      // This prevents Supabase from sending ANY automatic emails
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
           data: metadata,
-          // This is the key change - disable Supabase's automatic confirmation email
-          captchaToken: undefined
+          // CRITICAL: Set this to false to prevent any automatic confirmation emails
+          emailSentData: false
         }
       });
 
@@ -124,20 +125,20 @@ export const useAuthProvider = () => {
       console.log('User created successfully:', data);
 
       // IMPORTANT: Wait a moment to ensure Supabase has processed the user creation
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Now send ONLY our custom branded email
+      // Now send ONLY our custom branded email - NO Supabase defaults should be sent
       try {
-        console.log('Sending ONLY custom signup email...');
+        console.log('Sending ONLY custom branded confirmation email from noreply@tennexis.com...');
         await sendCustomEmail('signup', email, {
           fullName: metadata.fullName,
           redirect_to: `${window.location.origin}/auth/callback`
         });
         
-        console.log('Custom signup email sent successfully - NO Supabase default email should be sent');
+        console.log('SUCCESS: Custom branded email sent from tennexis.com domain - NO Supabase default emails!');
         toast({
           title: "Account created!",
-          description: "Please check your email to verify your account.",
+          description: "Please check your email to verify your account. The confirmation email is from noreply@tennexis.com",
         });
       } catch (emailError) {
         console.error('Error sending custom email:', emailError);

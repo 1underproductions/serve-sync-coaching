@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -269,11 +270,13 @@ serve(async (req) => {
         throw new Error("Invalid data provided for email");
       }
       
-      // Generate a proper email confirmation link using Supabase Admin API
-      console.log("Generating email confirmation link using Supabase Admin API...");
+      // CRITICAL FIX: Generate a proper email confirmation link using Supabase Admin API
+      // This completely bypasses Supabase's default email system
+      console.log("Generating CUSTOM email confirmation link using Supabase Admin API...");
       
       try {
-        // Generate an email confirmation link
+        // Generate an email confirmation link using the ADMIN API (not user signup)
+        // This ensures we control the entire process and bypass defaults
         const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
           type: 'signup',
           email: email,
@@ -287,7 +290,7 @@ serve(async (req) => {
           throw linkError;
         }
         
-        console.log("Email confirmation link generated successfully");
+        console.log("CUSTOM email confirmation link generated successfully - BYPASSING all Supabase defaults");
         const confirmationUrl = linkData.properties.action_link;
         
         try {
@@ -339,12 +342,12 @@ serve(async (req) => {
           );
 
           console.log("=== EMAIL SENT SUCCESSFULLY ===");
-          console.log("Email sent successfully via Resend!");
+          console.log("CUSTOM branded email sent successfully via Resend from noreply@tennexis.com!");
           console.log("Resend response:", JSON.stringify(emailResponse, null, 2));
           
           return new Response(JSON.stringify({ 
             success: true, 
-            message: "Email sent successfully via Resend using verified tennexis.com domain", 
+            message: "CUSTOM email sent successfully via Resend using verified tennexis.com domain", 
             debug_info: { 
               email_sent_to: email, 
               verification_url_generated: confirmationUrl,
@@ -354,13 +357,12 @@ serve(async (req) => {
               verified_domain: "tennexis.com",
               api_key_length: resendApiKey.length,
               delivery_status: emailResponse.data?.id ? "Submitted to Resend" : "Status unknown",
-              troubleshooting_notes: [
-                "Email submitted to Resend successfully using verified tennexis.com domain",
-                "Check your spam/junk folder",
-                "Try a different email provider (Gmail, Outlook) for testing", 
-                "Whitelist noreply@tennexis.com in your email client",
-                "Check Resend dashboard at https://resend.com/emails for delivery status",
-                "If using a corporate email, check with IT about automated email blocking"
+              IMPORTANT_NOTES: [
+                "🎉 CUSTOM EMAIL SENT from noreply@tennexis.com",
+                "✅ NO Supabase default emails should be sent",
+                "📧 Check your inbox for branded Tennexis confirmation email",
+                "🔍 If not received, check spam/junk folder",
+                "📊 Check Resend dashboard at https://resend.com/emails for delivery status"
               ]
             }
           }), {
