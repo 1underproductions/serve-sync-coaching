@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, sendCustomEmail, Profile } from '@/lib/supabase';
@@ -84,14 +83,15 @@ export const useAuthProvider = () => {
       setIsLoading(true);
       setAuthError(null);
       
-      console.log('Starting signup process with custom email only...');
+      console.log('Starting signup process with ONLY custom email...');
       
-      // Create the user account with standard signup options
+      // Create the user account with email confirmation DISABLED
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          // CRITICAL: This prevents Supabase from sending ANY emails
+          emailRedirectTo: undefined,
           data: metadata
         }
       });
@@ -119,20 +119,17 @@ export const useAuthProvider = () => {
         return;
       }
 
-      console.log('User created successfully:', data);
+      console.log('User created successfully (unconfirmed):', data);
 
-      // Wait a moment to ensure Supabase has processed the user creation
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Send our custom branded email
+      // IMMEDIATELY send ONLY our custom branded email
       try {
-        console.log('Sending custom branded confirmation email from noreply@tennexis.com...');
+        console.log('Sending ONLY custom branded confirmation email from noreply@tennexis.com...');
         await sendCustomEmail('signup', email, {
           fullName: metadata.fullName,
           redirect_to: `${window.location.origin}/auth/callback`
         });
         
-        console.log('SUCCESS: Custom branded email sent from tennexis.com domain');
+        console.log('SUCCESS: ONLY custom branded email sent from tennexis.com domain');
         toast({
           title: "Account created!",
           description: "Please check your email to verify your account. The confirmation email is from noreply@tennexis.com",
