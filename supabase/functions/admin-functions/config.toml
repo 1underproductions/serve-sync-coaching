@@ -1,0 +1,13 @@
+
+[deploy]
+allowed_origins = ["*"]
+
+[http]
+port = 54321
+
+[deploy.env]
+SUPABASE_URL = "https://cugwtwpgccpcjeumrkxf.supabase.co"
+SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z3d0d3BnY2NwY2pldW1ya3hmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0MzM2MDUwMSwiZXhwIjoyMDU4OTM2NTAxfQ.YTe0D1A-QxHzl4FMODjf6Zm6vPRmLyPAd7bZSr-wLxI"
+
+[auth]
+verify_jwt = false

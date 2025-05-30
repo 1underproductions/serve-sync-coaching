@@ -83,34 +83,21 @@ export const useAuthProvider = () => {
       setIsLoading(true);
       setAuthError(null);
       
-      console.log('=== STARTING CUSTOM SIGNUP PROCESS ===');
-      console.log('Step 1: Creating user with Supabase (no email confirmation required)');
+      console.log('=== STARTING CUSTOM SIGNUP PROCESS (NO SUPABASE EMAIL) ===');
+      console.log('Creating user account and sending ONLY custom email');
       
-      // Step 1: Create user with Supabase but disable email confirmation
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: metadata,
-          // Don't send confirmation email from Supabase
-          emailRedirectTo: undefined,
+      // Step 1: Create user account using the admin endpoint to bypass email confirmation
+      const { data, error } = await supabase.functions.invoke('admin-functions', {
+        body: { 
+          action: 'create_user_no_email',
+          email: email,
+          password: password,
+          user_metadata: metadata
         }
       });
 
       if (error) {
-        console.error('Supabase user creation failed:', error);
-        
-        // Handle specific error cases
-        if (error.message.includes('User already registered')) {
-          setAuthError('An account with this email already exists. Please try signing in instead.');
-          toast({
-            title: "Account exists",
-            description: "An account with this email already exists. Please try signing in instead.",
-            variant: "destructive",
-          });
-          return;
-        }
-        
+        console.error('User creation failed:', error);
         setAuthError(error.message);
         toast({
           title: "Signup failed",
@@ -120,7 +107,18 @@ export const useAuthProvider = () => {
         return;
       }
 
-      console.log('✅ User created successfully via Supabase');
+      if (data?.error) {
+        console.error('User creation failed:', data.error);
+        setAuthError(data.error);
+        toast({
+          title: "Signup failed",
+          description: data.error,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('✅ User created successfully without Supabase email');
       console.log('Step 2: Sending ONLY our custom branded email...');
 
       // Step 2: Send ONLY our custom email using the verified tennexis.com domain
