@@ -83,15 +83,16 @@ export const useAuthProvider = () => {
       setIsLoading(true);
       setAuthError(null);
       
-      console.log('Starting signup process with ONLY custom email...');
+      console.log('Starting signup process - CUSTOM EMAIL ONLY...');
       
       // Create the user account with email confirmation DISABLED
+      // This prevents ANY Supabase emails from being sent
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          // CRITICAL: This prevents Supabase from sending ANY emails
-          emailRedirectTo: undefined,
+          // CRITICAL: Completely disable Supabase's email system
+          emailRedirectTo: undefined, // No redirect URL means no email
           data: metadata
         }
       });
