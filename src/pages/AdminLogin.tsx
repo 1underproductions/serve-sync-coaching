@@ -20,6 +20,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/useAuth";
 import { confirmAdminEmail } from "@/utils/adminUtils";
+import { testSupabaseConnection, testAdminFunctions } from "@/utils/connectionTest";
 
 const loginSchema = z.object({
   email: z.string().email({
@@ -37,6 +38,7 @@ const AdminLogin = () => {
   const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
   const [isConfirmingEmail, setIsConfirmingEmail] = useState(false);
   const [loginAttempted, setLoginAttempted] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<string>('testing');
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAdmin, isLoading, signIn, authError, user } = useAuth();
@@ -48,6 +50,55 @@ const AdminLogin = () => {
       password: "admin123",
     },
   });
+
+  // Test connection on component mount
+  useEffect(() => {
+    const testConnection = async () => {
+      try {
+        setConnectionStatus('testing');
+        
+        // Test basic Supabase connection
+        const connectionTest = await testSupabaseConnection();
+        
+        if (!connectionTest.success) {
+          setConnectionStatus(`Connection failed: ${connectionTest.error}`);
+          toast({
+            variant: "destructive",
+            title: "Connection Issue",
+            description: `Supabase connection failed: ${connectionTest.error}`,
+          });
+          return;
+        }
+        
+        // Test admin functions
+        const adminTest = await testAdminFunctions();
+        
+        if (!adminTest.success) {
+          setConnectionStatus(`Admin functions failed: ${adminTest.error}`);
+          toast({
+            variant: "destructive",
+            title: "Admin Functions Issue",
+            description: `Admin functions not responding: ${adminTest.error}`,
+          });
+          return;
+        }
+        
+        setConnectionStatus('connected');
+        console.log('✅ All Supabase services are working');
+        
+      } catch (error) {
+        console.error('Connection test failed:', error);
+        setConnectionStatus(`Test failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        toast({
+          variant: "destructive",
+          title: "Connection Test Failed",
+          description: "Unable to test Supabase connection",
+        });
+      }
+    };
+    
+    testConnection();
+  }, [toast]);
 
   // Check if user is already logged in and is admin
   useEffect(() => {
@@ -63,7 +114,7 @@ const AdminLogin = () => {
   useEffect(() => {
     const setupAdminAccount = async () => {
       try {
-        if (isCreatingAdmin) return;
+        if (isCreatingAdmin || connectionStatus !== 'connected') return;
         
         setIsCreatingAdmin(true);
         
@@ -125,7 +176,7 @@ const AdminLogin = () => {
     };
     
     setupAdminAccount();
-  }, [toast]);
+  }, [toast, connectionStatus]);
 
   const onSubmit = async (data: LoginFormValues) => {
     try {
@@ -195,6 +246,30 @@ const AdminLogin = () => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          {/* Connection Status Alert */}
+          {connectionStatus !== 'connected' && (
+            <Alert className={`mb-6 ${connectionStatus === 'testing' ? 'bg-blue-50 border-blue-200' : 'bg-red-50 border-red-200'}`}>
+              <AlertDescription>
+                <div className="flex items-center space-x-2">
+                  {connectionStatus === 'testing' && (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  )}
+                  <span>
+                    Connection Status: {connectionStatus === 'testing' ? 'Testing Supabase connection...' : connectionStatus}
+                  </span>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {connectionStatus === 'connected' && (
+            <Alert className="mb-6 bg-green-50 border-green-200">
+              <AlertDescription>
+                ✅ Supabase connection restored and working properly
+              </AlertDescription>
+            </Alert>
+          )}
+
           {authError && authError.includes("Email not confirmed") && (
             <Alert variant="destructive" className="mb-6">
               <AlertDescription>
@@ -289,9 +364,9 @@ const AdminLogin = () => {
                 <Button 
                   type="submit" 
                   className="w-full" 
-                  disabled={isLoading || isCreatingAdmin || isConfirmingEmail}
+                  disabled={isLoading || isCreatingAdmin || isConfirmingEmail || connectionStatus !== 'connected'}
                 >
-                  {isLoading ? "Signing in..." : "Sign in to Admin Portal"}
+                  {isLoading ? "Signing in..." : connectionStatus !== 'connected' ? "Waiting for connection..." : "Sign in to Admin Portal"}
                 </Button>
               </div>
             </form>
