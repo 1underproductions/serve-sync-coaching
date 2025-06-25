@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { User, Mail, Phone, MessageSquare, Calendar, BarChart3, FileText, ChartLine, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -31,6 +30,7 @@ interface PlayerCardProps {
   parentPhone?: string;
   extraActions?: React.ReactNode;
   onPlayerDeleted?: () => void;
+  onProgressClick?: (player: any) => void;
 }
 
 const PlayerCard = ({ 
@@ -46,7 +46,8 @@ const PlayerCard = ({
   parentEmail,
   parentPhone,
   extraActions,
-  onPlayerDeleted
+  onPlayerDeleted,
+  onProgressClick
 }: PlayerCardProps) => {
   const { toast } = useToast();
 
@@ -89,6 +90,25 @@ const PlayerCard = ({
         description: "Failed to delete player. Please try again.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleProgressClick = () => {
+    if (onProgressClick) {
+      const playerData = {
+        id,
+        name,
+        skill,
+        age,
+        email,
+        phone,
+        sessionsCount,
+        isChild,
+        parentName,
+        parentEmail,
+        parentPhone
+      };
+      onProgressClick(playerData);
     }
   };
 
@@ -206,7 +226,7 @@ const PlayerCard = ({
               View Profile
             </Link>
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => {}}>
+          <Button variant="ghost" size="sm" onClick={handleProgressClick}>
             <ChartLine className="h-4 w-4 mr-1" />
             Progress
           </Button>

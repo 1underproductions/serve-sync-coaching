@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -134,6 +133,7 @@ const Players = () => {
                 key={player.id} 
                 {...player}
                 onPlayerDeleted={handlePlayerDeleted}
+                onProgressClick={openProgressDialog}
               />
             ))}
           </div>
