@@ -5,8 +5,11 @@ import Layout from "@/components/layout/Layout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
-import NewSessionForm from "@/components/schedule/NewSessionForm"; // Changed to default import
+import NewSessionForm from "@/components/schedule/NewSessionForm";
+import SessionPaymentManager from "@/components/schedule/SessionPaymentManager";
+import SessionNotificationManager from "@/components/schedule/SessionNotificationManager";
 import { ArrowLeft } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const SessionEdit = () => {
   const { sessionId } = useParams();
@@ -72,35 +75,75 @@ const SessionEdit = () => {
           <h1 className="text-3xl font-bold tracking-tight">Edit Session</h1>
         </div>
         
-        <Card>
-          <CardHeader>
-            <CardTitle>Session Details</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex justify-center p-8">
-                <p>Loading session details...</p>
-              </div>
-            ) : session ? (
-              <NewSessionForm 
-                key={session.id} 
-                initialData={session} 
-                onSessionCreated={handleSessionUpdated} 
+        {loading ? (
+          <div className="flex justify-center p-8">
+            <p>Loading session details...</p>
+          </div>
+        ) : session ? (
+          <Tabs defaultValue="details" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="details">Session Details</TabsTrigger>
+              <TabsTrigger value="payments">Payments</TabsTrigger>
+              <TabsTrigger value="notifications">Notifications</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="details" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Session Details</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <NewSessionForm 
+                    key={session.id} 
+                    initialData={session} 
+                    onSessionCreated={handleSessionUpdated} 
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="payments" className="space-y-6">
+              <SessionPaymentManager
+                sessionId={session.id}
+                sessionDetails={{
+                  title: session.title,
+                  date: session.date,
+                  startTime: session.startTime,
+                  player: session.player,
+                  playerEmail: session.playerEmail,
+                  location: session.location
+                }}
+                coachName="Coach" // You might want to get this from user context
               />
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">Session not found</p>
-                <Button 
-                  className="mt-4" 
-                  variant="outline" 
-                  onClick={() => navigate("/schedule")}
-                >
-                  Return to Schedule
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            </TabsContent>
+            
+            <TabsContent value="notifications" className="space-y-6">
+              <SessionNotificationManager
+                sessionId={session.id}
+                sessionDetails={{
+                  title: session.title,
+                  date: session.date,
+                  startTime: session.startTime,
+                  player: session.player,
+                  playerEmail: session.playerEmail,
+                  location: session.location
+                }}
+                coachName="Coach" // You might want to get this from user context
+              />
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">Session not found</p>
+            <Button 
+              className="mt-4" 
+              variant="outline" 
+              onClick={() => navigate("/schedule")}
+            >
+              Return to Schedule
+            </Button>
+          </div>
+        )}
       </div>
     </Layout>
   );

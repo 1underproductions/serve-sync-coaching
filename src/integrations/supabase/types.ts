@@ -400,6 +400,96 @@ export type Database = {
         }
         Relationships: []
       }
+      session_notifications: {
+        Row: {
+          coach_id: string
+          created_at: string
+          email_content: Json | null
+          error_message: string | null
+          id: string
+          notification_type: string
+          recipient_email: string
+          sent_at: string | null
+          session_id: string
+          status: string | null
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          email_content?: Json | null
+          error_message?: string | null
+          id?: string
+          notification_type: string
+          recipient_email: string
+          sent_at?: string | null
+          session_id: string
+          status?: string | null
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          email_content?: Json | null
+          error_message?: string | null
+          id?: string
+          notification_type?: string
+          recipient_email?: string
+          sent_at?: string | null
+          session_id?: string
+          status?: string | null
+        }
+        Relationships: []
+      }
+      session_payments: {
+        Row: {
+          amount: number | null
+          coach_id: string
+          created_at: string
+          currency: string | null
+          due_date: string | null
+          id: string
+          notes: string | null
+          payment_date: string | null
+          payment_method: string | null
+          payment_status: string | null
+          player_email: string | null
+          session_id: string
+          stripe_payment_intent_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          coach_id: string
+          created_at?: string
+          currency?: string | null
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          player_email?: string | null
+          session_id: string
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          coach_id?: string
+          created_at?: string
+          currency?: string | null
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          player_email?: string | null
+          session_id?: string
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sessions: {
         Row: {
           coach_id: string
