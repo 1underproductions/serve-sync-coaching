@@ -32,24 +32,8 @@ serve(async (req) => {
   }
 
   try {
-    const { action, email, password, user_metadata, test } = await req.json();
+    const { action, email, password, user_metadata } = await req.json();
     console.log(`Processing admin action: ${action} for email: ${email}`);
-
-    // Handle connection test
-    if (action === 'test_connection' || test === true) {
-      console.log("=== CONNECTION TEST ===");
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: "Admin functions are working",
-          timestamp: new Date().toISOString()
-        }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
-    }
 
     if (action === 'create_user_no_email') {
       console.log("=== CREATING USER WITHOUT EMAIL CONFIRMATION ===");
