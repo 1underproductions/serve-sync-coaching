@@ -1,9 +1,21 @@
 
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { User, Mail, Phone, MessageSquare, Calendar, BarChart3, FileText, ChartLine } from "lucide-react";
+import { User, Mail, Phone, MessageSquare, Calendar, BarChart3, FileText, ChartLine, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 interface PlayerCardProps {
   id: string;
@@ -18,6 +30,7 @@ interface PlayerCardProps {
   parentEmail?: string;
   parentPhone?: string;
   extraActions?: React.ReactNode;
+  onPlayerDeleted?: () => void;
 }
 
 const PlayerCard = ({ 
@@ -32,8 +45,11 @@ const PlayerCard = ({
   parentName,
   parentEmail,
   parentPhone,
-  extraActions 
+  extraActions,
+  onPlayerDeleted
 }: PlayerCardProps) => {
+  const { toast } = useToast();
+
   const emailPlayer = (e: React.MouseEvent) => {
     e.preventDefault();
     const contactEmail = isChild ? parentEmail : email;
@@ -47,6 +63,32 @@ const PlayerCard = ({
     const contactPhone = isChild ? parentPhone : phone;
     if (contactPhone) {
       window.location.href = `tel:${contactPhone}`;
+    }
+  };
+
+  const handleDeletePlayer = async () => {
+    try {
+      const existingPlayers = JSON.parse(localStorage.getItem("players") || "[]");
+      const updatedPlayers = existingPlayers.filter(p => p.id !== id);
+      
+      localStorage.setItem("players", JSON.stringify(updatedPlayers));
+      
+      toast({
+        title: "Player Deleted",
+        description: `${name} has been removed from your players list.`,
+      });
+      
+      // Call the callback to refresh the parent component
+      if (onPlayerDeleted) {
+        onPlayerDeleted();
+      }
+    } catch (error) {
+      console.error("Error deleting player:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete player. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -73,9 +115,32 @@ const PlayerCard = ({
             </h3>
             <p className="text-sm text-muted-foreground">{skill} • {age} years old</p>
           </div>
-          <div className={`flex items-center ${getProgressColor()}`}>
-            <BarChart3 className="h-4 w-4 mr-1" />
-            <span className="text-sm font-medium">{sessionsCount} sessions</span>
+          <div className="flex items-center gap-2">
+            <div className={`flex items-center ${getProgressColor()}`}>
+              <BarChart3 className="h-4 w-4 mr-1" />
+              <span className="text-sm font-medium">{sessionsCount} sessions</span>
+            </div>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500 hover:text-red-700">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Player</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete {name}? This action cannot be undone and will permanently remove all player data.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeletePlayer} className="bg-red-600 hover:bg-red-700">
+                    Delete Player
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </CardHeader>

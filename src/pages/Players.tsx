@@ -41,7 +41,7 @@ const Players = () => {
   const [isProgressDialogOpen, setIsProgressDialogOpen] = useState(false);
   const navigate = useNavigate();
   
-  useEffect(() => {
+  const loadPlayers = () => {
     // Load players from localStorage
     const storedPlayers = localStorage.getItem("players");
     if (storedPlayers) {
@@ -67,6 +67,10 @@ const Players = () => {
       localStorage.setItem("players", JSON.stringify(mockPlayers));
       setPlayers(mockPlayers);
     }
+  };
+
+  useEffect(() => {
+    loadPlayers();
   }, []);
   
   // Filter players based on search query
@@ -80,6 +84,10 @@ const Players = () => {
   const openProgressDialog = (player: Player) => {
     setSelectedPlayer(player);
     setIsProgressDialogOpen(true);
+  };
+
+  const handlePlayerDeleted = () => {
+    loadPlayers(); // Reload players from localStorage
   };
 
   return (
@@ -125,6 +133,7 @@ const Players = () => {
               <PlayerCard 
                 key={player.id} 
                 {...player}
+                onPlayerDeleted={handlePlayerDeleted}
               />
             ))}
           </div>
