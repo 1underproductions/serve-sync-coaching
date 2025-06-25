@@ -25,6 +25,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
+import { supabase } from "@/integrations/supabase/client";
 
 const playerFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
@@ -69,6 +70,7 @@ type PlayerFormValues = z.infer<typeof playerFormSchema>;
 const NewPlayer = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const form = useForm<PlayerFormValues>({
     resolver: zodResolver(playerFormSchema),
@@ -88,26 +90,78 @@ const NewPlayer = () => {
 
   const isChild = form.watch("isChild");
 
-  const onSubmit = (data: PlayerFormValues) => {
-    // In a real app, this would add to a database
-    // For now, we'll use localStorage to persist the data
-    const existingPlayers = JSON.parse(localStorage.getItem("players") || "[]");
-    const newPlayer = {
-      id: crypto.randomUUID(),
-      ...data,
-      age: parseInt(data.age),
-      sessionsCount: 0, // New player starts with 0 sessions
-    };
+  const sendWelcomeEmail = async (playerData: PlayerFormValues, coachData: { name: string; email: string }) => {
+    try {
+      const { error } = await supabase.functions.invoke('send-welcome-email', {
+        body: {
+          playerName: playerData.name,
+          playerEmail: playerData.email,
+          coachName: coachData.name,
+          coachEmail: coachData.email,
+          isChild: playerData.isChild,
+          parentName: playerData.parentName,
+          parentEmail: playerData.parentEmail,
+        }
+      });
+
+      if (error) {
+        console.error('Error sending welcome email:', error);
+        // Don't throw error - we don't want to prevent player creation if email fails
+        toast({
+          title: "Email Warning",
+          description: "Player was added successfully, but welcome email could not be sent.",
+          variant: "destructive",
+        });
+      } else {
+        console.log('Welcome email sent successfully');
+      }
+    } catch (error) {
+      console.error('Failed to send welcome email:', error);
+      // Don't throw error - we don't want to prevent player creation if email fails
+    }
+  };
+
+  const onSubmit = async (data: PlayerFormValues) => {
+    setIsSubmitting(true);
     
-    const updatedPlayers = [...existingPlayers, newPlayer];
-    localStorage.setItem("players", JSON.stringify(updatedPlayers));
-    
-    toast({
-      title: "Player Added",
-      description: `${data.name} has been added to your players list.`,
-    });
-    
-    navigate("/players");
+    try {
+      // In a real app, this would add to a database
+      // For now, we'll use localStorage to persist the data
+      const existingPlayers = JSON.parse(localStorage.getItem("players") || "[]");
+      const newPlayer = {
+        id: crypto.randomUUID(),
+        ...data,
+        age: parseInt(data.age),
+        sessionsCount: 0, // New player starts with 0 sessions
+      };
+      
+      const updatedPlayers = [...existingPlayers, newPlayer];
+      localStorage.setItem("players", JSON.stringify(updatedPlayers));
+      
+      // Send welcome email
+      const coachData = {
+        name: "Coach", // In a real app, this would come from the authenticated user's profile
+        email: "coach@example.com" // In a real app, this would come from the authenticated user's profile
+      };
+      
+      await sendWelcomeEmail(data, coachData);
+      
+      toast({
+        title: "Player Added",
+        description: `${data.name} has been added to your players list. A welcome email has been sent.`,
+      });
+      
+      navigate("/players");
+    } catch (error) {
+      console.error("Error adding player:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add player. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -300,14 +354,16 @@ const NewPlayer = () => {
                 type="button" 
                 variant="outline" 
                 onClick={() => navigate("/players")}
+                disabled={isSubmitting}
               >
                 Cancel
               </Button>
               <Button 
                 type="submit"
                 className="bg-tennis-green-600 hover:bg-tennis-green-700"
+                disabled={isSubmitting}
               >
-                Add Player
+                {isSubmitting ? "Adding Player..." : "Add Player"}
               </Button>
             </div>
           </form>
