@@ -6,7 +6,7 @@ import { useAuth } from '@/context/useAuth';
 interface RouteGuardProps {
   children: ReactNode;
   requireAuth?: boolean;
-  adminOnly?: boolean;
+  requireAdmin?: boolean;
 }
 
 /**
@@ -15,7 +15,7 @@ interface RouteGuardProps {
  * - Admin routes require admin privileges
  * - Public routes (coming soon, login, etc.) are accessible to all
  */
-const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGuardProps) => {
+const RouteGuard = ({ children, requireAuth = true, requireAdmin = false }: RouteGuardProps) => {
   const { user, isAdmin, isLoading, profile } = useAuth();
   const location = useLocation();
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
@@ -62,7 +62,7 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
     path: location.pathname,
     isAdmin,
     isAuthenticated: !!user,
-    adminOnly,
+    requireAdmin,
     requireAuth,
     profile,
     search: location.search,
@@ -115,7 +115,7 @@ const RouteGuard = ({ children, requireAuth = true, adminOnly = false }: RouteGu
   }
   
   // Paths that start with /admin require admin privileges
-  if (adminOnly || location.pathname.startsWith('/admin')) {
+  if (requireAdmin || location.pathname.startsWith('/admin')) {
     if (!user) {
       console.log("Admin route: No user, redirecting to admin-login");
       return <Navigate to="/admin-login" state={{ from: location }} replace />;
