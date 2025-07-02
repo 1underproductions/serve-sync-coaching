@@ -208,7 +208,7 @@ const Dashboard = () => {
               <Button asChild variant="outline" className="h-20 flex flex-col items-center justify-center space-y-1">
                 <Link to="/payments/new">
                   <DollarSign className="h-5 w-5 mb-1" />
-                  <span>Record Payment</span>
+                  <span>Create payment link</span>
                 </Link>
               </Button>
             </CardContent>
