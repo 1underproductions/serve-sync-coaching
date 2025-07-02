@@ -1,12 +1,14 @@
-
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/context/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import Layout from "@/components/layout/Layout";
 
 const profileFAQ = [
   {
@@ -97,6 +99,7 @@ const supportFAQ = [
 const Helpdesk = () => {
   const { user, profile } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
@@ -149,12 +152,23 @@ const Helpdesk = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <div className="container max-w-4xl py-10 flex-1">
-        <h1 className="text-3xl font-bold mb-2 text-center">Helpdesk & User Guide</h1>
-        <p className="text-center text-gray-600 mb-8">
-          Comprehensive guides to help you make the most of your tennis coaching platform. Get answers to common questions or submit a support ticket if you need further assistance.
-        </p>
+    <Layout>
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-6">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/dashboard')}
+            className="mb-4"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
+          </Button>
+          
+          <h1 className="text-3xl font-bold mb-2">Helpdesk & User Guide</h1>
+          <p className="text-gray-600 mb-8">
+            Comprehensive guides to help you make the most of your tennis coaching platform. Get answers to common questions or submit a support ticket if you need further assistance.
+          </p>
+        </div>
         
         <Tabs defaultValue="profile" className="w-full">
           <TabsList className="grid w-full grid-cols-6">
@@ -316,7 +330,7 @@ const Helpdesk = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </Layout>
   );
 };
 
