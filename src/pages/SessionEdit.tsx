@@ -62,6 +62,10 @@ const SessionEdit = () => {
       title: "Session updated",
       description: "The session has been successfully updated.",
     });
+    
+    // Dispatch custom event to notify other components of session updates
+    window.dispatchEvent(new CustomEvent('sessionsUpdated'));
+    
     navigate("/schedule");
   };
 

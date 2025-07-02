@@ -33,6 +33,9 @@ const NewSession = () => {
       description: "Session(s) have been scheduled successfully",
     });
     
+    // Dispatch custom event to notify other components of session updates
+    window.dispatchEvent(new CustomEvent('sessionsUpdated'));
+    
     // Schedule reminders for the new sessions if enabled in settings
     try {
       // Get the latest sessions from localStorage

@@ -6,6 +6,7 @@ import StatsCard from "@/components/dashboard/StatsCard";
 import UpcomingSessionCard from "@/components/dashboard/UpcomingSessionCard";
 import PlayerCard from "@/components/players/PlayerCard";
 import { Link, useNavigate } from "react-router-dom";
+import { useSessionStats } from "@/hooks/useSessionStats";
 
 const upcomingSessions = [
   { id: "1", title: "Advanced Forehand Drills", playerName: "Michael Johnson", date: "Today", time: "3:00 PM - 4:00 PM", type: 'individual' as const },
@@ -21,6 +22,7 @@ const recentPlayers = [
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { stats, isLoading } = useSessionStats();
 
   const handleUpcomingSessionsClick = () => {
     navigate('/schedule?view=list');
@@ -47,10 +49,13 @@ const Dashboard = () => {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatsCard
             title="Upcoming Sessions"
-            value="8"
-            description="3 sessions today"
+            value={isLoading ? "..." : stats.totalUpcoming.toString()}
+            description={isLoading ? "Loading..." : `${stats.todaySessions} sessions today`}
             icon={<CalendarClock className="h-4 w-4" />}
-            trend={{ value: "15%", positive: true }}
+            trend={stats.trendPercentage > 0 ? {
+              value: `${stats.trendPercentage}%`,
+              positive: stats.trendPositive
+            } : undefined}
           />
           <StatsCard
             title="Active Players"
