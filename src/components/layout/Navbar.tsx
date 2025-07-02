@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,6 @@ import {
   DollarSign, 
   User, 
   Menu,
-  Bell,
   Search,
   LogOut,
   Home,
@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/drawer";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
+import NotificationDropdown from "@/components/notifications/NotificationDropdown";
 
 const navItems = [
   { name: "Dashboard", path: "/dashboard", icon: Home },
@@ -144,12 +145,7 @@ const Navbar = () => {
         </div>
         
         <div className="flex items-center space-x-3">
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5" />
-            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center">
-              3
-            </span>
-          </Button>
+          <NotificationDropdown />
           
           <Link to="/helpdesk">
             <Button variant="ghost" size="icon">

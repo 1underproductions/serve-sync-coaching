@@ -5,6 +5,7 @@ import Layout from "@/components/layout/Layout";
 import StatsCard from "@/components/dashboard/StatsCard";
 import UpcomingSessionCard from "@/components/dashboard/UpcomingSessionCard";
 import PlayerCard from "@/components/players/PlayerCard";
+import TestNotificationButton from "@/components/notifications/TestNotificationButton";
 import { Link, useNavigate } from "react-router-dom";
 import { useSessionStats } from "@/hooks/useSessionStats";
 
@@ -38,12 +39,15 @@ const Dashboard = () => {
               Welcome back, Coach! Here's what's happening with your coaching business today.
             </p>
           </div>
-          <Button className="bg-tennis-green-600 hover:bg-tennis-green-700" asChild>
-            <Link to="/schedule/new">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              New Session
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <TestNotificationButton />
+            <Button className="bg-tennis-green-600 hover:bg-tennis-green-700" asChild>
+              <Link to="/schedule/new">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                New Session
+              </Link>
+            </Button>
+          </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
