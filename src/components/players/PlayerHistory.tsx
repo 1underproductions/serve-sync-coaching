@@ -114,7 +114,7 @@ const PlayerHistory = ({ player }) => {
               className={`cursor-pointer hover:bg-gray-50 transition-colors ${
                 requiresFeedback ? 'border-l-4 border-l-orange-400 bg-orange-50/50' : ''
               }`}
-              onClick={() => navigate(`/session/${session.id}`)}
+              onClick={() => navigate(`/sessions/${session.id}`)}
             >
               <CardContent className="p-4">
                 <div className="flex justify-between items-start">
@@ -165,7 +165,7 @@ const PlayerHistory = ({ player }) => {
                     className={`h-8 ${hasNotes ? 'text-tennis-green-700' : 'text-muted-foreground'}`}
                     onClick={(e) => {
                       e.stopPropagation();
-                      navigate(`/session/${session.id}`);
+                      navigate(`/sessions/${session.id}`);
                     }}
                   >
                     <FileText className="h-3.5 w-3.5 mr-1.5" />
