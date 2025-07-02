@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/context/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -140,82 +141,89 @@ const Helpdesk = () => {
           Comprehensive guides to help you make the most of your tennis coaching platform. Get answers to common questions or submit a support ticket if you need further assistance.
         </p>
         
-        {/* FAQ SECTION */}
-        <section className="mb-12">
-          <h2 className="text-2xl font-semibold mb-6">Frequently Asked Questions</h2>
-          <div className="bg-white rounded-lg shadow-sm p-2">
-            <Accordion type="single" collapsible className="w-full">
-              {faqCoach.map((item, idx) => (
-                <AccordionItem key={idx} value={`q${idx}`} className="border-b last:border-b-0">
-                  <AccordionTrigger className="text-left px-4 py-4 hover:bg-gray-50 rounded">
-                    <div className="flex items-center">
-                      <span className="font-medium text-gray-900">{item.question}</span>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="px-4 pb-4">
-                    <div className="text-gray-700 leading-relaxed">{item.answer}</div>
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </div>
-        </section>
+        <Tabs defaultValue="faq" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="faq">FAQ</TabsTrigger>
+            <TabsTrigger value="quickstart">Quick Start</TabsTrigger>
+            <TabsTrigger value="support">Support</TabsTrigger>
+          </TabsList>
 
-        {/* QUICK START GUIDE */}
-        <section className="mb-12">
-          <h2 className="text-2xl font-semibold mb-6">Quick Start Guide</h2>
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="text-center">
-                <div className="bg-tennis-green-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
-                  <span className="text-tennis-green-600 font-bold text-lg">1</span>
+          <TabsContent value="faq" className="mt-6">
+            <div className="bg-white rounded-lg shadow-sm p-2">
+              <h2 className="text-2xl font-semibold mb-6 px-4 pt-4">Frequently Asked Questions</h2>
+              <Accordion type="single" collapsible className="w-full">
+                {faqCoach.map((item, idx) => (
+                  <AccordionItem key={idx} value={`q${idx}`} className="border-b last:border-b-0">
+                    <AccordionTrigger className="text-left px-4 py-4 hover:bg-gray-50 rounded">
+                      <div className="flex items-center">
+                        <span className="font-medium text-gray-900">{item.question}</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-4">
+                      <div className="text-gray-700 leading-relaxed">{item.answer}</div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="quickstart" className="mt-6">
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h2 className="text-2xl font-semibold mb-6">Quick Start Guide</h2>
+              <div className="grid md:grid-cols-3 gap-6">
+                <div className="text-center">
+                  <div className="bg-tennis-green-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                    <span className="text-tennis-green-600 font-bold text-lg">1</span>
+                  </div>
+                  <h3 className="font-semibold mb-2">Set Up Your Profile</h3>
+                  <p className="text-sm text-gray-600">Complete your profile with rates, availability, and qualifications to start attracting players.</p>
                 </div>
-                <h3 className="font-semibold mb-2">Set Up Your Profile</h3>
-                <p className="text-sm text-gray-600">Complete your profile with rates, availability, and qualifications to start attracting players.</p>
-              </div>
-              <div className="text-center">
-                <div className="bg-tennis-green-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
-                  <span className="text-tennis-green-600 font-bold text-lg">2</span>
+                <div className="text-center">
+                  <div className="bg-tennis-green-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                    <span className="text-tennis-green-600 font-bold text-lg">2</span>
+                  </div>
+                  <h3 className="font-semibold mb-2">Add Your Players</h3>
+                  <p className="text-sm text-gray-600">Import or manually add your students with their contact information and skill levels.</p>
                 </div>
-                <h3 className="font-semibold mb-2">Add Your Players</h3>
-                <p className="text-sm text-gray-600">Import or manually add your students with their contact information and skill levels.</p>
-              </div>
-              <div className="text-center">
-                <div className="bg-tennis-green-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
-                  <span className="text-tennis-green-600 font-bold text-lg">3</span>
+                <div className="text-center">
+                  <div className="bg-tennis-green-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                    <span className="text-tennis-green-600 font-bold text-lg">3</span>
+                  </div>
+                  <h3 className="font-semibold mb-2">Start Scheduling</h3>
+                  <p className="text-sm text-gray-600">Create sessions, send invites, and manage payments all in one place.</p>
                 </div>
-                <h3 className="font-semibold mb-2">Start Scheduling</h3>
-                <p className="text-sm text-gray-600">Create sessions, send invites, and manage payments all in one place.</p>
               </div>
             </div>
-          </div>
-        </section>
+          </TabsContent>
 
-        {/* SUBMIT TICKET */}
-        <section className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="font-semibold text-xl mb-4">Submit a Support Ticket</h2>
-          <p className="text-gray-600 mb-6">Can't find what you're looking for? Our support team is here to help!</p>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <input
-              type="text"
-              className="border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-tennis-green-500 focus:border-transparent"
-              placeholder="Subject"
-              value={subject}
-              onChange={e => setSubject(e.target.value)}
-              required
-            />
-            <Textarea
-              placeholder="Describe your problem or question in detail..."
-              value={message}
-              onChange={e => setMessage(e.target.value)}
-              className="min-h-[120px] focus:ring-2 focus:ring-tennis-green-500"
-              required
-            />
-            <Button type="submit" variant="tennis" disabled={submitting} className="self-start">
-              {submitting ? "Submitting..." : "Submit Ticket"}
-            </Button>
-          </form>
-        </section>
+          <TabsContent value="support" className="mt-6">
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h2 className="font-semibold text-xl mb-4">Submit a Support Ticket</h2>
+              <p className="text-gray-600 mb-6">Can't find what you're looking for? Our support team is here to help!</p>
+              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                <input
+                  type="text"
+                  className="border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-tennis-green-500 focus:border-transparent"
+                  placeholder="Subject"
+                  value={subject}
+                  onChange={e => setSubject(e.target.value)}
+                  required
+                />
+                <Textarea
+                  placeholder="Describe your problem or question in detail..."
+                  value={message}
+                  onChange={e => setMessage(e.target.value)}
+                  className="min-h-[120px] focus:ring-2 focus:ring-tennis-green-500"
+                  required
+                />
+                <Button type="submit" variant="tennis" disabled={submitting} className="self-start">
+                  {submitting ? "Submitting..." : "Submit Ticket"}
+                </Button>
+              </form>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
