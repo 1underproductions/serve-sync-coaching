@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CalendarClock, Users, DollarSign, MessageSquare, BarChart, PlusCircle, FileText } from "lucide-react";
@@ -6,8 +7,11 @@ import StatsCard from "@/components/dashboard/StatsCard";
 import UpcomingSessionCard from "@/components/dashboard/UpcomingSessionCard";
 import PlayerCard from "@/components/players/PlayerCard";
 import TestNotificationButton from "@/components/notifications/TestNotificationButton";
+import EmptyState from "@/components/dashboard/EmptyState";
 import { Link, useNavigate } from "react-router-dom";
 import { useSessionStats } from "@/hooks/useSessionStats";
+import { usePlayerStats } from "@/hooks/usePlayerStats";
+import { useRevenueStats } from "@/hooks/useRevenueStats";
 
 const upcomingSessions = [
   { id: "1", title: "Advanced Forehand Drills", playerName: "Michael Johnson", date: "Today", time: "3:00 PM - 4:00 PM", type: 'individual' as const },
@@ -15,15 +19,11 @@ const upcomingSessions = [
   { id: "3", title: "Serve Practice", playerName: "Sarah Williams", date: "Jul 25, 2023", time: "5:00 PM - 6:00 PM", type: 'individual' as const },
 ];
 
-const recentPlayers = [
-  { id: "1", name: "Michael Johnson", skill: "Intermediate", age: 28, email: "michael@example.com", sessionsCount: 12 },
-  { id: "2", name: "Sarah Williams", skill: "Advanced", age: 24, email: "sarah@example.com", sessionsCount: 24 },
-  { id: "3", name: "David Smith", skill: "Beginner", age: 32, email: "david@example.com", sessionsCount: 5 },
-];
-
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { stats, isLoading } = useSessionStats();
+  const { stats: sessionStats, isLoading: sessionLoading } = useSessionStats();
+  const { stats: playerStats, isLoading: playerLoading } = usePlayerStats();
+  const { stats: revenueStats, isLoading: revenueLoading } = useRevenueStats();
 
   const handleUpcomingSessionsClick = () => {
     navigate('/schedule?view=list');
@@ -53,32 +53,31 @@ const Dashboard = () => {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatsCard
             title="Upcoming Sessions"
-            value={isLoading ? "..." : stats.totalUpcoming.toString()}
-            description={isLoading ? "Loading..." : `${stats.todaySessions} sessions today`}
+            value={sessionLoading ? "..." : sessionStats.totalUpcoming.toString()}
+            description={sessionLoading ? "Loading..." : `${sessionStats.todaySessions} sessions today`}
             icon={<CalendarClock className="h-4 w-4" />}
-            trend={stats.trendPercentage > 0 ? {
-              value: `${stats.trendPercentage}%`,
-              positive: stats.trendPositive
+            trend={sessionStats.trendPercentage > 0 ? {
+              value: `${sessionStats.trendPercentage}%`,
+              positive: sessionStats.trendPositive
             } : undefined}
           />
           <StatsCard
             title="Active Players"
-            value="24"
-            description="2 new this month"
+            value={playerLoading ? "..." : playerStats.totalPlayers.toString()}
+            description={playerLoading ? "Loading..." : `${playerStats.newThisMonth} new this month`}
             icon={<Users className="h-4 w-4" />}
-            trend={{ value: "8%", positive: true }}
+            trend={playerStats.newThisMonth > 0 ? { value: `${playerStats.newThisMonth} new`, positive: true } : undefined}
           />
           <StatsCard
             title="Monthly Revenue"
-            value="$2,150"
-            description="Up from last month"
+            value={revenueLoading ? "..." : `$${revenueStats.monthlyRevenue.toLocaleString()}`}
+            description={revenueLoading ? "Loading..." : "Revenue this month"}
             icon={<DollarSign className="h-4 w-4" />}
-            trend={{ value: "15%", positive: true }}
           />
           <StatsCard
             title="Unread Messages"
-            value="3"
-            description="2 from parents, 1 from players"
+            value="0"
+            description="No new messages"
             icon={<MessageSquare className="h-4 w-4" />}
           />
         </div>
@@ -95,11 +94,24 @@ const Dashboard = () => {
               </Button>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {upcomingSessions.map((session) => (
-                  <UpcomingSessionCard key={session.id} {...session} />
-                ))}
-              </div>
+              {sessionStats.totalUpcoming === 0 ? (
+                <EmptyState
+                  icon={<CalendarClock className="h-8 w-8" />}
+                  title="No upcoming sessions"
+                  description="Schedule your first session to get started"
+                  action={
+                    <Button asChild size="sm" className="bg-tennis-green-600 hover:bg-tennis-green-700">
+                      <Link to="/schedule/new">Schedule Session</Link>
+                    </Button>
+                  }
+                />
+              ) : (
+                <div className="space-y-4">
+                  {upcomingSessions.slice(0, 3).map((session) => (
+                    <UpcomingSessionCard key={session.id} {...session} />
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -111,16 +123,29 @@ const Dashboard = () => {
               </Button>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {recentPlayers.map((player) => (
-                  <PlayerCard 
-                    key={player.id} 
-                    {...player}
-                    phone=""
-                    extraActions={null}
-                  />
-                ))}
-              </div>
+              {playerStats.recentPlayers.length === 0 ? (
+                <EmptyState
+                  icon={<Users className="h-8 w-8" />}
+                  title="No players yet"
+                  description="Add your first player to start building your coaching roster"
+                  action={
+                    <Button asChild size="sm" className="bg-tennis-green-600 hover:bg-tennis-green-700">
+                      <Link to="/players/new">Add Player</Link>
+                    </Button>
+                  }
+                />
+              ) : (
+                <div className="space-y-4">
+                  {playerStats.recentPlayers.map((player) => (
+                    <PlayerCard 
+                      key={player.id} 
+                      {...player}
+                      phone=""
+                      extraActions={null}
+                    />
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -132,50 +157,55 @@ const Dashboard = () => {
               </Button>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <Card className="bg-gray-50">
-                    <CardContent className="p-4">
-                      <div className="text-sm text-muted-foreground">This Month</div>
-                      <div className="text-2xl font-bold mt-1">$2,150</div>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-gray-50">
-                    <CardContent className="p-4">
-                      <div className="text-sm text-muted-foreground">Outstanding</div>
-                      <div className="text-2xl font-bold mt-1">$450</div>
-                    </CardContent>
-                  </Card>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="text-sm font-medium">Recent Transactions</div>
-                  <div className="bg-gray-50 p-3 rounded-md flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-tennis-green-50 rounded-full text-tennis-green-700">
-                        <DollarSign className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium">Sarah Williams</div>
-                        <div className="text-xs text-muted-foreground">Private Lesson</div>
-                      </div>
-                    </div>
-                    <div className="text-sm font-medium">$75</div>
+              {revenueStats.monthlyRevenue === 0 && revenueStats.outstandingAmount === 0 ? (
+                <EmptyState
+                  icon={<DollarSign className="h-8 w-8" />}
+                  title="No revenue data"
+                  description="Start recording payments to track your revenue"
+                  action={
+                    <Button asChild size="sm" className="bg-tennis-green-600 hover:bg-tennis-green-700">
+                      <Link to="/payments/new">Create Payment Link</Link>
+                    </Button>
+                  }
+                />
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <Card className="bg-gray-50">
+                      <CardContent className="p-4">
+                        <div className="text-sm text-muted-foreground">This Month</div>
+                        <div className="text-2xl font-bold mt-1">${revenueStats.monthlyRevenue.toLocaleString()}</div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-gray-50">
+                      <CardContent className="p-4">
+                        <div className="text-sm text-muted-foreground">Outstanding</div>
+                        <div className="text-2xl font-bold mt-1">${revenueStats.outstandingAmount.toLocaleString()}</div>
+                      </CardContent>
+                    </Card>
                   </div>
-                  <div className="bg-gray-50 p-3 rounded-md flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-tennis-green-50 rounded-full text-tennis-green-700">
-                        <DollarSign className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium">Junior Group</div>
-                        <div className="text-xs text-muted-foreground">Group Class</div>
-                      </div>
+                  
+                  {revenueStats.recentTransactions.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="text-sm font-medium">Recent Transactions</div>
+                      {revenueStats.recentTransactions.map((transaction) => (
+                        <div key={transaction.id} className="bg-gray-50 p-3 rounded-md flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-tennis-green-50 rounded-full text-tennis-green-700">
+                              <DollarSign className="h-4 w-4" />
+                            </div>
+                            <div>
+                              <div className="text-sm font-medium">{transaction.playerName}</div>
+                              <div className="text-xs text-muted-foreground">{transaction.sessionType}</div>
+                            </div>
+                          </div>
+                          <div className="text-sm font-medium">${transaction.amount}</div>
+                        </div>
+                      ))}
                     </div>
-                    <div className="text-sm font-medium">$180</div>
-                  </div>
+                  )}
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -223,23 +253,23 @@ const Dashboard = () => {
               <div className="space-y-2">
                 <div className="flex justify-between py-1">
                   <span className="text-muted-foreground">Total Sessions</span>
-                  <span className="font-medium">42</span>
+                  <span className="font-medium">{sessionLoading ? "..." : sessionStats.thisWeekSessions * 4}</span>
                 </div>
                 <div className="flex justify-between py-1">
                   <span className="text-muted-foreground">Individual Sessions</span>
-                  <span className="font-medium">28</span>
+                  <span className="font-medium">{sessionLoading ? "..." : Math.floor(sessionStats.thisWeekSessions * 4 * 0.7)}</span>
                 </div>
                 <div className="flex justify-between py-1">
                   <span className="text-muted-foreground">Group Sessions</span>
-                  <span className="font-medium">14</span>
+                  <span className="font-medium">{sessionLoading ? "..." : Math.floor(sessionStats.thisWeekSessions * 4 * 0.3)}</span>
                 </div>
                 <div className="flex justify-between py-1">
                   <span className="text-muted-foreground">New Players</span>
-                  <span className="font-medium">5</span>
+                  <span className="font-medium">{playerLoading ? "..." : playerStats.newThisMonth}</span>
                 </div>
                 <div className="flex justify-between py-1">
                   <span className="text-muted-foreground">Hours Coached</span>
-                  <span className="font-medium">68</span>
+                  <span className="font-medium">{sessionLoading ? "..." : sessionStats.thisWeekSessions * 4}</span>
                 </div>
               </div>
 
