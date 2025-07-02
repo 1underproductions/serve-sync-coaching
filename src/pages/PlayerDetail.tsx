@@ -10,7 +10,8 @@ import { ArrowLeft, Mail, Phone, User, CalendarClock, BarChart3, FileEdit } from
 import PlayerGoals from "@/components/players/PlayerGoals";
 import PlayerNotes from "@/components/players/PlayerNotes";
 import PlayerHistory from "@/components/players/PlayerHistory";
-import ProgressTracking from "@/components/session/ProgressTracking";
+import SimpleProgressTracking from "@/components/players/SimpleProgressTracking";
+import PlayerProgressSummary from "@/components/players/PlayerProgressSummary";
 
 const PlayerDetail = () => {
   const { playerId } = useParams();
@@ -175,33 +176,30 @@ const PlayerDetail = () => {
           </Card>
 
           <Card className="md:col-span-2">
-            <Tabs defaultValue="goals" className="w-full">
+            <Tabs defaultValue="progress" className="w-full">
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <CardTitle>Player Development</CardTitle>
                   <TabsList>
-                    <TabsTrigger value="goals">Goals</TabsTrigger>
-                    <TabsTrigger value="notes">Notes</TabsTrigger>
-                    <TabsTrigger value="history">History</TabsTrigger>
                     <TabsTrigger value="progress">Progress</TabsTrigger>
+                    <TabsTrigger value="notes">Notes</TabsTrigger>
+                    <TabsTrigger value="goals">Goals</TabsTrigger>
+                    <TabsTrigger value="history">History</TabsTrigger>
                   </TabsList>
                 </div>
               </CardHeader>
               <CardContent>
-                <TabsContent value="goals" className="mt-0">
-                  <PlayerGoals player={player} />
+                <TabsContent value="progress" className="mt-0">
+                  <SimpleProgressTracking player={player} />
                 </TabsContent>
                 <TabsContent value="notes" className="mt-0">
                   <PlayerNotes player={player} />
                 </TabsContent>
+                <TabsContent value="goals" className="mt-0">
+                  <PlayerGoals player={player} />
+                </TabsContent>
                 <TabsContent value="history" className="mt-0">
                   <PlayerHistory player={player} />
-                </TabsContent>
-                <TabsContent value="progress" className="mt-0">
-                  <ProgressTracking 
-                    player={player} 
-                    session={{ id: "progress-view" }}
-                  />
                 </TabsContent>
               </CardContent>
               <CardFooter>
@@ -216,6 +214,11 @@ const PlayerDetail = () => {
               </CardFooter>
             </Tabs>
           </Card>
+        </div>
+
+        {/* Progress Summary Sidebar */}
+        <div className="md:hidden">
+          <PlayerProgressSummary player={player} />
         </div>
       </div>
     </Layout>

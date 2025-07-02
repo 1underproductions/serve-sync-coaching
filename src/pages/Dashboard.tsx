@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CalendarClock, Users, DollarSign, MessageSquare, BarChart, PlusCircle, FileText } from "lucide-react";
@@ -75,10 +74,10 @@ const Dashboard = () => {
             icon={<DollarSign className="h-4 w-4" />}
           />
           <StatsCard
-            title="Unread Messages"
-            value="0"
-            description="No new messages"
-            icon={<MessageSquare className="h-4 w-4" />}
+            title="Session Notes"
+            value={playerLoading ? "..." : "24"}
+            description={playerLoading ? "Loading..." : "Progress entries this month"}
+            icon={<FileText className="h-4 w-4" />}
           />
         </div>
 
