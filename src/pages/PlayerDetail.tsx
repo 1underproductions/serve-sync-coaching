@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,8 +15,12 @@ import PlayerProgressSummary from "@/components/players/PlayerProgressSummary";
 const PlayerDetail = () => {
   const { playerId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [player, setPlayer] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  // Get the tab from URL params, default to "progress"
+  const defaultTab = searchParams.get('tab') || 'progress';
 
   useEffect(() => {
     const fetchPlayer = () => {
@@ -164,19 +167,17 @@ const PlayerDetail = () => {
                 <Button 
                   size="sm" 
                   className="bg-tennis-green-600 hover:bg-tennis-green-700" 
-                  asChild
+                  onClick={() => navigate(`/schedule/new?playerId=${player.id}`)}
                 >
-                  <a onClick={() => navigate(`/schedule/new?playerId=${player.id}`)}>
-                    <CalendarClock className="h-4 w-4 mr-2" />
-                    New Session
-                  </a>
+                  <CalendarClock className="h-4 w-4 mr-2" />
+                  New Session
                 </Button>
               </div>
             </CardContent>
           </Card>
 
           <Card className="md:col-span-2">
-            <Tabs defaultValue="progress" className="w-full">
+            <Tabs defaultValue={defaultTab} className="w-full">
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <CardTitle>Player Development</CardTitle>

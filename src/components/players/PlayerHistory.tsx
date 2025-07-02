@@ -53,6 +53,25 @@ const PlayerHistory = ({ player }) => {
     }
   };
 
+  const hasSessionNotes = (sessionId) => {
+    const notesStr = localStorage.getItem(`session_notes_${sessionId}`);
+    if (!notesStr) return false;
+    
+    try {
+      const notes = JSON.parse(notesStr);
+      return !!(notes.postSessionNotes || notes.preSessionNotes);
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const needsFeedback = (session) => {
+    // Check if session is in the past and doesn't have post-session notes
+    const sessionDate = new Date(session.date);
+    const now = new Date();
+    return sessionDate < now && !hasSessionNotes(session.id);
+  };
+
   if (loading) {
     return <div className="text-center py-8">Loading session history...</div>;
   }
@@ -85,68 +104,93 @@ const PlayerHistory = ({ player }) => {
       </div>
 
       <div className="space-y-3">
-        {sessions.map((session) => (
-          <Card key={session.id} className="cursor-pointer hover:bg-gray-50 transition-colors"
-                onClick={() => navigate(`/session/${session.id}`)}>
-            <CardContent className="p-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h4 className="font-medium">{session.title}</h4>
-                  
-                  <div className="flex flex-col sm:flex-row sm:gap-4 mt-1">
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Calendar className="h-3.5 w-3.5 mr-1" />
-                      <span>{formatDate(session.date)}</span>
+        {sessions.map((session) => {
+          const requiresFeedback = needsFeedback(session);
+          const hasNotes = hasSessionNotes(session.id);
+          
+          return (
+            <Card 
+              key={session.id} 
+              className={`cursor-pointer hover:bg-gray-50 transition-colors ${
+                requiresFeedback ? 'border-l-4 border-l-orange-400 bg-orange-50/50' : ''
+              }`}
+              onClick={() => navigate(`/session/${session.id}`)}
+            >
+              <CardContent className="p-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium">{session.title}</h4>
+                      {requiresFeedback && (
+                        <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
+                          Needs feedback
+                        </span>
+                      )}
                     </div>
                     
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Clock className="h-3.5 w-3.5 mr-1" />
-                      <span>{session.startTime} - {session.endTime}</span>
+                    <div className="flex flex-col sm:flex-row sm:gap-4 mt-1">
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <Calendar className="h-3.5 w-3.5 mr-1" />
+                        <span>{formatDate(session.date)}</span>
+                      </div>
+                      
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <Clock className="h-3.5 w-3.5 mr-1" />
+                        <span>{session.startTime} - {session.endTime}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <div className={`text-xs px-2 py-1 rounded-full ${
+                      session.type === "individual"
+                        ? "bg-tennis-green-100 text-tennis-green-800"
+                        : session.type === "group"
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-orange-100 text-orange-800"
+                    }`}>
+                      {session.type === "individual" 
+                        ? "Individual" 
+                        : session.type === "group" 
+                          ? "Group" 
+                          : "Tournament"}
                     </div>
                   </div>
                 </div>
                 
-                <div className="flex gap-2">
-                  <div className={`text-xs px-2 py-1 rounded-full ${
-                    session.type === "individual"
-                      ? "bg-tennis-green-100 text-tennis-green-800"
-                      : session.type === "group"
-                        ? "bg-blue-100 text-blue-800"
-                        : "bg-orange-100 text-orange-800"
-                  }`}>
-                    {session.type === "individual" 
-                      ? "Individual" 
-                      : session.type === "group" 
-                        ? "Group" 
-                        : "Tournament"}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex gap-3 mt-3">
-                <Button variant="ghost" size="sm" className="h-8" asChild>
-                  <div onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/session/${session.id}?tab=notes`);
-                  }}>
+                <div className="flex gap-3 mt-3">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className={`h-8 ${hasNotes ? 'text-tennis-green-700' : 'text-muted-foreground'}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/session/${session.id}`);
+                    }}
+                  >
                     <FileText className="h-3.5 w-3.5 mr-1.5" />
                     Notes
-                  </div>
-                </Button>
-                
-                <Button variant="ghost" size="sm" className="h-8" asChild>
-                  <div onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/session/${session.id}?tab=progress`);
-                  }}>
+                    {hasNotes && <span className="ml-1 text-xs">✓</span>}
+                  </Button>
+                  
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-8" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Navigate to the player's progress tab to see session-related progress
+                      navigate(`/players/${player.id}?tab=progress`);
+                    }}
+                  >
                     <BarChart className="h-3.5 w-3.5 mr-1.5" />
                     Progress
-                  </div>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );
