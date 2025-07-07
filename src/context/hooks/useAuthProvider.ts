@@ -53,6 +53,8 @@ export const useAuthProvider = () => {
       const id = userId || user?.id;
       if (!id) return null;
 
+      console.log('Fetching profile for user:', id);
+
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -63,6 +65,8 @@ export const useAuthProvider = () => {
         console.error('Error fetching profile:', error);
         return null;
       }
+
+      console.log('Profile fetched successfully:', data);
 
       // Type assertion to ensure role conforms to the expected union type
       const profileData: Profile = {
@@ -270,6 +274,8 @@ export const useAuthProvider = () => {
     try {
       if (!user) throw new Error('No authenticated user');
 
+      console.log('Updating profile with data:', data);
+
       const { data: updatedProfile, error } = await supabase
         .from('profiles')
         .update(data)
@@ -277,7 +283,12 @@ export const useAuthProvider = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating profile:', error);
+        throw error;
+      }
+
+      console.log('Profile updated successfully:', updatedProfile);
 
       // Type assertion to ensure role conforms to the expected union type
       const profileData: Profile = {
@@ -349,10 +360,190 @@ export const useAuthProvider = () => {
     isLoading,
     isAdmin,
     authError,
-    signUp,
-    signIn,
-    signOut,
-    resetPassword,
+    signUp: async (email: string, password: string, metadata: any) => {
+      try {
+        setIsLoading(true);
+        setAuthError(null);
+        
+        console.log('=== STARTING CUSTOM SIGNUP PROCESS (NO SUPABASE EMAIL) ===');
+        console.log('Creating user account and sending ONLY custom email');
+        
+        // Step 1: Create user account using the admin endpoint to bypass email confirmation
+        const { data, error } = await supabase.functions.invoke('admin-functions', {
+          body: { 
+            action: 'create_user_no_email',
+            email: email,
+            password: password,
+            user_metadata: metadata
+          }
+        });
+
+        if (error) {
+          console.error('User creation failed:', error);
+          setAuthError(error.message);
+          toast({
+            title: "Signup failed",
+            description: error.message,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (data?.error) {
+          console.error('User creation failed:', data.error);
+          setAuthError(data.error);
+          toast({
+            title: "Signup failed",
+            description: data.error,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const userAlreadyExists = data?.already_exists;
+        
+        if (userAlreadyExists) {
+          console.log('✅ User already exists, proceeding to send email');
+        } else {
+          console.log('✅ User created successfully without Supabase email');
+        }
+        
+        console.log('Step 2: Sending ONLY our custom branded email...');
+
+        // Step 2: Send ONLY our custom email using the verified tennexis.com domain
+        try {
+          await sendCustomEmail('signup', email, {
+            fullName: metadata.fullName,
+            redirect_to: `${window.location.origin}/auth/callback`
+          });
+          
+          console.log('✅ SUCCESS: ONLY custom Tennexis email sent from noreply@tennexis.com!');
+          
+          if (userAlreadyExists) {
+            toast({
+              title: "Welcome back!",
+              description: "We've sent you a new verification email to noreply@tennexis.com",
+            });
+          } else {
+            toast({
+              title: "Account created!",
+              description: "Please check your email to verify your account. The confirmation email is from noreply@tennexis.com",
+            });
+          }
+        } catch (emailError) {
+          console.error('Custom email failed:', emailError);
+          toast({
+            title: "Account created!",
+            description: "Your account was created but there was an issue sending the verification email. Please try resending it.",
+            variant: "destructive",
+          });
+        }
+
+      } catch (error) {
+        console.error('Signup error:', error);
+        setAuthError(error instanceof Error ? error.message : 'An error occurred during signup');
+        toast({
+          title: "Signup failed",
+          description: error instanceof Error ? error.message : 'An error occurred during signup',
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    signIn: async (email: string, password: string) => {
+      try {
+        setIsLoading(true);
+        setAuthError(null);
+        
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) {
+          setAuthError(error.message);
+          toast({
+            title: "Sign in failed",
+            description: error.message,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        toast({
+          title: "Welcome back!",
+          description: "You have been signed in successfully.",
+        });
+
+      } catch (error) {
+        console.error('Sign in error:', error);
+        setAuthError(error instanceof Error ? error.message : 'An error occurred during sign in');
+        toast({
+          title: "Sign in failed",
+          description: error instanceof Error ? error.message : 'An error occurred during sign in',
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    signOut: async () => {
+      try {
+        setIsLoading(true);
+        await supabase.auth.signOut();
+        setProfile(null);
+        toast({
+          title: "Signed out",
+          description: "You have been signed out successfully.",
+        });
+      } catch (error) {
+        console.error('Sign out error:', error);
+        toast({
+          title: "Error",
+          description: "An error occurred while signing out.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    resetPassword: async (email: string) => {
+      try {
+        setIsLoading(true);
+        setAuthError(null);
+        
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+
+        if (error) {
+          setAuthError(error.message);
+          toast({
+            title: "Error",
+            description: error.message,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        toast({
+          title: "Check your email",
+          description: "We've sent you a password reset link.",
+        });
+
+      } catch (error) {
+        console.error('Reset password error:', error);
+        setAuthError(error instanceof Error ? error.message : 'An error occurred');
+        toast({
+          title: "Error",
+          description: error instanceof Error ? error.message : 'An error occurred',
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    },
     updateProfile,
     fetchUserProfile,
     setUserAsAdmin,

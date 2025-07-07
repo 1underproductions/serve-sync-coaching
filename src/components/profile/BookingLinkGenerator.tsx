@@ -8,47 +8,18 @@ import { toast } from '@/hooks/use-toast';
 import { Copy, Share2, Check } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { supabase } from '@/lib/supabase';
 
 const BookingLinkGenerator = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [copied, setCopied] = useState(false);
   const [enableBooking, setEnableBooking] = useState(true);
-  const [isAvailable, setIsAvailable] = useState(false);
   
   const bookingLink = user?.id 
     ? `${window.location.origin}/booking/${user.id}` 
     : '';
 
-  // Verify the user exists in the profiles table
-  useEffect(() => {
-    const checkProfileExists = async () => {
-      if (!user?.id) return;
-      
-      try {
-        console.log('Checking if profile exists for booking link generation');
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('id', user.id)
-          .limit(1);
-          
-        if (error) {
-          console.error('Error checking profile:', error);
-          setIsAvailable(false);
-          return;
-        }
-        
-        setIsAvailable(data && data.length > 0);
-        console.log('Profile availability for booking:', data && data.length > 0);
-      } catch (err) {
-        console.error('Failed to check profile availability:', err);
-        setIsAvailable(false);
-      }
-    };
-    
-    checkProfileExists();
-  }, [user?.id]);
+  // Profile is available if we have a profile object
+  const isAvailable = Boolean(profile?.id);
 
   const handleCopyLink = () => {
     if (!bookingLink) return;
