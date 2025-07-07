@@ -63,10 +63,11 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
     },
   });
 
+  // Reset form when profile data changes
   useEffect(() => {
     if (profile) {
       console.log('ProfileForm: Updating form with profile data:', profile);
-      const formValues = {
+      const formValues: ProfileFormValues = {
         full_name: profile.full_name || "",
         email: profile.email || "",
         phone: profile.phone || "",
@@ -77,6 +78,7 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
         hourly_rate: profile.hourly_rate || 0,
       };
       
+      // Use reset to properly update all form fields
       form.reset(formValues);
     }
   }, [profile, form]);
@@ -227,7 +229,8 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
                   <FormControl>
                     <Input 
                       placeholder="Your name" 
-                      {...field} 
+                      {...field}
+                      value={field.value || ""}
                     />
                   </FormControl>
                   <FormMessage />
@@ -245,7 +248,8 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
                     <Input 
                       placeholder="Your email" 
                       type="email" 
-                      {...field} 
+                      {...field}
+                      value={field.value || ""}
                     />
                   </FormControl>
                   <FormMessage />
@@ -262,7 +266,8 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
                   <FormControl>
                     <Input 
                       placeholder="Your phone number" 
-                      {...field} 
+                      {...field}
+                      value={field.value || ""}
                     />
                   </FormControl>
                   <FormMessage />
@@ -279,7 +284,8 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
                   <FormControl>
                     <Input 
                       placeholder="City, State" 
-                      {...field} 
+                      {...field}
+                      value={field.value || ""}
                     />
                   </FormControl>
                   <FormMessage />
@@ -297,7 +303,8 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
                     <Textarea 
                       placeholder="Tell players about yourself" 
                       rows={4} 
-                      {...field} 
+                      {...field}
+                      value={field.value || ""}
                     />
                   </FormControl>
                   <FormMessage />
@@ -315,7 +322,8 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
                     <FormControl>
                       <Input 
                         placeholder="https://..." 
-                        {...field} 
+                        {...field}
+                        value={field.value || ""}
                       />
                     </FormControl>
                     <FormMessage />
@@ -332,7 +340,8 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
                     <FormControl>
                       <Input 
                         type="number" 
-                        {...field} 
+                        {...field}
+                        value={field.value || ""}
                       />
                     </FormControl>
                     <FormMessage />
@@ -352,7 +361,8 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
                       type="number" 
                       min="0" 
                       step="0.01" 
-                      {...field} 
+                      {...field}
+                      value={field.value || ""}
                     />
                   </FormControl>
                   <FormMessage />
