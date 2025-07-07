@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Edit } from "lucide-react";
+import { Edit, TestTube } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -45,8 +45,9 @@ interface ProfileFormProps {
 
 export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
   const { toast } = useToast();
-  const { profile, updateProfile, isLoading } = useAuth();
+  const { profile, updateProfile, user, fetchUserProfile, isLoading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -64,6 +65,7 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
 
   useEffect(() => {
     if (profile) {
+      console.log('ProfileForm: Updating form with profile data:', profile);
       form.reset({
         full_name: profile.full_name || "",
         email: profile.email || "",
@@ -77,24 +79,108 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
     }
   }, [profile, form]);
 
-  const onSubmit = async (data: ProfileFormValues) => {
-    setIsSubmitting(true);
-    try {
-      await updateProfile(data);
+  const testConnection = async () => {
+    if (!user) {
       toast({
-        title: "Profile updated",
-        description: "Your profile has been successfully updated.",
+        variant: "destructive",
+        title: "No user found",
+        description: "User authentication is required to test profile updates.",
       });
+      return;
+    }
+
+    setIsTesting(true);
+    console.log('=== TESTING PROFILE CONNECTION ===');
+    console.log('Current user:', user);
+    console.log('Current profile:', profile);
+
+    try {
+      // Test a simple profile update
+      const testUpdate = {
+        bio: `Test update at ${new Date().toISOString()}`
+      };
       
-      // Check if profile is complete
-      const isProfileComplete = Boolean(data.bio && data.location && data.phone && data.years_experience);
-      onProfileUpdate(isProfileComplete);
+      console.log('Testing profile update with:', testUpdate);
+      const result = await updateProfile(testUpdate);
+      
+      if (result) {
+        toast({
+          title: "Test successful!",
+          description: "Profile connection is working properly.",
+        });
+        
+        // Refresh the profile to see the change
+        setTimeout(() => {
+          fetchUserProfile(user.id);
+        }, 1000);
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Test failed",
+          description: "Profile update returned null/undefined.",
+        });
+      }
+    } catch (error) {
+      console.error('Test connection error:', error);
+      toast({
+        variant: "destructive",
+        title: "Test failed",
+        description: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      });
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
+  const onSubmit = async (data: ProfileFormValues) => {
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Authentication required",
+        description: "You must be logged in to update your profile.",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    console.log('=== PROFILE FORM SUBMISSION ===');
+    console.log('Form data:', data);
+    console.log('Current user ID:', user.id);
+    
+    try {
+      const result = await updateProfile(data);
+      
+      if (result) {
+        console.log('Profile update successful, result:', result);
+        toast({
+          title: "Profile updated",
+          description: "Your profile has been successfully updated.",
+        });
+        
+        // Check if profile is complete
+        const isProfileComplete = Boolean(data.bio && data.location && data.phone && data.years_experience);
+        console.log('Profile complete status:', isProfileComplete);
+        onProfileUpdate(isProfileComplete);
+        
+        // Refresh the profile data
+        setTimeout(() => {
+          console.log('Refreshing profile data...');
+          fetchUserProfile(user.id);
+        }, 500);
+      } else {
+        console.error('Profile update returned null/undefined');
+        toast({
+          variant: "destructive",
+          title: "Update failed",
+          description: "Profile update returned no data. Check console for details.",
+        });
+      }
     } catch (error) {
       console.error("Error updating profile:", error);
       toast({
         variant: "destructive",
         title: "Update failed",
-        description: "There was a problem updating your profile.",
+        description: `There was a problem updating your profile: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
     } finally {
       setIsSubmitting(false);
@@ -110,6 +196,24 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        <div className="mb-4 p-3 bg-gray-50 rounded-md">
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-sm font-medium">Test Profile Connection</p>
+              <p className="text-xs text-gray-600">Click to test if profile updates are working</p>
+            </div>
+            <Button 
+              onClick={testConnection}
+              disabled={isTesting || !user}
+              variant="outline"
+              size="sm"
+            >
+              <TestTube className="mr-2 h-4 w-4" />
+              {isTesting ? "Testing..." : "Test"}
+            </Button>
+          </div>
+        </div>
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -231,7 +335,7 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
                 type="submit" 
                 className="ml-auto" 
                 variant="tennis"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isLoading}
               >
                 <Edit className="mr-2 h-4 w-4" />
                 {isSubmitting ? "Updating..." : "Update Profile"}
