@@ -61,12 +61,13 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
       years_experience: 0,
       hourly_rate: 0,
     },
+    mode: "onChange",
   });
 
   useEffect(() => {
     if (profile) {
       console.log('ProfileForm: Updating form with profile data:', profile);
-      form.reset({
+      const formValues = {
         full_name: profile.full_name || "",
         email: profile.email || "",
         phone: profile.phone || "",
@@ -75,7 +76,9 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
         website: profile.website || "",
         years_experience: profile.years_experience || 0,
         hourly_rate: profile.hourly_rate || 0,
-      });
+      };
+      
+      form.reset(formValues);
     }
   }, [profile, form]);
 
@@ -223,7 +226,12 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
                 <FormItem>
                   <FormLabel>Full Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Your name" {...field} />
+                    <Input 
+                      placeholder="Your name" 
+                      {...field} 
+                      value={field.value || ""}
+                      onChange={(e) => field.onChange(e.target.value)}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -237,7 +245,13 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="Your email" type="email" {...field} />
+                    <Input 
+                      placeholder="Your email" 
+                      type="email" 
+                      {...field} 
+                      value={field.value || ""}
+                      onChange={(e) => field.onChange(e.target.value)}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -251,7 +265,12 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
                 <FormItem>
                   <FormLabel>Phone Number</FormLabel>
                   <FormControl>
-                    <Input placeholder="Your phone number" {...field} />
+                    <Input 
+                      placeholder="Your phone number" 
+                      {...field} 
+                      value={field.value || ""}
+                      onChange={(e) => field.onChange(e.target.value)}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -265,7 +284,12 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
                 <FormItem>
                   <FormLabel>Location</FormLabel>
                   <FormControl>
-                    <Input placeholder="City, State" {...field} />
+                    <Input 
+                      placeholder="City, State" 
+                      {...field} 
+                      value={field.value || ""}
+                      onChange={(e) => field.onChange(e.target.value)}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -279,7 +303,13 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
                 <FormItem>
                   <FormLabel>Bio</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Tell players about yourself" rows={4} {...field} />
+                    <Textarea 
+                      placeholder="Tell players about yourself" 
+                      rows={4} 
+                      {...field} 
+                      value={field.value || ""}
+                      onChange={(e) => field.onChange(e.target.value)}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -294,7 +324,12 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
                   <FormItem>
                     <FormLabel>Website</FormLabel>
                     <FormControl>
-                      <Input placeholder="https://..." {...field} />
+                      <Input 
+                        placeholder="https://..." 
+                        {...field} 
+                        value={field.value || ""}
+                        onChange={(e) => field.onChange(e.target.value)}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -308,7 +343,12 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
                   <FormItem>
                     <FormLabel>Years of Experience</FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} />
+                      <Input 
+                        type="number" 
+                        {...field} 
+                        value={field.value || ""}
+                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : "")}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -323,7 +363,14 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
                 <FormItem>
                   <FormLabel>Hourly Rate ($)</FormLabel>
                   <FormControl>
-                    <Input type="number" min="0" step="0.01" {...field} />
+                    <Input 
+                      type="number" 
+                      min="0" 
+                      step="0.01" 
+                      {...field} 
+                      value={field.value || ""}
+                      onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : "")}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
