@@ -23,7 +23,7 @@ const Profile = () => {
         try {
           console.log('Profile page: Fetching user profile on initial load');
           
-          // Direct DB query to get fresh profile data
+          // Direct DB query to get fresh profile data with explicit logging
           const { data, error } = await supabase.from('profiles')
             .select('*')
             .eq('id', user.id)
@@ -37,6 +37,7 @@ const Profile = () => {
           
           // Also refresh through auth context
           await fetchUserProfile(user.id);
+          console.log('Profile context refreshed successfully');
         } catch (error) {
           console.error('Error fetching profile on Profile page:', error);
         } finally {
@@ -65,7 +66,9 @@ const Profile = () => {
     // Refresh profile data after update
     if (user?.id) {
       try {
+        console.log('Profile page: Refreshing profile after update');
         await fetchUserProfile(user.id);
+        console.log('Profile refreshed successfully after update');
       } catch (error) {
         console.error('Error refreshing profile after update:', error);
       }

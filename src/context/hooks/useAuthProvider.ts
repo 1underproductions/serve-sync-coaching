@@ -23,10 +23,12 @@ export const useAuthProvider = () => {
         setUser(session?.user ?? null);
         
         if (session?.user && !profile) {
+          console.log('Auth state change: User available, fetching profile');
           setTimeout(() => {
             fetchUserProfile(session.user.id);
           }, 0);
         } else if (!session?.user) {
+          console.log('Auth state change: No user, clearing profile');
           setProfile(null);
         }
         
@@ -36,11 +38,14 @@ export const useAuthProvider = () => {
 
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session check:', session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
+        console.log('Initial session: User found, fetching profile');
         fetchUserProfile(session.user.id);
       } else {
+        console.log('Initial session: No user found');
         setIsLoading(false);
       }
     });
@@ -51,9 +56,12 @@ export const useAuthProvider = () => {
   const fetchUserProfile = async (userId?: string): Promise<Profile | null> => {
     try {
       const id = userId || user?.id;
-      if (!id) return null;
+      if (!id) {
+        console.log('fetchUserProfile: No user ID provided');
+        return null;
+      }
 
-      console.log('Fetching profile for user:', id);
+      console.log('fetchUserProfile: Starting fetch for user:', id);
 
       const { data, error } = await supabase
         .from('profiles')
@@ -62,11 +70,12 @@ export const useAuthProvider = () => {
         .single();
 
       if (error) {
-        console.error('Error fetching profile:', error);
+        console.error('fetchUserProfile: Database error:', error);
+        // Don't throw error, just log it and return null
         return null;
       }
 
-      console.log('Profile fetched successfully:', data);
+      console.log('fetchUserProfile: Success, received data:', data);
 
       // Type assertion to ensure role conforms to the expected union type
       const profileData: Profile = {
@@ -75,9 +84,10 @@ export const useAuthProvider = () => {
       };
 
       setProfile(profileData);
+      console.log('fetchUserProfile: Profile state updated successfully');
       return profileData;
     } catch (error) {
-      console.error('Error in fetchUserProfile:', error);
+      console.error('fetchUserProfile: Unexpected error:', error);
       return null;
     }
   };
@@ -274,7 +284,7 @@ export const useAuthProvider = () => {
     try {
       if (!user) throw new Error('No authenticated user');
 
-      console.log('Updating profile with data:', data);
+      console.log('updateProfile: Starting update with data:', data);
 
       const { data: updatedProfile, error } = await supabase
         .from('profiles')
@@ -284,11 +294,11 @@ export const useAuthProvider = () => {
         .single();
 
       if (error) {
-        console.error('Error updating profile:', error);
+        console.error('updateProfile: Database error:', error);
         throw error;
       }
 
-      console.log('Profile updated successfully:', updatedProfile);
+      console.log('updateProfile: Database update successful:', updatedProfile);
 
       // Type assertion to ensure role conforms to the expected union type
       const profileData: Profile = {
@@ -297,6 +307,8 @@ export const useAuthProvider = () => {
       };
 
       setProfile(profileData);
+      console.log('updateProfile: Profile state updated successfully');
+      
       toast({
         title: "Profile updated",
         description: "Your profile has been updated successfully.",
@@ -304,7 +316,7 @@ export const useAuthProvider = () => {
 
       return profileData;
     } catch (error) {
-      console.error('Error updating profile:', error);
+      console.error('updateProfile: Error:', error);
       toast({
         title: "Error",
         description: "Failed to update profile.",
@@ -546,6 +558,43 @@ export const useAuthProvider = () => {
     },
     updateProfile,
     fetchUserProfile,
-    setUserAsAdmin,
+    setUserAsAdmin: async (email: string): Promise<SupabaseUser | null> => {
+      try {
+        console.log(`Setting user as admin: ${email}`);
+        
+        const { data, error } = await supabase.functions.invoke('admin-functions', {
+          body: { 
+            action: 'set_admin',
+            email: email
+          }
+        });
+        
+        if (error) {
+          console.error('Error setting admin:', error);
+          toast({
+            title: "Error",
+            description: `Failed to set user as admin: ${error.message}`,
+            variant: "destructive",
+          });
+          return null;
+        }
+        
+        console.log('Admin set successfully:', data);
+        toast({
+          title: "Success",
+          description: "User has been set as admin successfully.",
+        });
+        
+        return data.user;
+      } catch (error) {
+        console.error('Error in setUserAsAdmin:', error);
+        toast({
+          title: "Error",
+          description: "An error occurred while setting admin privileges.",
+          variant: "destructive",
+        });
+        return null;
+      }
+    },
   };
 };
