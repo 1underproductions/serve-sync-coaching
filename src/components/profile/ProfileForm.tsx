@@ -28,7 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 const profileFormSchema = z.object({
   full_name: z.string().min(2, { message: "Name must be at least 2 characters" }),
-  email: z.string().email({ message: "Please enter a valid email address" }).optional(),
+  email: z.string().email({ message: "Please enter a valid email address" }),
   phone: z.string().optional(),
   bio: z.string().max(500, { message: "Bio must be at most 500 characters" }).optional(),
   location: z.string().optional(),
@@ -133,7 +133,7 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="Your email" type="email" {...field} disabled />
+                    <Input placeholder="Your email" type="email" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
