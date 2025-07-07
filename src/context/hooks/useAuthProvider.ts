@@ -92,6 +92,85 @@ export const useAuthProvider = () => {
     }
   };
 
+  const updateProfile = async (data: Partial<Profile>): Promise<Profile | null> => {
+    try {
+      if (!user) {
+        console.error('updateProfile: No authenticated user');
+        throw new Error('No authenticated user');
+      }
+
+      console.log('=== STARTING PROFILE UPDATE ===');
+      console.log('updateProfile: User ID:', user.id);
+      console.log('updateProfile: Data to update:', data);
+      console.log('updateProfile: Current profile before update:', profile);
+
+      // First, let's check if we can read from the profiles table
+      console.log('updateProfile: Testing profile table access...');
+      const { data: testRead, error: testError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (testError) {
+        console.error('updateProfile: Cannot read current profile:', testError);
+        throw new Error(`Profile read error: ${testError.message}`);
+      } else {
+        console.log('updateProfile: Current profile from DB:', testRead);
+      }
+
+      // Now try the update
+      console.log('updateProfile: Attempting database update...');
+      const { data: updatedProfile, error } = await supabase
+        .from('profiles')
+        .update(data)
+        .eq('id', user.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('updateProfile: Database update failed:', error);
+        console.error('updateProfile: Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        throw new Error(`Profile update failed: ${error.message}`);
+      }
+
+      console.log('updateProfile: Database update successful:', updatedProfile);
+
+      // Type assertion to ensure role conforms to the expected union type
+      const profileData: Profile = {
+        ...updatedProfile,
+        role: updatedProfile.role as 'user' | 'admin' | 'tennexis_admin'
+      };
+
+      console.log('updateProfile: Setting new profile state:', profileData);
+      setProfile(profileData);
+      
+      console.log('updateProfile: Profile update completed successfully');
+      
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been updated successfully.",
+      });
+
+      return profileData;
+    } catch (error) {
+      console.error('updateProfile: Final catch block error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      toast({
+        title: "Error",
+        description: `Failed to update profile: ${errorMessage}`,
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
+
   const signUp = async (email: string, password: string, metadata: any) => {
     try {
       setIsLoading(true);
@@ -277,52 +356,6 @@ export const useAuthProvider = () => {
       });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const updateProfile = async (data: Partial<Profile>): Promise<Profile | null> => {
-    try {
-      if (!user) throw new Error('No authenticated user');
-
-      console.log('updateProfile: Starting update with data:', data);
-
-      const { data: updatedProfile, error } = await supabase
-        .from('profiles')
-        .update(data)
-        .eq('id', user.id)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('updateProfile: Database error:', error);
-        throw error;
-      }
-
-      console.log('updateProfile: Database update successful:', updatedProfile);
-
-      // Type assertion to ensure role conforms to the expected union type
-      const profileData: Profile = {
-        ...updatedProfile,
-        role: updatedProfile.role as 'user' | 'admin' | 'tennexis_admin'
-      };
-
-      setProfile(profileData);
-      console.log('updateProfile: Profile state updated successfully');
-      
-      toast({
-        title: "Profile updated",
-        description: "Your profile has been updated successfully.",
-      });
-
-      return profileData;
-    } catch (error) {
-      console.error('updateProfile: Error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update profile.",
-        variant: "destructive",
-      });
-      return null;
     }
   };
 
