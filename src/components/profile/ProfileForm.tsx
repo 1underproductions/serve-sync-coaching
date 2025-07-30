@@ -230,7 +230,6 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
                     <Input 
                       placeholder="Your name" 
                       {...field}
-                      value={field.value || ""}
                     />
                   </FormControl>
                   <FormMessage />
@@ -249,7 +248,6 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
                       placeholder="Your email" 
                       type="email" 
                       {...field}
-                      value={field.value || ""}
                     />
                   </FormControl>
                   <FormMessage />
@@ -267,7 +265,6 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
                     <Input 
                       placeholder="Your phone number" 
                       {...field}
-                      value={field.value || ""}
                     />
                   </FormControl>
                   <FormMessage />
@@ -285,7 +282,6 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
                     <Input 
                       placeholder="City, State" 
                       {...field}
-                      value={field.value || ""}
                     />
                   </FormControl>
                   <FormMessage />
@@ -304,7 +300,6 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
                       placeholder="Tell players about yourself" 
                       rows={4} 
                       {...field}
-                      value={field.value || ""}
                     />
                   </FormControl>
                   <FormMessage />
@@ -323,7 +318,6 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
                       <Input 
                         placeholder="https://..." 
                         {...field}
-                        value={field.value || ""}
                       />
                     </FormControl>
                     <FormMessage />
@@ -341,7 +335,6 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
                       <Input 
                         type="number" 
                         {...field}
-                        value={field.value || ""}
                       />
                     </FormControl>
                     <FormMessage />
@@ -357,13 +350,12 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
                 <FormItem>
                   <FormLabel>Hourly Rate ($)</FormLabel>
                   <FormControl>
-                    <Input 
-                      type="number" 
-                      min="0" 
-                      step="0.01" 
-                      {...field}
-                      value={field.value || ""}
-                    />
+                      <Input 
+                        type="number" 
+                        min="0" 
+                        step="0.01" 
+                        {...field}
+                      />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
