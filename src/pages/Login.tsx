@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/useAuth";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { createSuperAdmin } from '@/utils/adminSetup';
 
@@ -36,20 +36,15 @@ const Login = () => {
   const [loginError, setLoginError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signIn, isLoading, user, session } = useAuth();
+  const { signIn, isLoading, user } = useAuth();
   
-  // Debug auth state
-  useEffect(() => {
-    console.log('Login page - Auth state:', { user, session, isLoading });
-  }, [user, session, isLoading]);
   
   // Redirect if user is already logged in
   useEffect(() => {
-    if (user && !isLoading) {
-      console.log('Login page - User is authenticated, redirecting to dashboard');
-      navigate('/dashboard', { replace: true });
+    if (user) {
+      navigate('/dashboard');
     }
-  }, [user, isLoading, navigate]);
+  }, [user, navigate]);
   
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -198,24 +193,6 @@ const Login = () => {
               </div>
               
               <div className="mt-4 text-center space-y-2">
-                {/* Debug section - show current auth state */}
-                <div className="p-2 bg-gray-100 rounded text-xs text-left">
-                  <div>User: {user ? `${user.email} (${user.id.slice(0, 8)})` : 'Not logged in'}</div>
-                  <div>Session: {session ? 'Active' : 'None'}</div>
-                  <div>Loading: {isLoading ? 'Yes' : 'No'}</div>
-                </div>
-                
-                {user && (
-                  <Button 
-                    type="button" 
-                    variant="default" 
-                    className="w-full"
-                    onClick={() => navigate('/dashboard', { replace: true })}
-                  >
-                    Go to Dashboard (You're logged in!)
-                  </Button>
-                )}
-                
                 <Button 
                   type="button" 
                   variant="outline" 

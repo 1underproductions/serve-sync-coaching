@@ -19,25 +19,21 @@ export const ProfilePicture = () => {
   const { profile, user, fetchUserProfile } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
+  const [cacheBuster, setCacheBuster] = useState<number>(Date.now());
 
-  // Always update avatar when profile changes
+  // Sync avatar when profile updates
   useEffect(() => {
-    console.log('ProfilePicture: profile changed:', profile);
     if (profile?.avatar_url) {
-      console.log('ProfilePicture: Setting avatar URL:', profile.avatar_url);
-      // Add a small delay to ensure the URL is valid and test if it loads
       const testImg = new Image();
       testImg.onload = () => {
-        console.log('ProfilePicture: Image URL is valid and loads');
         setAvatarSrc(profile.avatar_url);
+        setCacheBuster(Date.now());
       };
       testImg.onerror = () => {
-        console.error('ProfilePicture: Image URL failed to load:', profile.avatar_url);
         setAvatarSrc(null);
       };
       testImg.src = profile.avatar_url;
     } else {
-      console.log('ProfilePicture: No avatar URL in profile');
       setAvatarSrc(null);
     }
   }, [profile]);
@@ -73,6 +69,7 @@ export const ProfilePicture = () => {
       
       // First update the local UI
       setAvatarSrc(url);
+      setCacheBuster(Date.now());
       
       // Get session for auth token
       const { data: { session } } = await supabase.auth.getSession();
@@ -133,48 +130,18 @@ export const ProfilePicture = () => {
       </CardHeader>
       <CardContent className="flex justify-center">
         <div className="space-y-4 flex flex-col items-center">
-          <div className="relative">
-            {/* Test with direct img tag first */}
-            {avatarSrc ? (
-              <div className="relative">
-                <img 
-                  src={avatarSrc}
-                  alt="Profile"
-                  className="h-32 w-32 rounded-full object-cover border-2 border-gray-200"
-                  onLoad={() => console.log('Direct img loaded successfully:', avatarSrc)}
-                  onError={(e) => {
-                    console.log('Direct img failed to load:', avatarSrc);
-                    console.log('Error event:', e);
-                  }}
+            <div className="relative flex flex-col items-center">
+              <Avatar className="h-32 w-32">
+                <AvatarImage 
+                  src={avatarSrc ? `${avatarSrc}${avatarSrc.includes('?') ? '&' : '?'}v=${cacheBuster}` : ""} 
+                  alt="Profile picture" 
+                  onError={() => setAvatarSrc(null)}
                 />
-                <div className="text-xs text-gray-500 mt-1 text-center break-all max-w-32">
-                  Direct IMG: {avatarSrc}
-                </div>
-              </div>
-            ) : (
-              <div className="h-32 w-32 rounded-full bg-tennis-green-100 text-tennis-green-700 flex items-center justify-center text-4xl">
-                <User />
-              </div>
-            )}
-            
-            {/* Original Avatar component for comparison */}
-            <Avatar className="h-32 w-32 mt-4">
-              <AvatarImage 
-                src={avatarSrc || ""} 
-                alt="Profile" 
-                onLoad={() => console.log('Avatar component loaded successfully:', avatarSrc)}
-                onError={() => console.log('Avatar component failed to load:', avatarSrc)}
-              />
-              <AvatarFallback className="text-4xl bg-tennis-green-100 text-tennis-green-700">
-                <User />
-              </AvatarFallback>
-            </Avatar>
-            {avatarSrc && (
-              <div className="text-xs text-gray-500 mt-1 text-center break-all max-w-32">
-                Avatar component: {avatarSrc}
-              </div>
-            )}
-          </div>
+                <AvatarFallback className="text-4xl bg-tennis-green-100 text-tennis-green-700">
+                  <User />
+                </AvatarFallback>
+              </Avatar>
+            </div>
 
           <ImageUploader 
             onUploadComplete={handleImageUpload}
