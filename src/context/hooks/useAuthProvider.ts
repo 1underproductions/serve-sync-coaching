@@ -57,34 +57,32 @@ export const useAuthProvider = () => {
     try {
       const id = userId || user?.id;
       if (!id) {
-        console.log('fetchUserProfile: No user ID provided');
         return null;
       }
 
-      console.log('fetchUserProfile: Starting fetch for user:', id);
-
+      // Use maybeSingle() to avoid errors when profile doesn't exist
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('fetchUserProfile: Database error:', error);
-        // Don't throw error, just log it and return null
         return null;
       }
 
-      console.log('fetchUserProfile: Success, received data:', data);
+      if (!data) {
+        console.log('fetchUserProfile: No profile found for user:', id);
+        return null;
+      }
 
-      // Type assertion to ensure role conforms to the expected union type
       const profileData: Profile = {
         ...data,
         role: data.role as 'user' | 'admin' | 'tennexis_admin'
       };
 
       setProfile(profileData);
-      console.log('fetchUserProfile: Profile state updated successfully');
       return profileData;
     } catch (error) {
       console.error('fetchUserProfile: Unexpected error:', error);
