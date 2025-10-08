@@ -60,20 +60,33 @@ export const useAuthProvider = () => {
         return null;
       }
 
-      // Use maybeSingle() to avoid errors when profile doesn't exist
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', id)
-        .maybeSingle();
-
-      if (error) {
-        console.error('fetchUserProfile: Database error:', error);
+      // Get the current session for auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
         return null;
       }
 
+      // Use edge function with service role to bypass schema cache issues
+      const response = await fetch(
+        'https://cugwtwpgccpcjeumrkxf.supabase.co/functions/v1/get-profile',
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1Z3d0d3BnY2NwY2pldW1ya3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNjA1MDEsImV4cCI6MjA1ODkzNjUwMX0.DjWV3Jt7OcVaJh4QYQ8NsBpPtrI1m8FJ5O3n-SHhMrk',
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (!response.ok) {
+        console.error('Profile fetch failed:', response.status);
+        return null;
+      }
+
+      const { profile: data } = await response.json();
+
       if (!data) {
-        console.log('fetchUserProfile: No profile found for user:', id);
         return null;
       }
 
