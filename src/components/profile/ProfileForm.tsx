@@ -63,7 +63,7 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
     },
   });
 
-  // Reset form when profile data changes
+  // Reset form when profile data changes (only when profile changes, not form)
   useEffect(() => {
     if (profile) {
       console.log('ProfileForm: Updating form with profile data:', profile);
@@ -81,7 +81,8 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
       // Use reset to properly update all form fields
       form.reset(formValues);
     }
-  }, [profile, form]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile]);
 
   const testConnection = async () => {
     if (!user) {
