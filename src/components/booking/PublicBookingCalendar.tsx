@@ -57,35 +57,19 @@ const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
 
         const formattedDate = format(date, 'yyyy-MM-dd');
         
-        // Get regular (non-recurring) sessions for the selected date
-        const { data: regularSessions, error: regularSessionsError } = await supabase
+        // Get all sessions for the selected date
+        const { data: sessionsData, error: sessionsError } = await supabase
           .from('sessions')
           .select('*')
           .eq('coach_id', coachId)
-          .is('is_recurring', false)  // Changed from eq to is which is safer for boolean filters
           .gte('start_time', `${formattedDate}T00:00:00`)
           .lt('start_time', `${format(addDays(date, 1), 'yyyy-MM-dd')}T00:00:00`);
 
-        if (regularSessionsError) throw regularSessionsError;
-
-        // Get recurring sessions for this coach
-        const { data: recurringSessionsData, error: recurringSessionsError } = await supabase
-          .from('sessions')
-          .select('*')
-          .eq('coach_id', coachId)
-          .is('is_recurring', true);  // Changed from eq to is for safer boolean filtering
+        if (sessionsError) throw sessionsError;
         
-        if (recurringSessionsError) throw recurringSessionsError;
+        setSessions(sessionsData || []);
         
-        // Combine both types of sessions
-        const allSessions = [
-          ...(regularSessions || []),
-          ...(recurringSessionsData || [])
-        ];
-        
-        setSessions(allSessions);
-        
-        const newTimeSlots = generateTimeSlots(date, allSessions);
+        const newTimeSlots = generateTimeSlots(date, sessionsData || []);
         setTimeSlots(newTimeSlots);
       } catch (error) {
         console.error('Error fetching data:', error);
