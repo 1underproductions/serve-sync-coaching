@@ -1,7 +1,7 @@
 
 import { useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/context/useAuth";
+import { useAuth } from "@/context/AuthContext";
 import { navItems, adminNavItems } from "./navigation/nav-items";
 import { NavLink } from "./navigation/nav-link";
 import { BrandLogo } from "./navigation/brand-logo";

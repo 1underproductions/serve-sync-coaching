@@ -31,7 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { BadgeCheck } from 'lucide-react';
-import { useAuth } from "@/context/useAuth";
+import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import PaymentStatusBadge from "@/components/schedule/PaymentStatusBadge";

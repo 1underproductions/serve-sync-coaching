@@ -21,7 +21,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/context/useAuth";
+import { useAuth } from "@/context/AuthContext";
 
 // Mock user data for demonstration
 const mockUsers = [
@@ -50,7 +50,7 @@ const AdminUsers = () => {
   const [isNewUserDialogOpen, setIsNewUserDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  const { setUserAsAdmin } = useAuth();
+  // Note: setUserAsAdmin functionality would need to be implemented via edge function
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -102,13 +102,15 @@ const AdminUsers = () => {
     setIsSubmitting(true);
     
     try {
-      // For admin users, we use a special function
+      // For admin users, create account and assign role
       if (data.role === "admin") {
-        await setUserAsAdmin(data.email);
+        // TODO: Implement admin user creation via edge function
         toast({
-          title: "Admin user created",
-          description: "The admin account has been created successfully.",
+          title: "Feature in development",
+          description: "Admin user creation will be available soon.",
+          variant: "destructive",
         });
+        return;
       } else {
         // Regular user/coach creation
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({

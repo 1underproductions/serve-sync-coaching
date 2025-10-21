@@ -1,7 +1,7 @@
 
 import { ReactNode, useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/context/useAuth';
+import { useAuth } from '@/context/AuthContext';
 
 interface RouteGuardProps {
   children: ReactNode;

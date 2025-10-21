@@ -5,7 +5,7 @@ import { Info, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/context/useAuth";
+import { useAuth } from "@/context/AuthContext";
 import { StatsOverview } from "@/components/admin/dashboard/StatsOverview";
 import { WaitlistTab } from "@/components/admin/dashboard/WaitlistTab";
 import { PlatformOverviewTab } from "@/components/admin/dashboard/PlatformOverviewTab";

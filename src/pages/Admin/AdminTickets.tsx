@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from "@/context/useAuth";
+import { useAuth } from "@/context/AuthContext";
 
 const statusColors = {
   open: "bg-red-100 text-red-800 border-red-200",

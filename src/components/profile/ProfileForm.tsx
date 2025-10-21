@@ -105,25 +105,17 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
       };
       
       console.log('Testing profile update with:', testUpdate);
-      const result = await updateProfile(testUpdate);
+      await updateProfile(testUpdate);
       
-      if (result) {
-        toast({
-          title: "Test successful!",
-          description: "Profile connection is working properly.",
-        });
-        
-        // Refresh the profile to see the change
-        setTimeout(() => {
-          fetchUserProfile(user.id);
-        }, 1000);
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Test failed",
-          description: "Profile update returned null/undefined.",
-        });
-      }
+      toast({
+        title: "Test successful!",
+        description: "Profile connection is working properly.",
+      });
+      
+      // Refresh the profile to see the change
+      setTimeout(() => {
+        fetchUserProfile(user.id);
+      }, 1000);
     } catch (error) {
       console.error('Test connection error:', error);
       toast({
@@ -152,33 +144,24 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
     console.log('Current user ID:', user.id);
     
     try {
-      const result = await updateProfile(data);
+      await updateProfile(data);
       
-      if (result) {
-        console.log('Profile update successful, result:', result);
-        toast({
-          title: "Profile updated",
-          description: "Your profile has been successfully updated.",
-        });
-        
-        // Check if profile is complete
-        const isProfileComplete = Boolean(data.bio && data.location && data.phone && data.years_experience);
-        console.log('Profile complete status:', isProfileComplete);
-        onProfileUpdate(isProfileComplete);
-        
-        // Refresh the profile data
-        setTimeout(() => {
-          console.log('Refreshing profile data...');
-          fetchUserProfile(user.id);
-        }, 500);
-      } else {
-        console.error('Profile update returned null/undefined');
-        toast({
-          variant: "destructive",
-          title: "Update failed",
-          description: "Profile update returned no data. Check console for details.",
-        });
-      }
+      console.log('Profile update successful');
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been successfully updated.",
+      });
+      
+      // Check if profile is complete
+      const isProfileComplete = Boolean(data.bio && data.location && data.phone && data.years_experience);
+      console.log('Profile complete status:', isProfileComplete);
+      onProfileUpdate(isProfileComplete);
+      
+      // Refresh the profile data
+      setTimeout(() => {
+        console.log('Refreshing profile data...');
+        fetchUserProfile(user.id);
+      }, 500);
     } catch (error) {
       console.error("Error updating profile:", error);
       toast({
