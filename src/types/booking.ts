@@ -10,6 +10,7 @@ export interface Coach {
   hourly_rate: number;
   location: string;
   avatar_url?: string;
+  email?: string;
 }
 
 export interface BookingSummaryProps {

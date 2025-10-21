@@ -48,7 +48,7 @@ const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
       try {
         const { data: coachData, error: coachError } = await supabase
           .from('profiles')
-          .select('full_name, hourly_rate, location, avatar_url')
+          .select('full_name, hourly_rate, location, avatar_url, email')
           .eq('id', coachId)
           .single();
 
@@ -102,45 +102,12 @@ const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
       const hours = durationMinutes / 60;
       const amount = coachInfo.hourly_rate * hours;
       
-      const { data: sessionData, error: sessionError } = await supabase
-        .from('sessions')
-        .insert({
-          coach_id: coachId,
-          title: `Tennis Session (${durationMinutes} minutes)`,
-          description: 'Booked online',
-          start_time: startDateTime,
-          end_time: endDateTime,
-          location: coachInfo.location || 'Main Courts',
-          status: 'scheduled',
-          payment_status: 'pending',
-          requires_prepayment: true
-        })
-        .select()
-        .single();
-      
-      if (sessionError) throw sessionError;
-      
-      const response = await fetch('/api/create-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount,
-          description: `Tennis Session (${durationMinutes} minutes)`,
-          currency: 'USD',
-          sessionId: sessionData.id,
-          successPath: '/booking-success',
-          isDeposit: false,
-          cancellationPolicy: '24_hours'
-        })
+      // For now, show a message that booking requires contacting the coach
+      // In a full implementation, this would integrate with payment processing
+      toast({
+        title: 'Contact Coach to Book',
+        description: `Please contact ${coachInfo.full_name} at ${coachInfo.email} to complete your booking for ${format(date, 'PPP')} at ${startTime}.`,
       });
-      
-      const { url } = await response.json();
-      
-      if (url) {
-        window.location.href = url;
-      } else {
-        throw new Error('Failed to create payment session');
-      }
     } catch (error) {
       console.error('Error booking session:', error);
       toast({
