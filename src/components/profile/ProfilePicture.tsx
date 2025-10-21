@@ -24,19 +24,14 @@ export const ProfilePicture = () => {
   // Sync avatar when profile updates
   useEffect(() => {
     if (profile?.avatar_url) {
-      const testImg = new Image();
-      testImg.onload = () => {
-        setAvatarSrc(profile.avatar_url);
-        setCacheBuster(Date.now());
-      };
-      testImg.onerror = () => {
-        setAvatarSrc(null);
-      };
-      testImg.src = profile.avatar_url;
+      console.log('ProfilePicture: Setting avatar from profile:', profile.avatar_url);
+      setAvatarSrc(profile.avatar_url);
+      setCacheBuster(Date.now());
     } else {
+      console.log('ProfilePicture: No avatar_url in profile, clearing avatar');
       setAvatarSrc(null);
     }
-  }, [profile]);
+  }, [profile?.avatar_url]);
 
   // Refresh profile data when component mounts and when user changes
   useEffect(() => {
@@ -100,14 +95,18 @@ export const ProfilePicture = () => {
       
       console.log("Profile picture updated in database, refreshing profile...");
       
-      // Refresh profile data immediately
-      await fetchUserProfile(user.id);
+      // Wait a moment for database replication
+      await new Promise(resolve => setTimeout(resolve, 200));
       
-      // Update local state to show new image immediately
-      setAvatarSrc(url);
-      setCacheBuster(Date.now());
+      // Refresh profile data
+      const updatedProfile = await fetchUserProfile(user.id);
       
-      console.log("Profile refreshed successfully");
+      console.log("Profile refreshed, new avatar_url:", updatedProfile?.avatar_url);
+      
+      // Verify the update worked
+      if (updatedProfile?.avatar_url !== url) {
+        console.warn('Profile avatar_url mismatch:', { expected: url, actual: updatedProfile?.avatar_url });
+      }
       
       toast({
         title: "Profile Picture Updated",
@@ -141,7 +140,10 @@ export const ProfilePicture = () => {
                 <AvatarImage 
                   src={avatarSrc ? `${avatarSrc}${avatarSrc.includes('?') ? '&' : '?'}v=${cacheBuster}` : ""} 
                   alt="Profile picture" 
-                  onError={() => setAvatarSrc(null)}
+                  onError={(e) => {
+                    console.error('Avatar image failed to load:', avatarSrc);
+                    // Don't clear on error - keep trying to show the image
+                  }}
                 />
                 <AvatarFallback className="text-4xl bg-tennis-green-100 text-tennis-green-700">
                   <User />

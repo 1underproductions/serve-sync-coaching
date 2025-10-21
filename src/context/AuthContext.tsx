@@ -52,14 +52,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-          }, 0);
+          fetchProfile(session.user.id);
         } else {
           setProfile(null);
           setIsAdmin(false);
@@ -84,14 +82,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchProfile = async (userId: string) => {
     try {
+      console.log('Fetching profile for user:', userId);
+      
       const { data: profileData, error: profileError} = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .maybeSingle();
+        .single();
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Profile fetch error:', profileError);
+        throw profileError;
+      }
 
+      console.log('Profile fetched successfully:', profileData);
+      
+      // Update state immediately
       setProfile(profileData);
 
       // Check if user has admin role
@@ -103,9 +109,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .maybeSingle();
 
       setIsAdmin(!!rolesData);
+      
       return profileData;
     } catch (error) {
       console.error('Error fetching profile:', error);
+      setProfile(null);
       return null;
     } finally {
       setIsLoading(false);
