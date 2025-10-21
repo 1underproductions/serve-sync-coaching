@@ -67,9 +67,7 @@ export const ProfilePicture = () => {
     try {
       setIsSubmitting(true);
       
-      // First update the local UI
-      setAvatarSrc(url);
-      setCacheBuster(Date.now());
+      console.log("Starting profile picture update with URL:", url);
       
       // Get session for auth token
       const { data: { session } } = await supabase.auth.getSession();
@@ -100,11 +98,16 @@ export const ProfilePicture = () => {
         throw new Error(`Update failed: ${response.status} ${response.statusText}`);
       }
       
-      // Wait for database to commit
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log("Profile picture updated in database, refreshing profile...");
       
-      // Force refresh the profile from database
+      // Refresh profile data immediately
       await fetchUserProfile(user.id);
+      
+      // Update local state to show new image immediately
+      setAvatarSrc(url);
+      setCacheBuster(Date.now());
+      
+      console.log("Profile refreshed successfully");
       
       toast({
         title: "Profile Picture Updated",
