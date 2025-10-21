@@ -7,10 +7,10 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+    PostgrestVersion: "13.0.4"
   }
   public: {
     Tables: {
@@ -357,6 +357,60 @@ export type Database = {
           },
         ]
       }
+      players: {
+        Row: {
+          coach_id: string
+          created_at: string
+          date_of_birth: string | null
+          email: string | null
+          full_name: string
+          goals: string | null
+          id: string
+          is_child: boolean | null
+          notes: string | null
+          parent_email: string | null
+          parent_name: string | null
+          parent_phone: string | null
+          phone: string | null
+          skill_level: string | null
+          updated_at: string
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          date_of_birth?: string | null
+          email?: string | null
+          full_name: string
+          goals?: string | null
+          id?: string
+          is_child?: boolean | null
+          notes?: string | null
+          parent_email?: string | null
+          parent_name?: string | null
+          parent_phone?: string | null
+          phone?: string | null
+          skill_level?: string | null
+          updated_at?: string
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          date_of_birth?: string | null
+          email?: string | null
+          full_name?: string
+          goals?: string | null
+          id?: string
+          is_child?: boolean | null
+          notes?: string | null
+          parent_email?: string | null
+          parent_name?: string | null
+          parent_phone?: string | null
+          phone?: string | null
+          skill_level?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -665,6 +719,27 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       waitlist_signups: {
         Row: {
           created_at: string
@@ -722,26 +797,26 @@ export type Database = {
       }
       create_payment_link: {
         Args: {
-          p_player_id: string
-          p_description: string
           p_amount: number
           p_currency?: string
+          p_description: string
           p_expires_in_days?: number
+          p_player_id: string
         }
         Returns: string
       }
       create_payment_notification: {
         Args: {
-          p_user_id: string
-          p_type: string
-          p_title: string
           p_message: string
           p_related_id?: string
+          p_title: string
+          p_type: string
+          p_user_id: string
         }
         Returns: string
       }
       create_player_portal: {
-        Args: { p_player_id: string; p_expires_in_days?: number }
+        Args: { p_expires_in_days?: number; p_player_id: string }
         Returns: string
       }
       generate_access_code: {
@@ -768,12 +843,19 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       insert_waitlist_entry: {
         Args: {
           p_email: string
           p_full_name: string
-          p_years_experience: number
           p_message?: string
+          p_years_experience: number
         }
         Returns: {
           created_at: string
@@ -819,7 +901,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "user" | "tennexis_admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -946,6 +1028,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["user", "tennexis_admin"],
+    },
   },
 } as const
