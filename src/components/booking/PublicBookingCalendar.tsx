@@ -113,8 +113,7 @@ const PublicBookingCalendar = ({ coachId }: PublicBookingCalendarProps) => {
           location: coachInfo.location || 'Main Courts',
           status: 'scheduled',
           payment_status: 'pending',
-          requires_prepayment: true,
-          is_recurring: false
+          requires_prepayment: true
         })
         .select()
         .single();
