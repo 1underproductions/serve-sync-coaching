@@ -63,10 +63,12 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
     },
   });
 
-  // Reset form when profile data changes (only when profile changes, not form)
+  // Reset form only on initial profile load, not on every profile change
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  
   useEffect(() => {
-    if (profile) {
-      console.log('ProfileForm: Updating form with profile data:', profile);
+    if (profile && !initialLoadComplete) {
+      console.log('ProfileForm: Initial form setup with profile data:', profile);
       const formValues: ProfileFormValues = {
         full_name: profile.full_name || "",
         email: profile.email || "",
@@ -78,11 +80,11 @@ export const ProfileForm = ({ onProfileUpdate }: ProfileFormProps) => {
         hourly_rate: profile.hourly_rate || 0,
       };
       
-      // Use reset to properly update all form fields
       form.reset(formValues);
+      setInitialLoadComplete(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile]);
+  }, [profile, initialLoadComplete]);
 
   const testConnection = async () => {
     if (!user) {
