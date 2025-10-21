@@ -100,13 +100,21 @@ export const ProfilePicture = () => {
         throw new Error(`Update failed: ${response.status} ${response.statusText}`);
       }
       
-      // Refresh profile data
-      await fetchUserProfile(user.id);
+      // Refresh profile data - add a small delay to ensure DB has committed
+      await new Promise(resolve => setTimeout(resolve, 500));
+      const refreshedProfile = await fetchUserProfile(user.id);
       
-      toast({
-        title: "Profile Picture Updated",
-        description: "Your profile picture has been saved successfully.",
-      });
+      if (refreshedProfile?.avatar_url === url) {
+        setAvatarSrc(url);
+        setCacheBuster(Date.now());
+        
+        toast({
+          title: "Profile Picture Updated",
+          description: "Your profile picture has been saved successfully.",
+        });
+      } else {
+        throw new Error("Profile refresh verification failed");
+      }
     } catch (error: any) {
       console.error("Error uploading profile picture:", error);
       

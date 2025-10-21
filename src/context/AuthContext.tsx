@@ -115,7 +115,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchUserProfile = async (userId?: string): Promise<Profile | null> => {
     const id = userId || user?.id;
     if (!id) return null;
-    return await fetchProfile(id);
+    
+    // Force a fresh fetch by bypassing any caching
+    const profileData = await fetchProfile(id);
+    
+    // Ensure the profile state is updated immediately
+    if (profileData) {
+      setProfile(profileData);
+    }
+    
+    return profileData;
   };
 
   const signIn = async (email: string, password: string) => {
