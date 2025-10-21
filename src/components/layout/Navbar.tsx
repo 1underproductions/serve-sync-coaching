@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { 
   CalendarClock, 
   Users, 
@@ -159,8 +160,16 @@ const Navbar = () => {
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 bg-tennis-green-100">
-                <span className="font-medium text-tennis-green-800">{getInitials()}</span>
+              <Button variant="ghost" className="rounded-full h-8 w-8 p-0">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage 
+                    src={profile?.avatar_url || ""} 
+                    alt={profile?.full_name || "User"}
+                  />
+                  <AvatarFallback className="bg-tennis-green-100 text-tennis-green-800 text-sm font-medium">
+                    {getInitials()}
+                  </AvatarFallback>
+                </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
